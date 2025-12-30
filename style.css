@@ -1,0 +1,12 @@
+@font-face {
+    font-family: CustomFont;
+    src: url(./Fonts/Amore\ Christmas.otf); /* url of the font */
+  }
+.MainTitle
+{
+    color: blue;
+    font-family: CustomFont;
+    font-size: 70px;
+    margin: auto;
+    width: 50%;
+}
