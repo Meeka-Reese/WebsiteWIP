@@ -1,5 +1,9 @@
 import { Normalize } from './Utils.js';
 import { ToRadian } from './Utils.js';
+import { mat4 } from './Externals/esm/index.js';
+import { vec3 } from './Externals/esm/index.js';
+import { vec4 } from './Externals/esm/index.js';
+import { quat } from './Externals/esm/index.js';
 let gSpeed = .1;
 let gRotationSpeed = .15;
 let gTotalYaw;

@@ -31,7 +31,31 @@ export function TanPreComp(TanBufferView,Length)
 
     for (let Sample = 0; Sample < Length; Sample++)
     {
-        TanBufferView[Sample] = Math.atan(currentPhase);
+        TanBufferView[Sample] = Math.tan(currentPhase);
+        currentPhase += deltaPhase;
+    }
+}
+
+export function ArcSinPreComp(ArcSinBufferView, Length)
+{
+    let currentPhase = -1.0;
+    let deltaPhase = (2.0) / Length;
+
+    for (let Sample = 0; Sample < Length; Sample++)
+    {
+        ArcSinBufferView[Sample] = Math.asin(currentPhase);
+        currentPhase += deltaPhase;
+    }
+}
+
+export function ArcCosPreComp(ArcCosBufferView, Length)
+{
+    let currentPhase = -1.0;
+    let deltaPhase = (2.0) / Length;
+
+    for (let Sample = 0; Sample < Length; Sample++)
+    {
+        ArcCosBufferView[Sample] = Math.acos(currentPhase);
         currentPhase += deltaPhase;
     }
 }

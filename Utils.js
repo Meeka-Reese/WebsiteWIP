@@ -15,3 +15,6 @@ export function ToRadian(degrees)
   // Multiply degrees by pi divided by 180 to convert to radians.
   return degrees * (pi/180);
 }
+export function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
