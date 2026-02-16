@@ -1162,8 +1162,15 @@ class Mesh {
         this.Rotation = [0.0,0.0,0.0];
         this.Scale = [1.0,1.0,1.0];
         this.Texture = null;
+        this.Normal = null;
+        this.Displacement = null;
         this.DepthTexture = null;
+        this.TextureBN = null; //blue noise
         this.Texture3D = null;
+        this.ParentTrans = null;
+        this.ParentScale = null;
+        this.Color = [0.0,0.0,0.0,0.0];
+        this.isHover = false;
         /*
         The OBJ file format does a sort of compression when saving a model in a
         program like Blender. There are at least 3 sections (4 including textures)

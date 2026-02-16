@@ -9,10 +9,12 @@
     uniform sampler3D uTexture3D;
     uniform sampler2D uTexture;
     uniform sampler2D depthTexture;
+    uniform sampler2D uTextureBlueNoise;
     uniform float Time;
     uniform vec3 viewPos;
     uniform vec3 CameraViewDir;  
     uniform vec2 uResolution;   
+    //https://momentsingraphics.de/BlueNoise.html
 
 
 
@@ -106,7 +108,7 @@
     {
         float DepthTexture = texture(depthTexture, gl_FragCoord.xy/uResolution).r;
         float near = 0.1;
-        float far = 100.0;
+        float far = 200.0;
         float z = DepthTexture * 2.0 - 1.0;
         float linearDepth = (2.0 * near * far) / (far + near - z * (far - near));
         linearDepth = linearDepth / far;
@@ -129,9 +131,9 @@
         vec3 BoundsMax = vec3(CubeSize,CubeSize,CubeSize);
         
         //vec2 rayMeshInfo = rayBoxDst(BoundsMin,BoundsMax, RayOrigin, invRayDir);
-        float Radius = 75.0;
-        float InnerRadius = 15.0;
-        vec3 Origin = vec3(35.0,0.0,30.0);
+        float Radius = 90.0;
+        float InnerRadius = 18.0;
+        vec3 Origin = vec3(45.0,0.0,30.0);
         vec2 rayMeshInfo = raySphereDst(Radius, Origin,RayOrigin,RayDir, Frame);
         float distToMesh = rayMeshInfo.x;
         float distInMesh = rayMeshInfo.y;
@@ -142,22 +144,28 @@
         float distToInner = innerRayMeshInfo.x - distToMesh;
         float distSkip = distToInner + innerRayMeshInfo.y; // adding dist inner to make comparing with dstTraveled easier
         float distTraveled = 0.0;
-        float numSteps = 256.0;
+        float numSteps = 128.0;
+        float Noise3D1 = texture(uTexture3D, vec3(RayDir.xy, Frame/10.0)).r * .1;
+        float Noise3D2 = texture(uTexture3D, vec3(RayDir.xy, Frame/5.0)).r * .1;
         float stepSize = distInMesh / numSteps;
-        float minStepSize = .01;
+        float stepRandAm = .5;
+        float maxStepSize = stepSize * 2.0;
+        float minStepSize = stepSize * .25;
+        stepSize += (texture(uTextureBlueNoise, UVCord + vec2(Noise3D1, Noise3D2)).r + rand(UVCord) * stepRandAm);
+        
         float DistLimit = distInMesh;
         float TotalDensity = 0.0;
+        float previousDensity = 0.0;
 
         float MaxHeight = 12.0;
         float MinHeight = 0.0;
         float DepthMult = 90.0;
-        float s=0.1;
-        float fade=1.;
-        float tile = 2.0;
-        float formuparam = .53;
-        float iterations = 5.0;
+        float tile = 4.5;
+        float tile2 = 8.0 + (sin(Frame) * 5.0);
+        float formuparam = .53 + sin(UVCord.y + Frame * 10.0)*.01;
+        float iterations = 6.0;
         float darkmatter = 1.0000;
-        float brightness = 0.03;
+        float brightness = .00002;
         float saturation = 0.850; 
         float distfading = 0.730;
         float r = 0.0;
@@ -173,33 +181,57 @@
             if (!(distTraveled > distToInner && distTraveled < distSkip) && !(RayPos.y > MaxHeight) && !(RayPos.y < MinHeight)) // Hole
             {
                 float density = SampleDensity(RayPos,Frame,Origin ) * stepSize * (1.0 - (RayPos.y/2.0)/MaxHeight);
+                float densityGradient = abs(density - previousDensity);
+                if (distToInner == 0.0) {distToInner = .1;}
+                stepSize = mix(maxStepSize, minStepSize, densityGradient);
                 TotalDensity += density;
-                
-                if (density > 0.01) {
+                previousDensity = density;
+                if (TotalDensity > 1.0)
+                {
+                    break;
+                }
+                if (density > 0.01) 
+                {
+                    float s = stepSize;
                     vec3 p = RayPos;
+                    vec3 p2 = RayPos;
+                    float fade=1.;
+
                     p = abs(vec3(tile)-mod(p,vec3(tile*2.))); // tiling fold
-                    p.x *= Frame;
+                    p2 = abs(vec3(tile2)-mod(p2,vec3(tile2*2.0))); // tiling fold
                     float pa,a=pa=0.;
-                    for (float i = 0.0; i < iterations; i++) {
+
+                    for (float i=0.0; i<iterations; i++) 
+                    { 
                         p=abs(p)/dot(p,p)-formuparam; // the magic formula
-                        a+=abs(length(p)-pa); // absolute sum of average change
-                        pa=length(p);
+                        p2=abs(p2)/dot(p2,p2)-formuparam-.1;
+
+                        a+=abs(length(p)-pa + s); // absolute sum of average change
+                        a+=abs(length(p2)-pa);
+                        pa=length(p);   
+                        s+=stepSize;
                     }
+                    s*=.5;
                     float dm=max(0.,darkmatter-a*a*.001); //dark matter
-                    a*=a*a; // add contrast
-                    s*= 1.1;
-                     v+=vec3(s,s*s*5.0,s*s*s*s*5.0)*a*brightness*fade*density;
-                    fade*=distfading;
-                    r++;
+                    a*=a*a*a; // add contrast
+                    if (r>3.0) fade*=1.-dm; // dark matter, don't render near
+                    v+=vec3(dm,dm*.5,0.);
+                    v+=fade;
+                    v+=vec3(s,s*s*s*s,s*s*s)*a*brightness*fade; // coloring based on distance
+                    fade*=distfading; // distance fading
+                     r++;   
                 }
             }
             distTraveled += stepSize;
             
         }
         float Transmittance = exp(-TotalDensity);
-        v=mix(vec3(length(v)),v,saturation);
-        float GlitterAlpha = Transmittance > .9 ? 0.0 : 1.0;
-        vec4 Glitter = vec4(v*.01,GlitterAlpha);
+        v=mix(vec3(length(v)),v,saturation); //color adjust
+        float colCutoff = .1;
+        if (length(v) < colCutoff) {v = vec3(0.0);}
+        float GlitterAlpha = Transmittance > .99 ? 0.0 : 1.0;
+        vec4 Glitter = vec4(v*.0000001,GlitterAlpha);
+    
     
         float QuantizeLevel = 4.0;
         TotalDensity *= QuantizeLevel;

@@ -1,67 +1,78 @@
+/*
+Create FBO for Raycast with Object ID. Have definition of all raycast 
+objects and make the rendered texture value be the index of the object
+*/
 //=======================SHADERS=============================
-let gVertSourceDef;
-let gVertSkybox;
-let gVertStar;
-let gFragSourceDef;
-let gFragSourceFlat;
-let gFragSourceCloud;
-let gFragSkybox;
-let gFragStar;
-let gShaderProgramDef;
-let gShaderProgramFlat;
-let gShaderProgramCloud;
-let gShaderProgramSkybox;
-let gShaderProgramStar;
+let gVertSourceDef, gVertSkybox, gVertStar, gVertRaycast, gVertTrans;
+
+let gFragSourceWave, gFragSourceFlat, gFragSourceCloud, gFragSkybox, gFragStar, gFragColor,
+gFragVolGlow, gFragDef, gFragRaycast, gFragGlass, gFragScreenFlat, gFragTransFlat;
+
+let gShaderProgramDef, gShaderProgramWave, gShaderProgramFlat, gShaderProgramCloud,
+gShaderProgramSkybox, gShaderProgramStar, gShaderProgramColor, gShaderProgramVolGlow,
+gShaderProgramRaycast, gShaderProgramGlass, gShaderProgramScreenRender, gShaderProgramScreenImage,
+gShaderProgramTrans;
+
 let gProgramInfoDef = {};
+let gProgramInfoWave = {};
 let gProgramInfoFlat = {};
 let gProgramInfoCloud = {};
 let gProgramInfoSkybox = {};
 let gProgramInfoStar = {};
+let gProgramInfoColor = {};
+let gProgramInfoVolGlow = {};
+let gProgramInfoRaycast = {};
+let gProgramInfoGlass = {};
+let gProgramInfoScreenRender = {};
+let gProgramInfoScreenImage = {};
+let gProgramInfoTrans = {};
+
 
 
 //Depth
 let gDepthFBO;
 let gDepthMap;
+let gMainDepthMap;
+let gGlassDepthMap;
+
+//Raycast
+let gRaycastFBO;
+let gRaycastColecMain = [];
+let gRaycastColecTransform = [];
+let gMainRaycastFuncs = new Map();
+let gTransRaycastFuncs = new Map();
+let gRaycastMap;
+let gRaycastIndex;
+let gRaycastText; // storing in different var to avoid editing binded buff
+let gCurrentMousePos = [0,0];
+let gMouseMoved = false;
+
+//Transparency and glass and stuff
+let gMainFBO;
+let gGlassFBO;
+let gGlassRendText;
+let gRenderText;
+let gTexForTransp;
 
 
 //Imported functions
-import { Move } from './translations.js';
-import { Rotate } from './translations.js';
-import { Scale } from './translations.js';
-import { Normalize } from './Utils.js';
-import { ToRadian } from './Utils.js';
-import { sleep } from './Utils.js';
-import { CameraMove } from './Camera.js';
-import { MouseLook } from './Camera.js';
-import { GetViewMatrix } from './Camera.js';
-import { SinPreComp } from './PreCompWave.js';
-import { CosPreComp } from './PreCompWave.js';
-import { TanPreComp } from './PreCompWave.js';
-import { ArcSinPreComp } from './PreCompWave.js';
-import { ArcCosPreComp } from './PreCompWave.js';
+import { Move,Rotate,Scale } from './translations.js';
+import { Normalize,ToRadian,sleep } from './Utils.js';
+import { CameraMove, MouseLook, GetViewMatrix } from './Camera.js';
+import { SinPreComp,CosPreComp,TanPreComp,ArcSinPreComp,ArcCosPreComp } from './PreCompWave.js';
 import { createNoise3D } from './Externals/simplex-noise.js';
-import { SetProgramInfo } from './ShaderFunc.js';
-import { loadTexture } from './ShaderFunc.js';
-import { setPositionAttribute } from './ShaderFunc.js';
-import { createTexture2DFromBuffer } from './ShaderFunc.js';
-import { createTexture3DFromBuffer } from './ShaderFunc.js';
-import { mat4 } from './Externals/esm/index.js';
-import { vec2 } from './Externals/esm/index.js';
-import { vec3 } from './Externals/esm/index.js';
-import { vec4 } from './Externals/esm/index.js';
-import { quat } from './Externals/esm/index.js';
-import { GenerateWave } from './GenerateMesh.js';
-import { CalculateNormals } from './GenerateMesh.js';
-import { GenerateQuad } from './GenerateMesh.js';
-import { SphereOfQuad } from './GenerateMesh.js';
-import { StarLookAt } from './GenerateMesh.js';
+import { SetProgramInfo,loadTexture,setPositionAttribute,createTexture2DFromBuffer,
+  createTexture3DFromBuffer,genFBO,genDepthMap,genEmptyTex,ClearFBO } from './ShaderFunc.js';
+import { mat4,vec2,vec3,vec4,quat } from './Externals/esm/index.js';
+import { GenerateWave,CalculateNormals,GenerateQuad,SphereOfQuad,StarLookAt } from './GenerateMesh.js';
 import { CreateWorley3D } from './GenerateNoise.js';
 
 
 //=======================GLOBALS=============================
 //Scene
+let gActiveMainLoop;
 let gCamera;
-let gLight1;
+let gLight1, gLight2, gLight3;
 let gSimpleWave;
 let gBoatMesh;
 let gSkybox;
@@ -70,6 +81,20 @@ let gStars;
 let gCloudShimmer;
 let gMoon;
 let gSpellCircle;
+let gSpellCircleVolume;
+let gSpellCircleOutline;
+let gCircleMask;
+let gRockWall;
+let gGlassSphere;
+let gCharHead, gCharHair;
+let gScreenSpaceQuad;
+let gCrossHair;
+let gOpt1, gOpt2, gOpt3; //set up raytracing Options
+
+//Transformation Scene
+let gCharTrans, gCharHairTrans;
+let gRCDict = new Map();
+
 //
 let gPreviousTime;
 let gDeltaTime;
@@ -77,6 +102,7 @@ let gTimeSinceRun;
 let gTimeStart;
 let gTime = new Date();
 let gGL;
+let gCanvas;
 let gCycleNum = 0;
 let gBoatWaveIndices = [0,0,0,0];
 let gBoatRangeIndices = [0,0,0,0];
@@ -156,49 +182,74 @@ function initShader(vSource, fSource)
       return shaderProgram;
     
 }
-function genFBODepth()
-{
-    gDepthFBO = gGL.createFramebuffer();
-    gDepthMap = gGL.createTexture();
-    gGL.bindTexture(gGL.TEXTURE_2D, gDepthMap);
-    gGL.texImage2D(gGL.TEXTURE_2D, 0, gGL.DEPTH_COMPONENT24, gCanvasWidth, 
-      gCanvasHeight, 0, gGL.DEPTH_COMPONENT, gGL.UNSIGNED_INT, null);
-      gGL.texParameteri(gGL.TEXTURE_2D, gGL.TEXTURE_MIN_FILTER, gGL.NEAREST);
-      gGL.texParameteri(gGL.TEXTURE_2D, gGL.TEXTURE_MAG_FILTER, gGL.NEAREST);
-      gGL.texParameteri(gGL.TEXTURE_2D, gGL.TEXTURE_WRAP_S, gGL.REPEAT); 
-      gGL.texParameteri(gGL.TEXTURE_2D, gGL.TEXTURE_WRAP_T, gGL.REPEAT);  
-    
-      gGL.bindFramebuffer(gGL.FRAMEBUFFER, gDepthFBO);  
-      gGL.framebufferTexture2D(gGL.FRAMEBUFFER, gGL.DEPTH_ATTACHMENT, gGL.TEXTURE_2D, gDepthMap, 0);
-      gGL.drawBuffers([gGL.NONE]);
-}
+
 async function SetUpScene()
 {
+  //== Main Scene ==
+
    //Gen Noise
-   const CubeMeshText = await LoadOBJ('./models/Cube.obj');
-   gNoiseCube = new OBJ.Mesh(CubeMeshText);
-   OBJ.initMeshBuffers(gGL, gNoiseCube);
-   let ImgSize = 32;
+   gNoiseCube = await LoadOBJ('./models/Cube.obj');
+   let ImgSize = 8;
    let ImgBufNoise = await CreateWorley3D(4, ImgSize);
-   gNoiseCube.Texture3D = await createTexture3DFromBuffer(gGL, ImgBufNoise, ImgSize, ImgSize, ImgSize);
+   let Noise3D = await createTexture3DFromBuffer(gGL, ImgBufNoise, ImgSize, ImgSize, ImgSize);
+   gNoiseCube.Texture3D = Noise3D;
    gNoiseCube.Texture = await loadTexture(gGL, './Textures/CloudDetailNoise.png',4);
-  const BoatMeshText = await LoadOBJ('./models/SailBoat.obj');
-  gBoatMesh = new OBJ.Mesh(BoatMeshText);
-  OBJ.initMeshBuffers(gGL, gBoatMesh);
+   gNoiseCube.TextureBN = await loadTexture(gGL, './Textures/BlueNoise.png',4);
+
+  gBoatMesh = await LoadOBJ('./models/SailBoat.obj');
   gBoatMesh.Texture = await loadTexture(gGL, './Textures/SailBoat.png',4);
-  const SphereText = await LoadOBJ('./models/Sphere.obj');
-  gMoon = new OBJ.Mesh(SphereText);
-  OBJ.initMeshBuffers(gGL, gMoon);
+
+  gMoon = await LoadOBJ('./models/Sphere.obj');
   gMoon.Texture = await loadTexture(gGL, './Textures/Moon.png',4);
-  gSkybox.Texture = await loadTexture(gGL, './Textures/ScreenOutline.png',4);
-  const SpellCircleText = await LoadOBJ('./models/SpellCircle.obj');
+
+  gSpellCircle = await LoadOBJ('./models/SpellCircle.obj');
+  gSpellCircle.Color = [0.5,.8,1.0,.3];
+
+  gSpellCircleVolume = await LoadOBJ('./models/SpellCircleVolume.obj');
+  gSpellCircleVolume.Texture = await loadTexture(gGL, './Textures/CloudDetailNoise.png',4);
+
+  gSpellCircleOutline = await LoadOBJ('./models/SpellCircle.obj');
+
+  gCircleMask = await LoadOBJ('./models/MaskCircle.obj');
+  gCircleMask.Color = [1.0,1.0,1.0,0.0];
+
+  gOpt1 = await LoadOBJ('./models/Arrow.obj');
+
+  gCharHead = await LoadOBJ('./models/CharHead.obj');
+  gCharHead.Texture = await loadTexture(gGL, './Textures/Girl.png',4);
+
+ gCharHair = await LoadOBJ('./models/CharHair.obj');
+ gCharHair.Texture = await loadTexture(gGL, './Textures/Girl.png',4);
 
 
+  gGlassSphere = await LoadOBJ('./models/Cube.obj'); // used for volume of raymarch sphere
+  gGlassSphere.Normal = await loadTexture(gGL, './Textures/GlassNoiseNorm.png',4);
+  gGlassSphere.Displacement = await loadTexture(gGL, './Textures/GlassDisplacement.png',4);
 
-  //Set Positions
+  gCrossHair.Texture = await loadTexture(gGL,'./Textures/crosshair.png',4);
+
+  //== Transform Scene ==
+  
+  gCharTrans = await LoadOBJ('./models/CharFullBodyUp.obj');
+  gCharTrans.Texture = await loadTexture(gGL, './Textures/GirlTextureFull.png',4);
+  gCharTrans.Texture3D = Noise3D;
+
+  gCharHairTrans = await LoadOBJ('./models/CharHairTrans.obj');
+  gCharHairTrans.Texture = await loadTexture(gGL, './Textures/Girl.png',4);
+  gCharHairTrans.Texture3D = Noise3D;
+
+   //==========================SET PARENTING======================================
+   //== Main Scene ==
+  gCharHead.ParentTrans = gGlassSphere;
+    gCharHair.ParentTrans = gCharHead;
+  //== Transform Scene ==
+  gCharHairTrans.ParentTrans = gCharTrans;
+  gCharHairTrans.ParentScale = gCharTrans;
+  //==========================SET POSITION======================================
+  //== Main Scene ==
   gBoatMesh.Scale = [2.0, 2.0, 2.0];
   gBoatMesh.Rotation = [0.0,0.0,0.0];
-  gBoatMesh.Position = [35.0,0.0,35.0];
+  gBoatMesh.Position = [45.0,0.0,35.0];
   gMoon.Position = [10,40,10];
   gMoon.Scale = [1.25,1.25,1.25];
   gMoon.Rotation = [0.0,0.0,0.0];
@@ -210,13 +261,65 @@ async function SetUpScene()
   gStars.Position = [0.0,0.0,0.0];
   gStars.Scale = [1.0,1.0,1.0];
   gStars.Rotation = [0.0,0.0,0.0];
+  gSpellCircle.Position = [45.0,1.0,30.0];
+  gSpellCircle.Rotation = [90.0,0.0,0.0];
+  let SpellCircScale = 45.0;
+  gSpellCircle.Scale = [SpellCircScale,SpellCircScale,SpellCircScale];
+  gSpellCircle.Color = [.5,.5,.5,1.0];
+  gSpellCircleOutline.Position = [1.2,0.0,0.0];
+  gSpellCircleOutline.Rotation = [0.0,0.0,0.0];
+  let BordScale = 1.04;
+  gSpellCircleOutline.Scale = [.24 * BordScale,.42 * BordScale,1.0];
+  gSpellCircleOutline.Color = [0.0,0.0,0.0,1.0];
+  gSpellCircleVolume.Scale = [SpellCircScale,SpellCircScale,SpellCircScale/8.0];
+  gSpellCircleVolume.Position = [45.0,0.0,30.0];
+  gSpellCircleVolume.Rotation = [90.0,0.0,0.0];
+  gSpellCircleVolume.Color = [0.247, 0.572, 0.988, 1.0];
+  let CircScale = 35.0;
+  gCircleMask.Scale = [CircScale,CircScale,CircScale*5.0];
+  gCircleMask.Color = [0.0,0.0,0.0,1.0];
+  gCircleMask.Position = [45.0,45.0,30.0];
+  gCircleMask.Rotation = [90.0,0.0,0.0];
+  let optSize = 4.0;
+  gOpt1.Position = [45.0,2.0,100.0];
+  gOpt1.Rotation = [0.0,90.0,0.0];
+  gOpt1.Scale = [optSize,optSize,optSize];
+  gOpt1.Color = [.7,.7,.7,1.0];
+  let gCharSize = 10.0;
+  gCharHead.Position = [0.0,-28.0,1.0];
+  gCharHead.Rotation = [0.0,180.0,0.0];
+  gCharHead.Scale = [gCharSize,gCharSize,gCharSize];
+  gCharHair.Position = [0.0,0.0,0.0];
+  gCharHair.Rotation = [0.0,0.0,0.0];
+  gCharHair.Scale = [gCharSize,gCharSize,gCharSize];
+  
+  
+  let GSphereSize = 15.0;
+  gGlassSphere.Position = [45.0,26.0,110.0];
+  gGlassSphere.Scale = [GSphereSize,GSphereSize,GSphereSize];
+  gGlassSphere.Rotation = [0.0,0.0,0.0];
+  //== Transform Scene ==
+  let CharTransScale = 10.0;
+  gCharTrans.Position = [0.0,0.0,0.0];
+  gCharTrans.Scale = [CharTransScale,CharTransScale,CharTransScale];
+  gCharTrans.Rotation = [0.0,180.0,0.0];
+  gCharHairTrans.Position = [0.0,0.0,0.0];
+  gCharHairTrans.Rotation = [0.0,0.0,0.0];
+  gCharHairTrans.Scale = [1.0,1.0,1.0];
+    //==========================FILL RAYCAST ARRAY======================================
+    //== Main Scene ==
+    gRaycastColecMain.push(gOpt1);
+    gRCDict.set(gOpt1, gGlassSphere);
+    //== Transform Scene ==
 }
 async function LoadOBJ(path)
 {
   const ObjLoad = await fetch(path);
   if(!ObjLoad.ok) throw new Error("Failed to load OBJ");
-  return await ObjLoad.text();
-
+  let ObjText = await ObjLoad.text();
+  let obj = new OBJ.Mesh(ObjText);
+  OBJ.initMeshBuffers(gGL, obj);
+  return obj;
 }
 function loadShader(type, source) 
 {
@@ -250,7 +353,7 @@ function WaveUpdateMesh(WaveObj)
     let NoiseDetail = [.3, .2,.3];
     let NoiseAmp = .5;
     let TimeSec = gTime.getTime() * .001;
-    const positionBuffer = gGL.createBuffer();
+    const positionBuffer = WaveObj.vertexBuffer;
     let PosOffset = WaveObj.PosOffset;
     let Vert = 0;
     let Positions = WaveObj.PositionsArray;
@@ -368,15 +471,50 @@ function SetUpModelMatrix(ModelMatrix, Object)
 {
   let RotationMatrix = mat4.create();
   let q = quat.create();
+  let ParentMatrix = mat4.create();
   quat.fromEuler(q, Object.Rotation[0], Object.Rotation[1], Object.Rotation[2]);
   mat4.fromQuat(RotationMatrix,q);
   let Pos = vec3.fromValues(Object.Position[0],Object.Position[1],Object.Position[2]);
   let Scale = vec3.fromValues(Object.Scale[0],Object.Scale[1],Object.Scale[2]);
   ModelMatrix = mat4.fromRotationTranslationScale(ModelMatrix, q, Pos, Scale);
+
+  let ParentTrans = Object.ParentTrans;
+  let ParentScale = Object.ParentScale;
+  while (ParentTrans|| ParentScale)
+  {
+    q = quat.create();
+    if (ParentTrans != null)
+    {
+      
+      quat.fromEuler(q, ParentTrans.Rotation[0], ParentTrans.Rotation[1], ParentTrans.Rotation[2]);
+      mat4.fromQuat(RotationMatrix,q);
+      Pos = vec3.fromValues(ParentTrans.Position[0], ParentTrans.Position[1],ParentTrans.Position[2]);
+    }
+    else
+    {
+      quat.fromEuler(q, 0.0, 0.0, 0.0);
+      mat4.fromQuat(RotationMatrix,q);
+      Pos = vec3.fromValues(0.0, 0.0,0.0);
+    }
+    
+    if (ParentScale != null)
+    {
+      Scale = vec3.fromValues(ParentScale.Scale[0],ParentScale.Scale[1],ParentScale.Scale[2]);
+    }
+    else
+    {
+      Scale = vec3.fromValues(1.0,1.0,1.0);
+    }
+    ParentMatrix = mat4.fromRotationTranslationScale(ParentMatrix, q, Pos, Scale);
+    ModelMatrix = mat4.multiply(ModelMatrix, ParentMatrix, ModelMatrix);
+    ParentTrans = ParentTrans.ParentTrans;
+    ParentScale = ParentScale == null ? null : ParentScale.ParentScale;
+  }
+  
 }
 function DrawCallSetup()
 {
-    gGL.clearColor(0.06, 0.09, 0.16, 1.0); 
+    gGL.clearColor(0.00, 0.00, 0.00, 0.0); 
     gGL.clearDepth(1.0);
     gGL.enable(gGL.DEPTH_TEST); 
     gGL.depthFunc(gGL.LEQUAL); 
@@ -388,7 +526,7 @@ function DrawCallSetup()
       
     gGL.clear(gGL.COLOR_BUFFER_BIT | gGL.DEPTH_BUFFER_BIT);
 }
-function Draw(programInfo, Object, Camera, Light, LoadedMesh = false, ScreenQuad = false)
+function Draw(programInfo, Object, Camera, Light)
 {
       
         // Create a perspective matrix, a special matrix that is
@@ -405,8 +543,7 @@ function Draw(programInfo, Object, Camera, Light, LoadedMesh = false, ScreenQuad
          // Tell WebGL to use our program when drawing
          gGL.useProgram(programInfo.program);
 
-         if (!ScreenQuad)
-         {
+         
           const projectionMatrix = mat4.create();
         
           // note: glMatrix always has the first argument
@@ -443,20 +580,8 @@ function Draw(programInfo, Object, Camera, Light, LoadedMesh = false, ScreenQuad
             false,
             ModelMatrix,
           );
-         }
-         else //for skybox render
-         {
-          let ViewMatrix = mat4.create();
-          let inverseViewMatrix = mat4.create();
-          ViewMatrix = GetViewMatrix(Camera);
-          mat4.invert(inverseViewMatrix,ViewMatrix);
-          gGL.uniformMatrix4fv(
-            programInfo.uniformLocations.inverseViewDir,
-            false,
-            ViewMatrix,
-          );
-
-         }
+         
+        
           // Tell WebGL how to pull out the positions from the position
          // buffer into the vertexPosition attribute.
          setPositionAttribute(Object, programInfo, Camera, Light, gGL, gTimeSinceRun);
@@ -465,22 +590,57 @@ function Draw(programInfo, Object, Camera, Light, LoadedMesh = false, ScreenQuad
           gGL.bindBuffer(gGL.ELEMENT_ARRAY_BUFFER, Object.indexBuffer); //This needs to be the last active buffer 
           
           const offset = 0;
-          let vertexCount = LoadedMesh ? Object.indexBuffer.numItems : Object.VertexCount; 
+          if (!("VertexCount" in Object || "indexBuffer" in Object))
+          {
+            console.log("No vert number could be found");
+            return;
+          }
+          let vertexCount = "VertexCount" in Object ? Object.VertexCount : Object.indexBuffer.numItems; 
           
           gGL.drawElements(gGL.TRIANGLES, vertexCount, gGL.UNSIGNED_SHORT, offset);
         }
       
 }
+function getMousePixel(event) {
+  const rect = gGL.canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio;
+
+  const cssX = event.clientX - rect.left;
+  const cssY = event.clientY - rect.top;
+
+  const pixelX = Math.floor(cssX * dpr);
+  const pixelY = Math.floor((rect.height - cssY) * dpr - 1);
+
+  return [pixelX, pixelY];
+}
+
 function CalcMouseDelta(event)
 {
-  let CurrentPos = [event.pageX, event.pageY];
-  if (!gMousePosInit)
-  {
+
+  if (document.pointerLockElement === gCanvas) {
+    
+    gDeltaMouse = [
+      event.movementX || event.mozMovementX || 0, 
+      event.movementY || event.mozMovementY || 0
+    ];
+    gCurrentMousePos = [gCanvasWidth / 2.0, gCanvasHeight / 2.0];
+  } else {
+    
+    let CurrentPos = [event.pageX, event.pageY];
+    gCurrentMousePos = getMousePixel(event);
+    
+    if (!gMousePosInit) {
+      gPreviousMouse = CurrentPos;
+      gMousePosInit = true;
+      gDeltaMouse = [0, 0]; // Prevent jump on first movement
+      return; 
+    }
+    
+    gDeltaMouse = [CurrentPos[0] - gPreviousMouse[0], CurrentPos[1] - gPreviousMouse[1]];
+
     gPreviousMouse = CurrentPos;
-    gMousePosInit = true;
   }
-  gDeltaMouse = [CurrentPos[0] - gPreviousMouse[0], CurrentPos[1] - gPreviousMouse[1]];
-  gPreviousMouse = CurrentPos;
+  
 }
 function Input()
 {
@@ -494,6 +654,99 @@ function Input()
     if (gKeysPressed['a']){Direction = 2; CameraMove(gCamera, Direction, gDeltaTime);}
     if (gKeysPressed['d']){Direction = 3; CameraMove(gCamera, Direction, gDeltaTime);}
 }
+function CheckRaycast(SelectColor, DeselectColor)
+{
+  let MousePos = [gCurrentMousePos[0], gCurrentMousePos[1]]; //flip y to turn from mouse to screen space
+  //console.log("x " + MousePos[0] + "y " + MousePos[1]);
+  const MousePixel = new Uint8Array(4); // Read single pixel
+  gGL.bindFramebuffer(gGL.FRAMEBUFFER, gRaycastFBO);
+  gGL.readPixels(
+    MousePos[0], MousePos[1],  // pixel coordinates
+      1, 1,            // 1x1 pixel
+      gGL.RGBA,
+      gGL.UNSIGNED_BYTE,
+      MousePixel
+  );
+ 
+  let ObjIndex = (MousePixel[0] - 1); // -1 for indexing against array
+  gRaycastIndex = ObjIndex;
+  for (let Obj of gRaycastColecMain)//reset all to deselect color
+  {
+    Obj.Color = DeselectColor;
+    let DispObj = gRCDict.get(Obj);
+    if (DispObj != null && "isHover" in DispObj){DispObj.isHover = 0.0;}
+  }
+  if (ObjIndex == -1) {return null;}
+
+  let ObjSelec = gRaycastColecMain[ObjIndex];
+  ObjSelec.Color = SelectColor;
+  let DispObj = gRCDict.get(ObjSelec);
+  if (DispObj != null && "isHover" in DispObj){DispObj.isHover = 1.0;}
+
+}
+function RaycastClick(Obj)
+{
+  switch(Obj){
+    case gOpt1:
+      gActiveMainLoop = TransformationLoop;
+      break;
+    default:
+      break;
+  }
+}
+function ClickFunc(event)
+{
+  console.log("Raycast Index is : " + gRaycastIndex);
+  //== Request Pointer Lock ==
+  console.log("Click detected, requesting pointer lock...");
+  
+  gCanvas.requestPointerLock = gCanvas.requestPointerLock ||
+                              gCanvas.mozRequestPointerLock ||
+                              gCanvas.webkitRequestPointerLock;
+  
+  if(document.activeElement == document.getElementById("Body"))
+  {
+    if (gCanvas.requestPointerLock) {
+      gCanvas.requestPointerLock();
+    } else {
+      console.error("Pointer Lock API not supported");
+    }
+  }
+  else
+  {
+    console.log(document.activeElement.id)
+  }
+
+
+document.addEventListener('pointerlockerror', () => {
+  console.error("Pointer lock error!");
+}, false);
+
+  //== Raycast Check ==
+  if (gRaycastIndex != -1)
+  {
+    console.log("Raycast hit with index : " 
+    + gRaycastIndex);
+    let rcObj;
+    switch (gActiveMainLoop)
+    {
+      case MainLoop:
+        gCamera.Eye = [0.0,0.0,0.0];
+        gCamera.ViewDir = [0.0,0.0,1.0];
+        rcObj = gRaycastColecMain[gRaycastIndex];
+        break;
+      case TransformationLoop:
+        gCamera.Eye = [0.0,0.0,0.0];
+        gCamera.ViewDir = [0.0,0.0,1.0];
+        rcObj = gRaycastColecTransform[gRaycastIndex];
+        break;
+    }
+    if (rcObj != null) {RaycastClick(rcObj);}
+  }
+
+}
+
+
 async function FrameCount()
 {
   while(true)
@@ -503,67 +756,242 @@ async function FrameCount()
     gFrameCount = 0;
   }
 }
-function MainLoop()
+const MainLoop = ()=>
 {
     gTime = new Date();
     let newTime = gTime.getTime();
     gDeltaTime = newTime- gPreviousTime;
     gTimeSinceRun = newTime - gTimeStart;
     gPreviousTime = newTime;
-    
+
     Input();
     MouseLook(gCamera, gDeltaMouse);
-    gDeltaMouse = [0.0,0.0];
-    WaveUpdateMesh(gSimpleWave);
-    CalculateNormals(gSimpleWave, gGL);
-    CalculateBoatRot();
+    if (gFrameCount % 2 == 0)
+    {
+      WaveUpdateMesh(gSimpleWave);
+      CalculateNormals(gSimpleWave, gGL);
+      CalculateBoatRot();
+    }
     
+      //Animation
+      gSpellCircle.Rotation[1] += gDeltaTime * .002; //Spell Volume Rotate
+      gSpellCircleVolume.Rotation[1] = gSpellCircle.Rotation[1];
+      gSpellCircleVolume.Scale[2] = 1.0 + (4.0 * Math.sin(gTime/800.0));//Spell Volume pulse
 
-      //Render Depth
-      gGL.bindFramebuffer(gGL.FRAMEBUFFER, gDepthFBO);  
+
+
+      //======================RENDER RAYCAST============================
+      ClearFBO(null, gGL);
+      ClearFBO(gMainFBO, gGL);
+      ClearFBO(gRaycastFBO, gGL);
+      ClearFBO(gGlassFBO, gGL);
+
+      gGL.bindFramebuffer(gGL.FRAMEBUFFER, gRaycastFBO);
       gGL.viewport(0, 0, gCanvasWidth, gCanvasHeight);
       gGL.enable(gGL.DEPTH_TEST);
-      gGL.clear(gGL.DEPTH_BUFFER_BIT);   
+      gGL.enable(gGL.CULL_FACE);
+      let SelectColor = [1.0,1.0,1.0,1.0];
+      let DeselectColor = [.2,.2,.2,1.0];
+      let ObjIndex = 1; //start indexing at 1
+      for(let obj of gRaycastColecMain)
+      {
+        gCamera.ObjectIndex = ObjIndex;
+        Draw(gProgramInfoRaycast,obj,gCamera,gLight1); 
+        ObjIndex++;
+      }
+      gRaycastText = gRaycastMap;
+      gMouseMoved = Math.abs(gDeltaMouse[0]) + Math.abs(gDeltaMouse[1]) >= .001 ? true : false;
+      if (gMouseMoved) {CheckRaycast(SelectColor, DeselectColor); console.log("MouseMove");}
+      gDeltaMouse = [0.0,0.0];
+
+      
+
+      //======================RENDER DEPTH============================
+      gGL.bindFramebuffer(gGL.FRAMEBUFFER, gDepthFBO);  
+      gGL.viewport(0, 0, gCanvasWidth, gCanvasHeight);
+      gGL.enable(gGL.DEPTH_TEST);    
+      gGL.clear(gGL.DEPTH_BUFFER_BIT); 
       gGL.disable(gGL.CULL_FACE);
-      //Draw(gProgramInfoDef, gSimpleWave, gCamera, gLight1, false);
-      Draw(gProgramInfoFlat, gBoatMesh, gCamera, gLight1, true, false);
-      Draw(gProgramInfoFlat, gMoon, gCamera, gLight1, true, false);
-      gGL.bindFramebuffer(gGL.FRAMEBUFFER, null);  
+
+      Draw(gProgramInfoFlat, gBoatMesh, gCamera, gLight1);
+      Draw(gProgramInfoFlat, gMoon, gCamera, gLight1);
+      gGL.bindFramebuffer(gGL.FRAMEBUFFER, gMainFBO);  
       gNoiseCube.DepthTexture = gDepthMap;
       gStars.DepthTexture = gDepthMap;
+      gSkybox.DepthTexture = gDepthMap;
+      gSpellCircleVolume.DepthTexture = gDepthMap;
+      gSpellCircle.DepthTexture = gDepthMap;
   
     //
     DrawCallSetup();
 
-    //Normal Render Pass
+    //======================RENDER NORMALPASS============================
+    
     gGL.disable(gGL.CULL_FACE);
-    Draw(gProgramInfoSkybox,gSkybox,gCamera,gLight1,false, true);
-    Draw(gProgramInfoDef, gSimpleWave, gCamera, gLight1, false, false);
-    Draw(gProgramInfoFlat, gBoatMesh, gCamera, gLight1, true, false);
-    Draw(gProgramInfoFlat, gMoon, gCamera, gLight1, true, false);
+    gGL.disable(gGL.DEPTH_TEST); 
+    gGL.depthMask(false);
+    Draw(gProgramInfoSkybox,gSkybox,gCamera,gLight1); 
+    gGL.enable(gGL.DEPTH_TEST); 
+    gGL.depthMask(true);
+    Draw(gProgramInfoDef, gCircleMask, gCamera, gLight1);  
+    Draw(gProgramInfoWave, gSimpleWave, gCamera, gLight1);
     gGL.enable(gGL.CULL_FACE);
+    
+    Draw(gProgramInfoFlat, gBoatMesh, gCamera, gLight1);
     gGL.depthMask(false);
     gGL.disable(gGL.DEPTH_TEST); 
+    Draw(gProgramInfoWave,gSpellCircle, gCamera, gLight1);
+    gGL.disable(gGL.CULL_FACE);
+    Draw(gProgramInfoVolGlow,gSpellCircleVolume, gCamera, gLight1);
+    gGL.depthMask(true);
+    gGL.enable(gGL.DEPTH_TEST); 
+    Draw(gProgramInfoDef, gOpt1, gCamera,gLight1);
+    gGL.enable(gGL.CULL_FACE);
+    Draw(gProgramInfoFlat, gMoon, gCamera, gLight1);
+    
+    
     StarLookAt(gGL, gStars, gCamera);
-    Draw(gProgramInfoStar, gStars, gCamera, gLight1, false,false);
-    Draw(gProgramInfoCloud, gNoiseCube, gCamera, gLight1, true, false);
+    Draw(gProgramInfoStar, gStars, gCamera, gLight1);
+    gGL.depthMask(false);
+    gGL.disable(gGL.DEPTH_TEST); 
+    Draw(gProgramInfoCloud, gNoiseCube, gCamera, gLight1);
     gGL.enable(gGL.DEPTH_TEST);
     gGL.depthMask(true);
+    
+
+    gScreenSpaceQuad.Texture = gRenderText;
+    gGlassSphere.Texture = gRenderText;
+    gGL.bindFramebuffer(gGL.FRAMEBUFFER, gGlassFBO); 
+    gGL.viewport(0, 0, gCanvasWidth, gCanvasHeight);
+    gGL.disable(gGL.CULL_FACE);
+    gGL.disable(gGL.DEPTH_TEST);
+    Draw(gProgramInfoScreenRender, gScreenSpaceQuad, gCamera, gLight1);
+    gGL.enable(gGL.CULL_FACE);
+    Draw(gProgramInfoGlass, gGlassSphere, gCamera, gLight3);
+    gGL.cullFace(gGL.BACK);
+    gGL.enable(gGL.DEPTH_TEST);
+    Draw(gProgramInfoFlat, gCharHead, gCamera, gLight1);
+    Draw(gProgramInfoFlat, gCharHair, gCamera, gLight1);
+    gGL.disable(gGL.DEPTH_TEST);
+    gScreenSpaceQuad.Texture = gGlassRendText;
+    gGL.bindFramebuffer(gGL.FRAMEBUFFER, null); 
+    gGL.disable(gGL.CULL_FACE);
+    Draw(gProgramInfoScreenRender, gScreenSpaceQuad, gCamera, gLight1);
+    Draw(gProgramInfoScreenImage, gCrossHair, gCamera, gLight1);
+    
+  
+
     gFrameCount++;
     gCycleNum++;
-    requestAnimationFrame(MainLoop);
+    requestAnimationFrame(gActiveMainLoop);
+}
+const TransformationLoop = ()=>
+{
+  gTime = new Date();
+  let newTime = gTime.getTime();
+  gDeltaTime = newTime- gPreviousTime;
+  gTimeSinceRun = newTime - gTimeStart;
+  gPreviousTime = newTime;
+
+  Input();
+  MouseLook(gCamera, gDeltaMouse);
+  if (gFrameCount % 2 == 0)
+  {
+    WaveUpdateMesh(gSimpleWave);
+    CalculateNormals(gSimpleWave, gGL);
+    CalculateBoatRot();
+  }
+  //Animation
+
+  //======================RENDER RAYCAST============================
+  ClearFBO(null, gGL);
+  ClearFBO(gMainFBO, gGL);
+  ClearFBO(gRaycastFBO, gGL);
+  ClearFBO(gGlassFBO, gGL);
+
+  gGL.bindFramebuffer(gGL.FRAMEBUFFER, gRaycastFBO);
+  gGL.viewport(0, 0, gCanvasWidth, gCanvasHeight);
+  gGL.enable(gGL.DEPTH_TEST);
+  gGL.enable(gGL.CULL_FACE);
+  let SelectColor = [1.0,1.0,1.0,1.0];
+  let DeselectColor = [.2,.2,.2,1.0];
+  let ObjIndex = 1; //start indexing at 1
+  for(let obj of gRaycastColecTransform)
+  {
+    gCamera.ObjectIndex = ObjIndex;
+    Draw(gProgramInfoRaycast,obj,gCamera,gLight1); 
+    ObjIndex++;
+  }
+  gRaycastText = gRaycastMap;
+  gMouseMoved = Math.abs(gDeltaMouse[0]) + Math.abs(gDeltaMouse[1]) >= .001 ? true : false;
+  if (gMouseMoved) {CheckRaycast(SelectColor, DeselectColor); console.log("MouseMove");}
+  gDeltaMouse = [0.0,0.0];
+
+  
+
+  //======================RENDER DEPTH============================
+  gGL.bindFramebuffer(gGL.FRAMEBUFFER, gDepthFBO);  
+  gGL.viewport(0, 0, gCanvasWidth, gCanvasHeight);
+  gGL.enable(gGL.DEPTH_TEST);    
+  gGL.clear(gGL.DEPTH_BUFFER_BIT); 
+  gGL.disable(gGL.CULL_FACE); 
+
+  //Render models for depth pass
+  gGL.bindFramebuffer(gGL.FRAMEBUFFER, gMainFBO);  
+  //Set depth texture
+
+//
+DrawCallSetup();
+
+//======================RENDER NORMALPASS============================
+gGL.bindFramebuffer(gGL.FRAMEBUFFER, null);
+gGL.cullFace(gGL.BACK);
+Draw(gProgramInfoTrans, gCharTrans, gCamera, gLight1);
+Draw(gProgramInfoTrans, gCharHairTrans, gCamera, gLight1);
+
+
+
+gFrameCount++;
+gCycleNum++;
+requestAnimationFrame(gActiveMainLoop);
 }
 
+function ResizeCanvas(gl, canvas)
+{
+  const displayWidth = canvas.clientWidth;
+  const displayHeight = canvas.clientHeight;
 
+  // Check if the canvas is not the same size
+  if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
+  console.log("Resizing");
+    canvas.width = displayWidth;
+    canvas.height = displayHeight;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = displayWidth * dpr;
+    canvas.height = displayHeight * dpr;
+
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gCanvasWidth = canvas.width;
+    gCanvasHeight = canvas.height;
+    if (gCamera != null) //Fails during init cause gcamera not set yet
+    {
+      gCamera.Width = gCanvasWidth;
+      gCamera.Height = gCanvasHeight;
+    }
+  }
+}
 main();
 
 async function main() {
   const canvas = document.querySelector("#gl-canvas");
-  gCanvasWidth = canvas.width;
-  gCanvasHeight = canvas.height;
   // Initialize the GL context
-  gGL = canvas.getContext("webgl2");
-  
+  gGL = canvas.getContext("webgl2",
+  {
+    alpha: true
+  });
+  ResizeCanvas(gGL, canvas);
+  window.addEventListener('resize', () => ResizeCanvas(gGL, canvas));
+  gCanvas = document.querySelector("#gl-canvas");
 
   // Only continue if WebGL is available and working
   if (gGL === null) {
@@ -583,25 +1011,52 @@ async function main() {
   gVertSourceDef = await loadShaderFiles(gVertSourceDef, './Shaders/DefaultVert.glsl');
   gVertSkybox = await loadShaderFiles(gVertSkybox, './Shaders/SkyboxVert.glsl');
   gVertStar = await loadShaderFiles(gVertStar, './Shaders/StarVert.glsl');
+  gVertRaycast = await loadShaderFiles(gVertRaycast, './Shaders/RaycastVert.glsl');
+  gVertTrans = await loadShaderFiles(gVertTrans, './Shaders/TransVert.glsl');
   //Frag
-  gFragSourceDef = await loadShaderFiles(gFragSourceDef, './Shaders/DefaultFrag.glsl');
+  gFragSourceWave = await loadShaderFiles(gFragSourceWave, './Shaders/WaveFrag.glsl');
   gFragSourceFlat = await loadShaderFiles(gFragSourceFlat, './Shaders/FlatFrag.glsl');
   gFragSourceCloud = await loadShaderFiles(gFragSourceCloud, './Shaders/CloudFrag.glsl');
   gFragSkybox = await loadShaderFiles(gFragSkybox, './Shaders/SkyboxFrag.glsl');
   gFragStar = await loadShaderFiles(gFragStar, './Shaders/StarFrag.glsl');
+  gFragColor = await loadShaderFiles(gFragColor, './Shaders/ColorFrag.glsl');
+  gFragVolGlow = await loadShaderFiles(gFragVolGlow, './Shaders/VolumeGlowFrag.glsl');
+  gFragDef = await loadShaderFiles(gFragDef, './Shaders/DefaultFrag.glsl');
+  gFragRaycast = await loadShaderFiles(gFragRaycast, './Shaders/RaycastFrag.glsl');
+  gFragGlass = await loadShaderFiles(gFragGlass, './Shaders/GlassFrag.glsl');
+  gFragScreenFlat = await loadShaderFiles(gFragScreenFlat, './Shaders/ScreenFlatFrag.glsl');
+  gFragTransFlat = await loadShaderFiles(gFragTransFlat,'./Shaders/TransFlatFrag.glsl');
 
-  gShaderProgramDef = initShader(gVertSourceDef,gFragSourceDef);
+  gShaderProgramWave = initShader(gVertSourceDef,gFragSourceWave);
   gShaderProgramFlat = initShader(gVertSourceDef,gFragSourceFlat);
   gShaderProgramCloud = initShader(gVertSourceDef,gFragSourceCloud);
   gShaderProgramSkybox = initShader(gVertSkybox,gFragSkybox);
+  gShaderProgramColor = initShader(gVertSkybox, gFragColor);
   gShaderProgramStar = initShader(gVertStar, gFragStar);
+  gShaderProgramVolGlow = initShader(gVertSourceDef, gFragVolGlow);
+  gShaderProgramDef = initShader(gVertSourceDef, gFragDef);
+  gShaderProgramRaycast = initShader(gVertRaycast, gFragRaycast);
+  gShaderProgramGlass = initShader(gVertSourceDef, gFragGlass);
+  gShaderProgramScreenRender = initShader(gVertSkybox, gFragScreenFlat);
+  gShaderProgramScreenImage = initShader(gVertSkybox, gFragSourceFlat);
+  gShaderProgramTrans = initShader(gVertTrans, gFragTransFlat);
+  
+
 
   SetProgramInfo(gGL, 
-    gProgramInfoDef, gShaderProgramDef,
+    gProgramInfoWave, gShaderProgramWave,
      gProgramInfoFlat, gShaderProgramFlat, 
      gProgramInfoCloud, gShaderProgramCloud,
      gProgramInfoSkybox, gShaderProgramSkybox,
      gProgramInfoStar, gShaderProgramStar,
+     gProgramInfoColor, gShaderProgramColor,
+     gProgramInfoVolGlow, gShaderProgramVolGlow,
+     gProgramInfoDef, gShaderProgramDef,
+     gProgramInfoRaycast, gShaderProgramRaycast,
+     gProgramInfoGlass, gShaderProgramGlass,
+     gProgramInfoScreenRender, gShaderProgramScreenRender,
+     gProgramInfoScreenImage, gShaderProgramScreenImage,
+     gProgramInfoTrans, gShaderProgramTrans,
      );
   
     SinPreComp(gSinView,WAVE_BUFFER_SIZE);
@@ -614,31 +1069,45 @@ async function main() {
     const Wave = makeStruct("ShaderProgram, vertexBuffer, indexBuffer, VertexCount, normalBuffer, \
     textureBuffer, PosOffset, RowNum, ColNum, PositionsArray, IndicesArray, Color, \
     Position, Rotation, Scale, \
+    ParentTrans, ParentScale\
     Texture");
     const Quad = makeStruct("ShaderProgram, vertexBuffer, indexBuffer, VertexCount, normalBuffer, \
     textureBuffer, PositionsArray, IndicesArray, Color, \
     Position, Rotation, Scale, \
-    Texture3D, Texture");
-    const QuadStar = makeStruct("ShaderProgram, vertexBuffer, indexBuffer, VertexCount, normalBuffer, \
-    textureBuffer, QuadPosBuffer, PositionsArray, IndicesArray, Color, LocalPosArray, QuadPosArray, DepthTexture");
+    ParentTrans, ParentScale\
+    Texture3D, Texture, DepthTexture");
+    const QuadStar = makeStruct("ShaderPrrogram, vertexBuffer, indexBuffer, VertexCount, normalBuffer, \
+    textureBuffer, QuadPosBuffer, PositionsArray, IndicesArray, Color, LocalPosArray, QuadPosArray, \
+    ParentTrans, ParentScale \
+    DepthTexture");
     
-    gSkybox = new Quad(gShaderProgramSkybox, null, null,0,null,null,null,[],[],[1.0,1.0,1.0,1.0],
-    [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0],null, null);
+    gSkybox = new Quad(gShaderProgramSkybox, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
+    [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null);
     let SkyboxOrigin = [0.0,0.0,0.0];
-    GenerateQuad(gSkybox,gGL,1.0,SkyboxOrigin);
+    GenerateQuad(gSkybox,gGL,1.0,SkyboxOrigin);  
+    gScreenSpaceQuad = new Quad(gShaderProgramSkybox, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
+      [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null);
+    let ScreenSpaceOrigin = [0.0,0.0,0.0];
+    GenerateQuad(gScreenSpaceQuad,gGL,1.0,ScreenSpaceOrigin);  
+    gCrossHair = new Quad(gShaderProgramSkybox, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
+      [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null);
+    let CrossHairOrigin = [0.0,0.0,0.0];
+    GenerateQuad(gCrossHair,gGL,.05,CrossHairOrigin);  
     
 
-    gSimpleWave = new Wave(gShaderProgramDef, 0,0,0,[], [],[0.0,0.0,0.0],0,0,[], [], 
-      [.1,.5,1.0], [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null);
-    GenerateWave(gSimpleWave, gProgramInfoDef, gGL);
-    const Camera = makeStruct("Eye, ViewDir, UpDir, Width, Height");
-    gCamera = new Camera([0.0,0.0,0.0],[0.0,0.0,1.0],[0.0,1.0,0.0], gCanvasWidth, gCanvasHeight);
+    gSimpleWave = new Wave(gShaderProgramWave, 0,0,0,[], [],[0.0,0.0,0.0],0,0,[], [], 
+      [.1,.5,1.0,1.0], [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null);
+    GenerateWave(gSimpleWave, gProgramInfoWave, gGL);
+    const Camera = makeStruct("Eye, ViewDir, UpDir, Width, Height, ObjectIndex");
+    gCamera = new Camera([0.0,0.0,0.0],[0.0,0.0,1.0],[0.0,1.0,0.0], gCanvasWidth, gCanvasHeight, 0);
     const Light = makeStruct("Pos, Color, Intensity");
     gLight1 = new Light([0.0,1.0,-1.0],[1.0, 0.863, 0.537],1.5);
+    gLight2 = new Light([0.0,1.0,-1.0],[1.0, 0.863, 0.537],1.0);
+    gLight3 = new Light([10.0,-100.0,-50.0],[.4, 0.863, 0.837],1.0);
     
     //=======================Star Sphere==============================
     gStars = new QuadStar(gShaderProgramFlat, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
-      [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0],[],[],null);
+      [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0],[],[],null,null,null);
     
     let StarSphereOrigin = vec3.fromValues(40.0,20.0,40.0);
     let StarSphereRadius = 100.0;
@@ -663,16 +1132,27 @@ async function main() {
     document.addEventListener("keyup", (e) => {
       gKeysPressed[e.key] = false;
     });
-    document.onmousemove = CalcMouseDelta;
+    document.addEventListener("mousemove", CalcMouseDelta);
+    document.addEventListener("click", (e) => ClickFunc(e));
 
 
-
-    genFBODepth();
+    gDepthMap = genDepthMap(gGL, gCanvasWidth, gCanvasHeight);
+    gDepthFBO = genFBO(gGL, gDepthMap);
+    gRaycastMap = genEmptyTex(gGL, gCanvasWidth, gCanvasHeight);
+    gRaycastFBO = genFBO(gGL, gDepthMap, gRaycastMap);
+    gRenderText = genEmptyTex(gGL, gCanvasWidth, gCanvasHeight);
+    gMainDepthMap = genDepthMap(gGL, gCanvasWidth, gCanvasHeight);
+    gMainFBO = genFBO(gGL, gMainDepthMap, gRenderText);
+    gGlassRendText = genEmptyTex(gGL, gCanvasWidth, gCanvasHeight);
+    gGlassDepthMap = genDepthMap(gGL, gCanvasWidth, gCanvasHeight);
+    gGlassFBO = genFBO(gGL, gGlassDepthMap, gGlassRendText);
+    
     await SetUpScene();
     
 
     BoatWaveIndexFind();
-    MainLoop();
+    gActiveMainLoop = MainLoop;
+    gActiveMainLoop();
     FrameCount();
     
    
@@ -691,4 +1171,10 @@ https://www.shadertoy.com/view/3cyfzy
 https://www.shadertoy.com/view/WcVfRy
 https://www.shadertoy.com/view/WfGfWw
 https://www.shadertoy.com/view/WfyBWh
+
+
+WAVEMARCH GLASS
+https://www.shadertoy.com/view/flfyRS -- Try this one
+https://www.shadertoy.com/view/XsSGDh -- Simple option
 */
+

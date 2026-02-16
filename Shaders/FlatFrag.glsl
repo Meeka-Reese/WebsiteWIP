@@ -7,6 +7,6 @@
     uniform sampler2D uTexture;
     void main()
     {
-        vec4 texColor = texture(uTexture, vec2(UVCord.x, UVCord.y));
+        vec4 texColor = texture(uTexture, UVCord);
         fragColor = texColor;
     }

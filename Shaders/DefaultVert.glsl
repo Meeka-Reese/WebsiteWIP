@@ -10,11 +10,16 @@
     out vec2 UVCord;
     out vec3 CameraPos;
     out vec3 vWorldPos;
+    out vec3 VertPos;
+    out vec4 vClipPos;
 
     void main()
     {
+        VertPos = aVertPos.xyz; 
         vec4 ViewPos = uViewMatrix * uModelMatrix * aVertPos;
-        gl_Position = uProjMatrix * uViewMatrix * uModelMatrix * aVertPos;
+        vec4 Pos = uProjMatrix * uViewMatrix * uModelMatrix * aVertPos;
+        gl_Position = Pos;
+        vClipPos = Pos;
         vec4 ProjNormals = uViewMatrix * vec4(aNorm,0.0);
         vec4 world = uModelMatrix * aVertPos;
         vWorldPos = world.xyz;

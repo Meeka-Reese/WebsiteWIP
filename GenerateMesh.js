@@ -67,8 +67,8 @@ export function GenerateWave(Object, programInfo, gl) // Being used for wave gen
     const UVBuffer = gl.createBuffer();
 
 
-    const RowNum = 35;
-    const ColNum = 35;
+    const RowNum = 43;
+    const ColNum = 43;
     Object.RowNum = RowNum;
     Object.ColNum = ColNum;
     const Spacing = 2.5;
