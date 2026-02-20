@@ -1,6 +1,7 @@
 import { Normalize } from './Utils.js';
 import { mat4 } from './Externals/esm/index.js';
 import { vec3 } from './Externals/esm/index.js';
+import { LoadOBJ } from './Externals/webgl-obj-loader.js';
 export function GenerateIco(Object, progamInfo, gl)
 {
     //Not Finished or being used, likely doing clouds with raymarching. Look to https://www.youtube.com/watch?v=4QOcCGI6xOU&t=314s
@@ -379,4 +380,42 @@ export function StarLookAt(gl, Object, Camera)
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
     Object.vertexBuffer = positionBuffer;
+}
+
+export async function PlaceColecOnSurf(TargetVertColec, TargetNormalsColec, ObjDir, MinDist, NumObj)
+{
+    let TargetSize = TargetVertColec.length;
+    let PrevObjPos = [0.0,0.0,0.0];
+    let ObjPos = [];
+    let ObjNormals = [];
+    let ObjIndicies = [];
+    let Distance;
+    let SurfObjColec = [];
+    let DistanceFromPrev;
+    let MappedVerts = [];
+    for (let i = 0; i < NumObj; i++)
+    {
+        let VertIndex = (Math.random() * TargetSize) - 1.0; 
+        ObjPos = [TargetVertColec[VertIndex * 3.0], TargetVertColec[(VertIndex * 3.0) + 1.0], TargetVertColec[(VertIndex * 3.0) + 1]];
+        DistanceFromPrev = Math.abs((ObjPos[0] - PrevObjPos[0]) + (ObjPos[1] - PrevObjPos[1]) + (ObjPos[2] - PrevObjPos[2])) / 3.0;
+        if (DistanceFromPrev < MinDist) {continue;}
+
+        ObjIndicies.push(VertIndex);
+        ObjNormals = [TargetNormalsColec[VertIndex * 3.0], TargetNormalsColec[(VertIndex * 3.0) + 1.0], TargetNormalsColec[(VertIndex * 3.0) + 1]];
+        let instance = await LoadOBJ(gGL, ObjDir);
+
+        instance.Position = ObjPos;
+        instance.Scale = [1.0,1.0,1.0]; //Stand in
+        instance.Rotation = [0.0,0.0,0.0]; // retreive normals to allign
+        SurfObjColec.push(instance);
+        PrevObjPos = ObjPos;
+    }
+
+    let OutputColecs =  
+    {
+        vertIndicies: ObjIndicies,
+        instances: SurfObjColec,
+    }
+    return OutputColecs;
+
 }

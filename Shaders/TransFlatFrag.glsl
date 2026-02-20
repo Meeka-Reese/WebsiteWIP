@@ -1,6 +1,6 @@
 #version 300 es
     precision mediump float;   
-    precision lowp sampler3D;   
+    precision highp sampler3D;   
     in vec3 Normals;
     in vec3 FragPos;
     in vec2 UVCord;
@@ -13,6 +13,7 @@
     uniform vec3 lightColor;
     uniform float lightIntensity;
     uniform float Time;
+    uniform vec2 uResolution;
 
 
     vec3 RotateX (vec4 Input, float Rad, float Magnitude)
@@ -33,39 +34,72 @@
         vec3 Result = (RotationMatY * Input).xyz * Magnitude;
         return Result;
     }
+    vec3 RotateZ (vec4 Input, float Rad, float Magnitude)
+    {   
+        mat4 RotationMatZ = mat4 (cos(Rad), -sin(Rad), 0.0, 0.0,
+                                  sin(Rad), cos(Rad), 0.0, 0.0,
+                                  0.0, 0.0, 1.0, 0.0,
+                                  0.0,0.0,0.0,1.0);
+        vec3 Result = (RotationMatZ * Input).xyz * Magnitude;
+        return Result;
+    }
     
     void main()
     {
         float Frame = Time / 8000.0;
-        vec3 RotLightPos = RotateY(vec4(lightPos, 1.0), Frame*20.0, 500.0);
-        float NoiseSize = sin(Frame) * 5.0;
+        vec3 RotLightPos = RotateY(vec4(lightPos, 1.0), Frame*10.0, 500.0);
+        float NoiseSize = 5.0;
         vec3 NoiseUV = vec3(UVCord.x, UVCord.y,1.0) * NoiseSize;
         vec3 NormalMap = texture(uTexture3D, NoiseUV).rgb;
-        vec3 NormalizedNorm = normalize(Normals + vDisplVal.xyz - NormalMap);
+        vec3 NormalizedNorm = normalize(NormalMap + (vDisplVal.xyz * viewPos));
+        float ShaderMask = texture(uTexture3D, NoiseUV).r;
+        float ShaderMaskCutoff = 1.6 - abs(sin(Frame));
+        vec4 Output = vec4(0.0);
         vec4 texColor = texture(uTexture, UVCord);
-        //diffuse
-        float diffAm = 1.0;
-        vec3 lightDir = normalize(RotLightPos - FragPos);
-        float diff = max(dot(-NormalizedNorm, lightDir), 0.0);
-        vec3 diffuse = diff * normalize(vec3(1.0) + lightColor) * lightIntensity * diffAm;
+        if (ShaderMask < ShaderMaskCutoff)
+        {
+            //diffuse
+            float diffAm = 1.0;
+            vec3 lightDir = normalize(RotLightPos - FragPos);
+            float diff = max(dot(-NormalizedNorm, lightDir), 0.0);
+            vec3 diffuse = diff * normalize(vec3(1.0) + lightColor) * lightIntensity * diffAm;
 
-         //Specular
-        float specularStrength = 40.0;
-        vec3 viewDir = normalize(viewPos - FragPos);
-        vec3 reflectDir = reflect(-lightDir, NormalizedNorm);
-        float spec = pow(max(dot(viewDir, reflectDir), 0.0), 1000.0);
-        vec3 specular = specularStrength * spec * vec3(1.0,1.0,1.0);
+            //Specular
+            float specularStrength = 10.0;
+            vec3 viewDir = normalize(viewPos - FragPos);
+            vec3 reflectDir = reflect(-lightDir, -NormalizedNorm);
+            float spec = pow(max(dot(viewDir, reflectDir), 0.0), 1000.0);
+            vec3 specular = specularStrength * spec * vec3(1.0,1.0,1.0);
+            texColor.rgb *= diffuse.r + specular.r;
 
-        texColor.rgb *= diffuse.r + specular.r;
-       
-        float ColCutoff = .2;
-        vec3 RotateDispX = RotateX(vDisplVal, Frame * 4.0, 1.0);
-        vec3 RotateDispY = RotateY(vDisplVal, Frame * 20.0, 1.0);
-        float AddR = RotateDispX.x > ColCutoff ? RotateDispX.x : 0.0;
-        float AddB = RotateDispY.x > ColCutoff ? RotateDispY.x : 0.0;
-        vec4 OutCol = texColor + vec4(AddR, 0.0,AddB,0.0);
-        float TextCutoff = .7;
-        OutCol = vDisplVal.r > TextCutoff ? OutCol : texColor;
-        fragColor = OutCol + texColor;
+            Output = texColor;
+        }
+        else
+        {
+            int Dither = int(gl_FragCoord.y + (gl_FragCoord.x * uResolution.x));
+            NormalizedNorm += vec3(Dither);
+            //diffuse
+            float diffAm = 1.0;
+            vec3 lightDir = normalize(RotLightPos - FragPos);
+            float diff = max(dot(-NormalizedNorm, lightDir), 0.0);
+            vec3 diffuse = diff * normalize(vec3(1.0) + lightColor) * lightIntensity * diffAm;
+
+            //Specular
+            float specularStrength = 1.0;
+            vec3 viewDir = normalize(viewPos - FragPos);
+            vec3 reflectDir = reflect(-lightDir, -NormalizedNorm);
+            float spec = pow(max(dot(viewDir, reflectDir), 0.0), 1000.0);
+            vec3 specular = specularStrength * spec * vec3(1.0,1.0,1.0);
+            vec4 MetalColor = vec4(.8, .6, .9,1.0);
+            
+            //Ambient
+            float ambientAmount = .6;
+            vec3 ambient = (MetalColor.rgb) * ambientAmount * lightIntensity;
+            Output = vec4(MetalColor.rgb * (diffuse.rgb + specular.rgb + ambient), 1.0);
+            Output = Dither % 16 == 0 ? vec4(0.0) : Output;
+            Dither = int(gl_FragCoord.y - (gl_FragCoord.x * uResolution.x));
+            Output = Dither % 7 == 0 ? vec4(0.0) : Output;
+        }
+        fragColor = Output;
 
     }

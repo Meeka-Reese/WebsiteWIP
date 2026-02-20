@@ -9,10 +9,12 @@
     uniform mat4 uModelMatrix;
     uniform sampler3D uTexture3D;
     uniform float Time;
+    uniform vec3 uOrigin;
+    uniform vec3 viewPos;
+
     out vec3 Normals;
     out vec3 FragPos;
     out vec2 UVCord;
-    out vec3 CameraPos;
     out vec3 vWorldPos;
     out vec3 VertPos;
     out vec4 vClipPos;
@@ -20,26 +22,34 @@
 
     void main()
     {
-        float Frame = Time / 8000.0;
-        float NoiseSize = 1.1;
-        float NoiseMaskSize = .2;
+        float Frame = Time / 3000.0;
+        vec3 MovedOrigin = vec3(uOrigin.x,1.0 + uOrigin.y, sin(Frame));
+        float NoiseSize = 1.1 + sin(Frame);
+        float NoiseMaskSize = .2 + sin(Frame);
+        float NoiseGainTextSize = .5;
+        float NoiseGain = texture(uTexture3D, vec3(-aVertPos.y*NoiseGainTextSize, aVertPos.x*NoiseGainTextSize, aVertPos.z*NoiseGainTextSize + Frame)).r;
         vec4 DisplacementTextMask = texture(uTexture3D, vec3(aVertPos.x*NoiseMaskSize, aVertPos.y*NoiseMaskSize, aVertPos.z*NoiseMaskSize + Frame));
-        vec4 DisplacementText = texture(uTexture3D, vec3(aVertPos.x*NoiseSize, aVertPos.y*NoiseSize, aVertPos.z*NoiseSize + Frame));
-        float MaskCutoff = abs(sin(Frame*2.0))-.35;
-        DisplacementText = DisplacementTextMask.r > MaskCutoff ? DisplacementText : vec4(0.0);
-        DisplacementText.w = 0.0;
-        vDisplVal = DisplacementText;
+        float DispMagnitude = texture(uTexture3D, vec3(aVertPos.x*NoiseSize, aVertPos.y*NoiseSize, aVertPos.z*NoiseSize + Frame)).r;
+        vec4 DispDir = vec4(normalize(aVertPos.xyz - MovedOrigin.xyz),1.0);
+        DispMagnitude *= NoiseGain;
+        float MaskCutoff = abs(sin(Frame*2.0)) * 2.0;
+        DispMagnitude = DisplacementTextMask.r > MaskCutoff * .3 ? DispMagnitude : 0.0;
+        DispDir = DisplacementTextMask.r > MaskCutoff ? DispDir : -DispDir;
+        
         VertPos = aVertPos.xyz; 
-        vec4 ViewPos = uViewMatrix * uModelMatrix * (aVertPos + (DisplacementText * 5.0));
-        vec4 DisplacedPos = aVertPos + DisplacementText;
+        vec4 ViewPos = uViewMatrix * uModelMatrix * (aVertPos + (DispDir * DispMagnitude));
+        vec4 DisplacedPos = aVertPos + DispMagnitude;
         vec4 Pos = uProjMatrix * uViewMatrix * uModelMatrix * DisplacedPos;
-        gl_Position = Pos;
-        vClipPos = Pos;
         vec4 ProjNormals = uViewMatrix * vec4(aNorm,0.0);
         vec4 world = uModelMatrix * aVertPos;
+
+        vClipPos = Pos;
         vWorldPos = world.xyz;
         Normals = ProjNormals.xyz;
         FragPos = ViewPos.xyz;
         UVCord = aUVCord;
+        vDisplVal = vec4(DispDir.xyz * DispMagnitude,1.0);
+
+         gl_Position = Pos;
         
     }

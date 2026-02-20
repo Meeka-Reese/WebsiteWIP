@@ -1,3 +1,13 @@
+export async function LoadOBJ(gl, path)
+{
+  const ObjLoad = await fetch(path);
+  if(!ObjLoad.ok) throw new Error("Failed to load OBJ");
+  let ObjText = await ObjLoad.text();
+  let obj = new OBJ.Mesh(ObjText);
+  OBJ.initMeshBuffers(gl, obj);
+  return obj;
+}
+
 
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
@@ -1171,6 +1181,8 @@ class Mesh {
         this.ParentScale = null;
         this.Color = [0.0,0.0,0.0,0.0];
         this.isHover = false;
+        this.Origin = [0.0,0.0,0.0];
+        this.vertices = [];
         /*
         The OBJ file format does a sort of compression when saving a model in a
         program like Blender. There are at least 3 sections (4 including textures)
@@ -1850,6 +1862,7 @@ function getMtl(modelOptions) {
     }
     return modelOptions.mtl;
 }
+
 /**
  * Accepts a list of model request objects and returns a Promise that
  * resolves when all models have been downloaded and parsed.
@@ -2088,6 +2101,7 @@ function initMeshBuffers(gl, mesh) {
     mesh.normalBuffer = _buildBuffer(gl, gl.ARRAY_BUFFER, mesh.vertexNormals, 3);
     mesh.textureBuffer = _buildBuffer(gl, gl.ARRAY_BUFFER, mesh.textures, mesh.textureStride);
     mesh.vertexBuffer = _buildBuffer(gl, gl.ARRAY_BUFFER, mesh.vertices, 3);
+    this.vertices = mesh.vertices;
     mesh.indexBuffer = _buildBuffer(gl, gl.ELEMENT_ARRAY_BUFFER, mesh.indices, 1);
     return mesh;
 }

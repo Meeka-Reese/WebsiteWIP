@@ -226,6 +226,9 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         viewPosition: GL.getUniformLocation(ShaderProgramTrans, "viewPos"),
         lightColor: GL.getUniformLocation(ShaderProgramTrans, "lightColor"),
         lightIntensity: GL.getUniformLocation(ShaderProgramTrans, "lightIntensity"),
+        resolution: GL.getUniformLocation(ShaderProgramTrans, "uResolution"),
+        origin: GL.getUniformLocation(ShaderProgramTrans, "uOrigin"),
+        viewPosition: GL.getUniformLocation(ShaderProgramTrans, "viewPos"),
     }
 
 
@@ -504,6 +507,14 @@ export function loadTexture(gl, url, numChans = 4) {
     }
     else if(("isHover" in programInfo))
     {console.log("isHover Uniform Could Not Be Found!")}
+    
+    if (programInfo.uniformLocations.origin != null)
+    {;
+        gl.uniform3fv(programInfo.uniformLocations.origin,Object.Origin);
+    }
+    else if(("origin" in programInfo))
+    {console.log("Origin Uniform Could Not Be Found!")}
+    
 
 
     
@@ -611,4 +622,62 @@ export function ClearFBO(FBO, gl)
     gl.bindFramebuffer(gl.FRAMEBUFFER, FBO);
     gl.clear(gl.DEPTH_BUFFER_BIT); 
     gl.clear(gl.COLOR_BUFFER_BIT);
+}
+
+export async function loadShaderFiles(ShaderText, Path)
+{
+  const ShaderFile = await fetch(Path);
+  if (!ShaderFile.ok) throw new Error("Shader File Error Load");
+  ShaderText = ShaderFile.text();
+  return ShaderText;
+}
+export function loadShader(gl, type, source) 
+{
+
+    const shader = gl.createShader(type);
+  
+    gl.shaderSource(shader, source);
+
+  
+    gl.compileShader(shader);
+
+  
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      alert(
+        `An error occurred compiling the shaders: ${gl.getShaderInfoLog(shader)}`,
+      );
+      gl.deleteShader(shader);
+      return null;
+    }
+  
+    return shader;
+}
+export function initShader(gl, vSource, fSource)
+{
+
+    const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vSource);
+    const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fSource);
+
+    const shaderProgram = gl.createProgram();
+    gl.attachShader(shaderProgram, vertexShader);
+    gl.attachShader(shaderProgram, fragmentShader);
+
+   
+
+    gl.linkProgram(shaderProgram);
+    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+        console.error(gl.getProgramInfoLog(shaderProgram));
+    }
+
+    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+        alert(
+          `Unable to initialize the shader program: ${gl.getProgramInfoLog(
+            shaderProgram,
+          )}`,
+        );
+        return null;
+      }
+    
+      return shaderProgram;
+    
 }

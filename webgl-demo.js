@@ -8,6 +8,7 @@ let gVertSourceDef, gVertSkybox, gVertStar, gVertRaycast, gVertTrans;
 let gFragSourceWave, gFragSourceFlat, gFragSourceCloud, gFragSkybox, gFragStar, gFragColor,
 gFragVolGlow, gFragDef, gFragRaycast, gFragGlass, gFragScreenFlat, gFragTransFlat;
 
+
 let gShaderProgramDef, gShaderProgramWave, gShaderProgramFlat, gShaderProgramCloud,
 gShaderProgramSkybox, gShaderProgramStar, gShaderProgramColor, gShaderProgramVolGlow,
 gShaderProgramRaycast, gShaderProgramGlass, gShaderProgramScreenRender, gShaderProgramScreenImage,
@@ -62,10 +63,12 @@ import { CameraMove, MouseLook, GetViewMatrix } from './Camera.js';
 import { SinPreComp,CosPreComp,TanPreComp,ArcSinPreComp,ArcCosPreComp } from './PreCompWave.js';
 import { createNoise3D } from './Externals/simplex-noise.js';
 import { SetProgramInfo,loadTexture,setPositionAttribute,createTexture2DFromBuffer,
-  createTexture3DFromBuffer,genFBO,genDepthMap,genEmptyTex,ClearFBO } from './ShaderFunc.js';
+  createTexture3DFromBuffer,genFBO,genDepthMap,genEmptyTex,ClearFBO,
+  loadShaderFiles,initShader} from './ShaderFunc.js';
 import { mat4,vec2,vec3,vec4,quat } from './Externals/esm/index.js';
-import { GenerateWave,CalculateNormals,GenerateQuad,SphereOfQuad,StarLookAt } from './GenerateMesh.js';
+import { GenerateWave,CalculateNormals,GenerateQuad,SphereOfQuad,StarLookAt,PlaceColecOnSurf } from './GenerateMesh.js';
 import { CreateWorley3D } from './GenerateNoise.js';
+import { LoadOBJ } from './Externals/webgl-obj-loader.js'; 
 
 
 //=======================GLOBALS=============================
@@ -94,6 +97,8 @@ let gOpt1, gOpt2, gOpt3; //set up raytracing Options
 //Transformation Scene
 let gCharTrans, gCharHairTrans;
 let gRCDict = new Map();
+let gSurfObjColec = [];
+let SurfColecVertIndicies = []; //Used to store which verts surface objects are linked with
 
 //
 let gPreviousTime;
@@ -150,45 +155,13 @@ function makeStruct(keys) {
     }
     return constructor;
   }
-async function loadShaderFiles(ShaderText, Path)
-{
-  const ShaderFile = await fetch(Path);
-  if (!ShaderFile.ok) throw new Error("Shader File Error Load");
-  ShaderText = ShaderFile.text();
-  return ShaderText;
-}
-function initShader(vSource, fSource)
-{
-    const vertexShader = loadShader(gGL.VERTEX_SHADER, vSource);
-    const fragmentShader = loadShader(gGL.FRAGMENT_SHADER, fSource);
-
-    const shaderProgram = gGL.createProgram();
-    gGL.attachShader(shaderProgram, vertexShader);
-    gGL.attachShader(shaderProgram, fragmentShader);
-    gGL.linkProgram(shaderProgram);
-    if (!gGL.getProgramParameter(shaderProgram, gGL.LINK_STATUS)) {
-        console.error(gGL.getProgramInfoLog(shaderProgram));
-    }
-
-    if (!gGL.getProgramParameter(shaderProgram, gGL.LINK_STATUS)) {
-        alert(
-          `Unable to initialize the shader program: ${gGL.getProgramInfoLog(
-            shaderProgram,
-          )}`,
-        );
-        return null;
-      }
-    
-      return shaderProgram;
-    
-}
 
 async function SetUpScene()
 {
   //== Main Scene ==
 
    //Gen Noise
-   gNoiseCube = await LoadOBJ('./models/Cube.obj');
+   gNoiseCube = await LoadOBJ(gGL, './models/Cube.obj');
    let ImgSize = 8;
    let ImgBufNoise = await CreateWorley3D(4, ImgSize);
    let Noise3D = await createTexture3DFromBuffer(gGL, ImgBufNoise, ImgSize, ImgSize, ImgSize);
@@ -196,33 +169,33 @@ async function SetUpScene()
    gNoiseCube.Texture = await loadTexture(gGL, './Textures/CloudDetailNoise.png',4);
    gNoiseCube.TextureBN = await loadTexture(gGL, './Textures/BlueNoise.png',4);
 
-  gBoatMesh = await LoadOBJ('./models/SailBoat.obj');
+  gBoatMesh = await LoadOBJ(gGL, './models/SailBoat.obj');
   gBoatMesh.Texture = await loadTexture(gGL, './Textures/SailBoat.png',4);
 
-  gMoon = await LoadOBJ('./models/Sphere.obj');
+  gMoon = await LoadOBJ(gGL, './models/Sphere.obj');
   gMoon.Texture = await loadTexture(gGL, './Textures/Moon.png',4);
 
-  gSpellCircle = await LoadOBJ('./models/SpellCircle.obj');
+  gSpellCircle = await LoadOBJ(gGL, './models/SpellCircle.obj');
   gSpellCircle.Color = [0.5,.8,1.0,.3];
 
-  gSpellCircleVolume = await LoadOBJ('./models/SpellCircleVolume.obj');
+  gSpellCircleVolume = await LoadOBJ(gGL, './models/SpellCircleVolume.obj');
   gSpellCircleVolume.Texture = await loadTexture(gGL, './Textures/CloudDetailNoise.png',4);
 
-  gSpellCircleOutline = await LoadOBJ('./models/SpellCircle.obj');
+  gSpellCircleOutline = await LoadOBJ(gGL, './models/SpellCircle.obj');
 
-  gCircleMask = await LoadOBJ('./models/MaskCircle.obj');
+  gCircleMask = await LoadOBJ(gGL, './models/MaskCircle.obj');
   gCircleMask.Color = [1.0,1.0,1.0,0.0];
 
-  gOpt1 = await LoadOBJ('./models/Arrow.obj');
+  gOpt1 = await LoadOBJ(gGL, './models/Arrow.obj');
 
-  gCharHead = await LoadOBJ('./models/CharHead.obj');
+  gCharHead = await LoadOBJ(gGL, './models/CharHead.obj');
   gCharHead.Texture = await loadTexture(gGL, './Textures/Girl.png',4);
 
- gCharHair = await LoadOBJ('./models/CharHair.obj');
+ gCharHair = await LoadOBJ(gGL, './models/CharHair.obj');
  gCharHair.Texture = await loadTexture(gGL, './Textures/Girl.png',4);
 
 
-  gGlassSphere = await LoadOBJ('./models/Cube.obj'); // used for volume of raymarch sphere
+  gGlassSphere = await LoadOBJ(gGL, './models/Cube.obj'); // used for volume of raymarch sphere
   gGlassSphere.Normal = await loadTexture(gGL, './Textures/GlassNoiseNorm.png',4);
   gGlassSphere.Displacement = await loadTexture(gGL, './Textures/GlassDisplacement.png',4);
 
@@ -230,13 +203,14 @@ async function SetUpScene()
 
   //== Transform Scene ==
   
-  gCharTrans = await LoadOBJ('./models/CharFullBodyUp.obj');
+  gCharTrans = await LoadOBJ(gGL, './models/CharFullBodyUp.obj');
   gCharTrans.Texture = await loadTexture(gGL, './Textures/GirlTextureFull.png',4);
   gCharTrans.Texture3D = Noise3D;
 
-  gCharHairTrans = await LoadOBJ('./models/CharHairTrans.obj');
+  gCharHairTrans = await LoadOBJ(gGL, './models/CharHairTrans.obj');
   gCharHairTrans.Texture = await loadTexture(gGL, './Textures/Girl.png',4);
   gCharHairTrans.Texture3D = Noise3D;
+
 
    //==========================SET PARENTING======================================
    //== Main Scene ==
@@ -312,36 +286,7 @@ async function SetUpScene()
     gRCDict.set(gOpt1, gGlassSphere);
     //== Transform Scene ==
 }
-async function LoadOBJ(path)
-{
-  const ObjLoad = await fetch(path);
-  if(!ObjLoad.ok) throw new Error("Failed to load OBJ");
-  let ObjText = await ObjLoad.text();
-  let obj = new OBJ.Mesh(ObjText);
-  OBJ.initMeshBuffers(gGL, obj);
-  return obj;
-}
-function loadShader(type, source) 
-{
 
-    const shader = gGL.createShader(type);
-  
-    gGL.shaderSource(shader, source);
-
-  
-    gGL.compileShader(shader);
-
-  
-    if (!gGL.getShaderParameter(shader, gGL.COMPILE_STATUS)) {
-      alert(
-        `An error occurred compiling the shaders: ${gGL.getShaderInfoLog(shader)}`,
-      );
-      gGL.deleteShader(shader);
-      return null;
-    }
-  
-    return shader;
-}
 
 
 
@@ -946,8 +891,13 @@ DrawCallSetup();
 //======================RENDER NORMALPASS============================
 gGL.bindFramebuffer(gGL.FRAMEBUFFER, null);
 gGL.cullFace(gGL.BACK);
+
 Draw(gProgramInfoTrans, gCharTrans, gCamera, gLight1);
 Draw(gProgramInfoTrans, gCharHairTrans, gCamera, gLight1);
+for (const obj in gSurfObjColec)
+{
+  Draw(gProgramInfoDef, obj, gCamera, gLight1);
+}
 
 
 
@@ -1027,19 +977,20 @@ async function main() {
   gFragScreenFlat = await loadShaderFiles(gFragScreenFlat, './Shaders/ScreenFlatFrag.glsl');
   gFragTransFlat = await loadShaderFiles(gFragTransFlat,'./Shaders/TransFlatFrag.glsl');
 
-  gShaderProgramWave = initShader(gVertSourceDef,gFragSourceWave);
-  gShaderProgramFlat = initShader(gVertSourceDef,gFragSourceFlat);
-  gShaderProgramCloud = initShader(gVertSourceDef,gFragSourceCloud);
-  gShaderProgramSkybox = initShader(gVertSkybox,gFragSkybox);
-  gShaderProgramColor = initShader(gVertSkybox, gFragColor);
-  gShaderProgramStar = initShader(gVertStar, gFragStar);
-  gShaderProgramVolGlow = initShader(gVertSourceDef, gFragVolGlow);
-  gShaderProgramDef = initShader(gVertSourceDef, gFragDef);
-  gShaderProgramRaycast = initShader(gVertRaycast, gFragRaycast);
-  gShaderProgramGlass = initShader(gVertSourceDef, gFragGlass);
-  gShaderProgramScreenRender = initShader(gVertSkybox, gFragScreenFlat);
-  gShaderProgramScreenImage = initShader(gVertSkybox, gFragSourceFlat);
-  gShaderProgramTrans = initShader(gVertTrans, gFragTransFlat);
+
+  gShaderProgramWave = initShader(gGL, gVertSourceDef,gFragSourceWave);
+  gShaderProgramFlat = initShader(gGL, gVertSourceDef,gFragSourceFlat);
+  gShaderProgramCloud = initShader(gGL, gVertSourceDef,gFragSourceCloud);
+  gShaderProgramSkybox = initShader(gGL, gVertSkybox,gFragSkybox);
+  gShaderProgramColor = initShader(gGL, gVertSkybox, gFragColor);
+  gShaderProgramStar = initShader(gGL, gVertStar, gFragStar);
+  gShaderProgramVolGlow = initShader(gGL, gVertSourceDef, gFragVolGlow);
+  gShaderProgramDef = initShader(gGL, gVertSourceDef, gFragDef);
+  gShaderProgramRaycast = initShader(gGL, gVertRaycast, gFragRaycast);
+  gShaderProgramGlass = initShader(gGL, gVertSourceDef, gFragGlass);
+  gShaderProgramScreenRender = initShader(gGL, gVertSkybox, gFragScreenFlat);
+  gShaderProgramScreenImage = initShader(gGL, gVertSkybox, gFragSourceFlat);
+  gShaderProgramTrans = initShader(gGL, gVertTrans, gFragTransFlat);
   
 
 
@@ -1081,6 +1032,7 @@ async function main() {
     ParentTrans, ParentScale \
     DepthTexture");
     
+    //=====Main Scene======
     gSkybox = new Quad(gShaderProgramSkybox, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
     [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null);
     let SkyboxOrigin = [0.0,0.0,0.0];
@@ -1120,7 +1072,6 @@ async function main() {
       gCamera);
 
     //----------------------------------------------------------------
-    
   
     gPreviousTime = gTime.getTime();
     gTimeStart = gPreviousTime;
@@ -1148,7 +1099,13 @@ async function main() {
     gGlassFBO = genFBO(gGL, gGlassDepthMap, gGlassRendText);
     
     await SetUpScene();
-    
+    //Surface Mapping
+    let MinDist = 1.0;
+    let NumObj = 25;
+    let SurfObjData = await PlaceColecOnSurf(gCharTrans.vertices, gCharTrans.vertexNormals, './models/Cube.obj', MinDist,NumObj);
+    gSurfObjColec = SurfObjData.instances;
+    SurfColecVertIndicies = SurfObjData.vertIndicies;
+    //
 
     BoatWaveIndexFind();
     gActiveMainLoop = MainLoop;
