@@ -1,3 +1,5 @@
+import { gGL } from "./webgl-demo.js";
+
 export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramInfoFlat, ShaderProgramFlat,
     ProgramInfoCloud, ShaderProgramCloud, ProgramInfoSkybox, ShaderProgramSkybox, 
     ProgramInfoStar, ShaderProgramStar,
@@ -46,7 +48,6 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         time: GL.getUniformLocation(ShaderProgramWave, "Time"),
         depthTexture: GL.getUniformLocation(ShaderProgramWave, "depthTexture"),
         resolution: GL.getUniformLocation(ShaderProgramWave, "uResolution"),
-
     };
 
     ProgramInfoFlat.program = ShaderProgramFlat;
@@ -98,6 +99,7 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         depthTexture: GL.getUniformLocation(ShaderProgramSkybox, "depthTexture"),
         resolution: GL.getUniformLocation(ShaderProgramSkybox, "uResolution"),
     };
+
     
     ProgramInfoStar.program = ShaderProgramStar;
     ProgramInfoStar.attribLocations = {
@@ -114,6 +116,7 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         resolution: GL.getUniformLocation(ShaderProgramStar, "uResolution"),
     };
 
+
     ProgramInfoColor.program = ShaderProgramColor;
     ProgramInfoColor.attribLocations = {
         vertexPosition: GL.getAttribLocation(ShaderProgramColor, "aVertPos"),
@@ -124,6 +127,7 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         color: GL.getUniformLocation(ShaderProgramColor, "uColor"),
         modelMatrix: GL.getUniformLocation(ShaderProgramColor, "uModelMatrix"),
     };
+
 
     ProgramInfoVolGlow.program = ShaderProgramVolGlow;
     ProgramInfoVolGlow.attribLocations = {
@@ -143,6 +147,7 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         resolution: GL.getUniformLocation(ShaderProgramVolGlow, "uResolution"),
     };
 
+
     ProgramInfoRaycast.program = ShaderProgramRaycast;
     ProgramInfoRaycast.attribLocations = {
         vertexPosition: GL.getAttribLocation(ShaderProgramRaycast, "aVertPos"),
@@ -155,6 +160,7 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         objectIndex: GL.getUniformLocation(ShaderProgramRaycast, "uObjetIndex"),
     };
 
+
     ProgramInfoGlass.program = ShaderProgramGlass;
     ProgramInfoGlass.attribLocations = {
         vertexPosition: GL.getAttribLocation(ShaderProgramGlass, "aVertPos"),
@@ -166,7 +172,7 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         ViewMatrix: GL.getUniformLocation(ShaderProgramGlass, "uViewMatrix"),
         modelMatrix: GL.getUniformLocation(ShaderProgramGlass, "uModelMatrix"),
         depthTexture: GL.getUniformLocation(ShaderProgramGlass, "depthTexture"),
-        texture: GL.getUniformLocation(ShaderProgramGlass, "uTexture"),
+        textureScene: GL.getUniformLocation(ShaderProgramGlass, "uTextureScene"),
         normal: GL.getUniformLocation(ShaderProgramGlass, "uNormal"),
         displacement: GL.getUniformLocation(ShaderProgramGlass, "uDisplacement"),
         color: GL.getUniformLocation(ShaderProgramGlass, "objCol"),
@@ -175,10 +181,11 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         lightPosition: GL.getUniformLocation(ShaderProgramGlass, "lightPos"),
         lightColor: GL.getUniformLocation(ShaderProgramGlass, "lightColor"),
         lightIntensity: GL.getUniformLocation(ShaderProgramGlass, "lightIntensity"),
-        origin: GL.getUniformLocation(ShaderProgramGlass, "Origin"),
+        marchOrigin: GL.getUniformLocation(ShaderProgramGlass, "marchOrigin"),
         time: GL.getUniformLocation(ShaderProgramGlass, "Time"),
         isHover: GL.getUniformLocation(ShaderProgramGlass, "isHover"),
     }
+
 
     ProgramInfoScreenRender.program = ShaderProgramScreenRender;
     ProgramInfoScreenRender.attribLocations = {
@@ -190,10 +197,11 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         projectionMatrix: GL.getUniformLocation(ShaderProgramScreenRender, "uProjMatrix"),
         ViewMatrix: GL.getUniformLocation(ShaderProgramScreenRender, "uViewMatrix"),
         modelMatrix: GL.getUniformLocation(ShaderProgramScreenRender, "uModelMatrix"),
-        texture: GL.getUniformLocation(ShaderProgramScreenRender, "uTexture"),
+        textureScene: GL.getUniformLocation(ShaderProgramScreenRender, "uTextureScene"),
         resolution: GL.getUniformLocation(ShaderProgramScreenRender, "uResolution"),
         textureScale: GL.getUniformLocation(ShaderProgramScreenRender, "TextScale"),
     }
+
 
     ProgramInfoScreenImage.program = ShaderProgramScreenImage;
     ProgramInfoScreenImage.attribLocations = {
@@ -209,11 +217,18 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         resolution: GL.getUniformLocation(ShaderProgramScreenImage, "uResolution"),
 
     }
+
     ProgramInfoTrans.program = ShaderProgramTrans;
     ProgramInfoTrans.attribLocations = {
         vertexPosition: GL.getAttribLocation(ShaderProgramTrans, "aVertPos"),
         normalPosition: GL.getAttribLocation(ShaderProgramTrans, "aNorm"),
         UVPosition: GL.getAttribLocation(ShaderProgramTrans, "aUVCord"),
+        WeightColec1: GL.getAttribLocation(ShaderProgramTrans, "aWeightColec1"),
+        WeightColec2: GL.getAttribLocation(ShaderProgramTrans, "aWeightColec2"),
+        WeightColec3: GL.getAttribLocation(ShaderProgramTrans, "aWeightColec3"),
+        WeightColec4: GL.getAttribLocation(ShaderProgramTrans, "aWeightColec4"),
+        WeightColec5: GL.getAttribLocation(ShaderProgramTrans, "aWeightColec5"),
+        WeightColec6: GL.getAttribLocation(ShaderProgramTrans, "aWeightColec6"),
     }
     ProgramInfoTrans.uniformLocations = {
         projectionMatrix: GL.getUniformLocation(ShaderProgramTrans, "uProjMatrix"),
@@ -229,7 +244,12 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         resolution: GL.getUniformLocation(ShaderProgramTrans, "uResolution"),
         origin: GL.getUniformLocation(ShaderProgramTrans, "uOrigin"),
         viewPosition: GL.getUniformLocation(ShaderProgramTrans, "viewPos"),
+        weightImage2DArray: GL.getUniformLocation(ShaderProgramTrans, "weightImage2DArray"),
+        boneParentIndicies: GL.getUniformLocation(ShaderProgramTrans, "boneParentIndicies"),
+        colecItemCount: GL.getUniformLocation(ShaderProgramTrans, "colecItemCount"),
+        boneMatrixColec: GL.getUniformLocation(ShaderProgramTrans, "boneMatrixColec"),
     }
+
 
 
 
@@ -273,10 +293,10 @@ export function loadTexture(gl, url, numChans = 4) {
     }
     
     const srcType = gl.UNSIGNED_BYTE;
-    const pixel = new Uint8Array([0, 0, 255, 255]); // opaque blue
+    const pixel = new Uint8Array([0, 0, 255, 255]); 
     gl.texImage2D(
       gl.TEXTURE_2D,
-      level,
+      level,            
       internalFormat,
       width,
       height,
@@ -318,10 +338,11 @@ export function loadTexture(gl, url, numChans = 4) {
     return texture;
   }
   
+  
   function isPowerOf2(value) {
     return (value & (value - 1)) === 0;
   }
-  export function setPositionAttribute(Object, programInfo, Camera, Light, gl, Time)
+  export function setPositionAttribute(Object, programInfo, Camera, Light, gl, Time, Armature = null)
 {
     
     gl.bindBuffer(gl.ARRAY_BUFFER, Object.vertexBuffer); //Verts
@@ -373,6 +394,81 @@ export function loadTexture(gl, url, numChans = 4) {
       );
       gl.enableVertexAttribArray(programInfo.attribLocations.UVPosition);
     }
+    if ("WeightColec1" in programInfo.attribLocations && Armature != null 
+    && programInfo.attribLocations.WeightColec1 >= 0 && 
+    programInfo.attribLocations.WeightColec2 >= 0 &&
+    programInfo.attribLocations.WeightColec3 >= 0 &&
+    programInfo.attribLocations.WeightColec4 >= 0 &&
+    programInfo.attribLocations.WeightColec5 >= 0 &&
+    programInfo.attribLocations.WeightColec6 >= 0)
+    {
+        gl.bindBuffer(gl.ARRAY_BUFFER, Armature.WeightBuffer1); //UV
+        gl.vertexAttribPointer(
+            programInfo.attribLocations.WeightColec1,
+            4,
+            gl.FLOAT,
+            false,
+            0,
+            0
+        );
+        gl.enableVertexAttribArray(programInfo.attribLocations.WeightColec1);
+        
+        gl.bindBuffer(gl.ARRAY_BUFFER, Armature.WeightBuffer2); //UV
+        gl.vertexAttribPointer(
+            programInfo.attribLocations.WeightColec2,
+            4,
+            gl.FLOAT,
+            false,
+            0,
+            0
+        );
+        gl.enableVertexAttribArray(programInfo.attribLocations.WeightColec2);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, Armature.WeightBuffer3); //UV
+        gl.vertexAttribPointer(
+            programInfo.attribLocations.WeightColec3,
+            4,
+            gl.FLOAT,
+            false,
+            0,
+            0
+        );
+        gl.enableVertexAttribArray(programInfo.attribLocations.WeightColec3);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, Armature.WeightBuffer4); //UV
+        gl.vertexAttribPointer(
+            programInfo.attribLocations.WeightColec4,
+            4,
+            gl.FLOAT,
+            false,
+            0,
+            0
+        );
+        gl.enableVertexAttribArray(programInfo.attribLocations.WeightColec4);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, Armature.WeightBuffer5); //UV
+        gl.vertexAttribPointer(
+            programInfo.attribLocations.WeightColec5,
+            4,
+            gl.FLOAT,
+            false,
+            0,
+            0
+        );
+        gl.enableVertexAttribArray(programInfo.attribLocations.WeightColec5);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, Armature.WeightBuffer6); //UV
+        gl.vertexAttribPointer(
+            programInfo.attribLocations.WeightColec6,
+            4,
+            gl.FLOAT,
+            false,
+            0,
+            0
+        );
+        gl.enableVertexAttribArray(programInfo.attribLocations.WeightColec6);
+    }
+    
     
     if (programInfo.uniformLocations.lightPosition != null)
     {
@@ -416,8 +512,16 @@ export function loadTexture(gl, url, numChans = 4) {
       gl.bindTexture(gl.TEXTURE_2D, Object.Texture);
       gl.uniform1i(programInfo.uniformLocations.texture, 0); 
     }
-    else if (("texture" in programInfo))
-    {console.log("texture Uniform Could Not Be Found!")};
+    else if (("texture" in programInfo)){console.log("texture Uniform Could Not Be Found!");}
+
+    if (programInfo.uniformLocations.textureScene != null && Object.Texture != null)
+    {
+      gl.activeTexture(gl.TEXTURE6);
+      gl.bindTexture(gl.TEXTURE_2D, Object.Texture);
+      gl.uniform1i(programInfo.uniformLocations.textureScene, 6); 
+    }
+    else if (("textureScene" in programInfo))
+    {console.log("textureScene Uniform Could Not Be Found!")};
     if (programInfo.uniformLocations.depthTexture != null && Object.DepthTexture != null)
     {
       gl.activeTexture(gl.TEXTURE1);
@@ -430,7 +534,7 @@ export function loadTexture(gl, url, numChans = 4) {
     {
         gl.activeTexture(gl.TEXTURE2);
         gl.bindTexture(gl.TEXTURE_2D, Object.TextureBN);
-        gl.uniform1i(programInfo.uniformLocations.texture3D,2);
+        gl.uniform1i(programInfo.uniformLocations.textureBN,2);
     }
     else if(("texture3D" in programInfo))
     {console.log("texture3D Uniform Could Not Be Found!")}
@@ -480,12 +584,12 @@ export function loadTexture(gl, url, numChans = 4) {
     }
     else if(("color" in programInfo))
     {console.log("color Uniform Could Not Be Found!")}
-    if (programInfo.uniformLocations.origin != null)
+    if (programInfo.uniformLocations.marchOrigin != null)
     {
-        gl.uniform3fv(programInfo.uniformLocations.origin,Object.Position);
+        gl.uniform3fv(programInfo.uniformLocations.marchOrigin,Object.Position);
     }
-    else if(("origin" in programInfo))
-    {console.log("origin Uniform Could Not Be Found!")}
+    else if(("marchOrigin" in programInfo))
+    {console.log("marchOrigin Uniform Could Not Be Found!")}
     if (programInfo.uniformLocations.objectIndex != null)
     {
         gl.uniform1f(programInfo.uniformLocations.objectIndex,Camera.ObjectIndex);
@@ -514,8 +618,47 @@ export function loadTexture(gl, url, numChans = 4) {
     }
     else if(("origin" in programInfo))
     {console.log("Origin Uniform Could Not Be Found!")}
-    
 
+
+    //==== Bone Uniforms ====
+    if (Armature != null)
+    { 
+        if (programInfo.uniformLocations.boneMatrixColec != null)
+        {
+        gGL.uniformMatrix4fv(
+            programInfo.uniformLocations.boneMatrixColec,
+            false,
+            Armature.boneMatrixArray,
+          );
+        }
+
+
+        if (programInfo.uniformLocations.weightImage2DArray != null)
+        {;
+            gl.activeTexture(gl.TEXTURE7);
+            gl.bindTexture(gl.TEXTURE_2D_ARRAY, Armature.weightImage2DArray);
+            gl.uniform1i(programInfo.uniformLocations.weightImage2DArray,7);
+        }
+        else if(("weightImage2DArray" in programInfo))
+        {
+            console.log("weightImage2DArray uniform couldn't be found")
+        }
+
+        if (programInfo.uniformLocations.boneParentIndicies != null)
+        {;
+            gl.uniform1fv(programInfo.uniformLocations.boneParentIndicies,Armature.boneParentIndicies);
+        }
+        else if(("boneParentIndicies" in programInfo))
+        {console.log("boneParentIndicies Uniform Could Not Be Found!")}
+
+        if (programInfo.uniformLocations.colecItemCount != null)
+        {;
+            gl.uniform1i(programInfo.uniformLocations.colecItemCount,Armature.boneMatrixColec.length);
+        }
+        else if(("colecItemCount" in programInfo))
+        {console.log("colecItemCount Uniform Could Not Be Found!")}
+    
+    }
 
     
 }
@@ -681,3 +824,119 @@ export function initShader(gl, vSource, fSource)
       return shaderProgram;
     
 }
+
+export async function LoadImage(path) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous"; 
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            
+            // Flip the image vertically when drawing
+            ctx.translate(0, canvas.height);
+            ctx.scale(1, -1);
+            ctx.drawImage(img, 0, 0);
+            
+            const pixels = ctx.getImageData(0, 0, img.width, img.height).data;
+            
+            // Restore transform
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            
+            resolve({ pixels: new Uint8Array(pixels.buffer), width: img.width, height: img.height });
+        };
+        img.onerror = reject;
+        img.src = path;
+    });
+}
+
+export async function CreateImageArray(ImageColec, width, height) {
+    const layerCount = ImageColec.length;
+    console.log("Layer count is " + layerCount);
+
+    const weightTextureArray = gGL.createTexture();
+    gGL.bindTexture(gGL.TEXTURE_2D_ARRAY, weightTextureArray);
+    
+    gGL.texStorage3D(
+        gGL.TEXTURE_2D_ARRAY,
+        1,
+        gGL.RGBA8,
+        width,
+        height,
+        layerCount
+    );
+    
+    let error = gGL.getError();
+    console.log("After texStorage3D error:", error);
+    gGL.pixelStorei(gGL.UNPACK_FLIP_Y_WEBGL, false);
+    gGL.pixelStorei(gGL.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+    gGL.pixelStorei(gGL.UNPACK_ALIGNMENT, 1);  
+    gGL.pixelStorei(gGL.UNPACK_ROW_LENGTH, 0);
+    gGL.pixelStorei(gGL.UNPACK_IMAGE_HEIGHT, 0);
+    gGL.pixelStorei(gGL.UNPACK_SKIP_PIXELS, 0);
+    gGL.pixelStorei(gGL.UNPACK_SKIP_ROWS, 0);
+    gGL.pixelStorei(gGL.UNPACK_SKIP_IMAGES, 0);
+
+    for (let i = 0; i < ImageColec.length; i++) {
+        
+        gGL.texSubImage3D(
+            gGL.TEXTURE_2D_ARRAY,
+            0,
+            0, 0, i,
+            width,
+            height,
+            1,
+            gGL.RGBA,
+            gGL.UNSIGNED_BYTE,  // For Uint8Array
+            ImageColec[i]
+        );
+        
+    }
+ 
+     gGL.texParameteri(gGL.TEXTURE_2D_ARRAY, gGL.TEXTURE_MIN_FILTER, gGL.NEAREST);
+    gGL.texParameteri(gGL.TEXTURE_2D_ARRAY, gGL.TEXTURE_MAG_FILTER, gGL.NEAREST);
+    gGL.texParameteri(gGL.TEXTURE_2D_ARRAY, gGL.TEXTURE_WRAP_S, gGL.CLAMP_TO_EDGE);
+    gGL.texParameteri(gGL.TEXTURE_2D_ARRAY, gGL.TEXTURE_WRAP_T, gGL.CLAMP_TO_EDGE);
+
+    return weightTextureArray;
+}
+
+
+export async function LoadWeightsTXT(Directory, BoneNameColec)
+{
+    const promises = BoneNameColec.map((boneName) => 
+        fetch(Directory + boneName + ".txt")
+        .then((res) => res.text())
+        .then((text) => {
+        let lines = text.split(/\r?\n/);
+        let numlines = lines.map(line => parseFloat(line));
+        return numlines
+        })
+        .catch((e) => {console.error(e); return [];})
+    );
+    const WeightColec = (await Promise.all(promises));
+    if (WeightColec.length <= 0) {console.error("TEXT FILE AT " + Directory + " COULD NOT LOAD!"); return -1;}
+    let Rows = WeightColec.length;
+    let Cols = WeightColec[0].length;
+    let WeightsForBuffColec = new Array(6).fill().map(() => []);
+    let MaxBoneCount = 24;
+    const WeightAttArr = new Array(Rows * Cols);
+    let ind = 0;
+    for (let c = 0; c < Cols; c++)
+    {
+        for (let r = 0; r < Rows; r++)
+        {
+            ind = Math.floor(r / 4.0); 
+            WeightsForBuffColec[ind].push(WeightColec[r][c]);
+        }
+        for (let r2 = 0; r2 < MaxBoneCount - Rows; r2 ++)
+        {
+            ind = Math.floor(((Rows / 4)) + (r2 * .25));
+            WeightsForBuffColec[ind].push(-1.0)
+        }
+    }
+    return WeightsForBuffColec // need to return collection of 6
+}
+

@@ -64,11 +64,12 @@ import { SinPreComp,CosPreComp,TanPreComp,ArcSinPreComp,ArcCosPreComp } from './
 import { createNoise3D } from './Externals/simplex-noise.js';
 import { SetProgramInfo,loadTexture,setPositionAttribute,createTexture2DFromBuffer,
   createTexture3DFromBuffer,genFBO,genDepthMap,genEmptyTex,ClearFBO,
-  loadShaderFiles,initShader} from './ShaderFunc.js';
+  loadShaderFiles,initShader, LoadWeightsTXT} from './ShaderFunc.js';
 import { mat4,vec2,vec3,vec4,quat } from './Externals/esm/index.js';
-import { GenerateWave,CalculateNormals,GenerateQuad,SphereOfQuad,StarLookAt,PlaceColecOnSurf } from './GenerateMesh.js';
+import { GenerateWave,CalculateNormals,GenerateQuad,SphereOfQuad,StarLookAt,PlaceColecOnSurf} from './GenerateMesh.js';
 import { CreateWorley3D } from './GenerateNoise.js';
 import { LoadOBJ } from './Externals/webgl-obj-loader.js'; 
+import { Bone, Armature, LoadBones} from './Armature.js';
 
 
 //=======================GLOBALS=============================
@@ -94,11 +95,16 @@ let gScreenSpaceQuad;
 let gCrossHair;
 let gOpt1, gOpt2, gOpt3; //set up raytracing Options
 
+
 //Transformation Scene
 let gCharTrans, gCharHairTrans;
+let gCharBoneColec = [];
+let gCharArmature;
 let gRCDict = new Map();
 let gSurfObjColec = [];
-let SurfColecVertIndicies = []; //Used to store which verts surface objects are linked with
+let gCompSurfObj;
+let gSurfColecVertIndicies = []; //Used to store which verts surface objects are linked with
+
 
 //
 let gPreviousTime;
@@ -106,7 +112,7 @@ let gDeltaTime;
 let gTimeSinceRun;
 let gTimeStart;
 let gTime = new Date();
-let gGL;
+export let gGL;
 let gCanvas;
 let gCycleNum = 0;
 let gBoatWaveIndices = [0,0,0,0];
@@ -212,6 +218,11 @@ async function SetUpScene()
   gCharHairTrans.Texture3D = Noise3D;
 
 
+  
+
+  //
+
+
    //==========================SET PARENTING======================================
    //== Main Scene ==
   gCharHead.ParentTrans = gGlassSphere;
@@ -268,11 +279,11 @@ async function SetUpScene()
   gCharHair.Scale = [gCharSize,gCharSize,gCharSize];
   
   
-  let GSphereSize = 15.0;
+  let GSphereSize = 20.0;
   gGlassSphere.Position = [45.0,26.0,110.0];
   gGlassSphere.Scale = [GSphereSize,GSphereSize,GSphereSize];
   gGlassSphere.Rotation = [0.0,0.0,0.0];
-  //== Transform Scene ==
+  //======================= Transform Scene =======================
   let CharTransScale = 10.0;
   gCharTrans.Position = [0.0,0.0,0.0];
   gCharTrans.Scale = [CharTransScale,CharTransScale,CharTransScale];
@@ -280,12 +291,48 @@ async function SetUpScene()
   gCharHairTrans.Position = [0.0,0.0,0.0];
   gCharHairTrans.Rotation = [0.0,0.0,0.0];
   gCharHairTrans.Scale = [1.0,1.0,1.0];
+
+  //==== Armature Setup ====== Gonna do a really dumb inefficient way. I'm too lazy to fix my Blender script to include parent in name
+  /*"Torso.png, Chest.png, LShould.png, LForearm.png 
+  LArm.png, LHand.png, RShould.png, RForearm.png, RArm.png,
+  RHand.png, Head.png, WaistL.png, ThighL.png, CalfL.png, 
+  FootL.png, WaistR.png, ThighR.png, CalfR.png, FootR.png,
+  Head.001.png"
+  */
+  // let TorsoWeightMap = await loadTexture(gGL, './Textures/WeightPaintImages/Torso.png', 4);
+  // let Torso = new Bone([0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, TorsoWeightMap);
+  let CharBoneImageNameColec = ["Torso", "Chest", "LShould", "LForearm", "LArm", "LHand", "RShould", "RForearm",
+                                "RArm", "RHand", "Head", "WaistL", "ThighL", "CalfL", "FootL", "WaistR", "ThighR",
+                                "CalfR", "FootR", "Head.001"];
+  let CharBoneParentsColec = ["null", "Torso", "Chest", "LShould", "LForearm", "LArm", "Chest", "RShould",
+                              "RForearm", "RArm", "Chest", "Torso", "WaistL", "ThighL", "CalfL", "Torso", "WaistR",
+                              "ThighR", "CalfR", "Head"];
+
+  let VertWeightDataColec = LoadWeightsTXT('./WeightTxt/',CharBoneImageNameColec);                         
+  console.log(CharBoneImageNameColec.length + " " + CharBoneParentsColec.length);
+  let BoneData = await LoadBones("./Textures/ArmatureWeights/",CharBoneImageNameColec, CharBoneParentsColec);
+  gCharBoneColec = BoneData.colec;
+  let CharStringColec = [];
+  CharStringColec = BoneData.stringColec;
+  gCharArmature = new Armature(gCharBoneColec, gCharTrans, CharStringColec, VertWeightDataColec, gTimeSinceRun * .001);
+
+  
     //==========================FILL RAYCAST ARRAY======================================
     //== Main Scene ==
     gRaycastColecMain.push(gOpt1);
     gRCDict.set(gOpt1, gGlassSphere);
     //== Transform Scene ==
+
+
+      //Surface Mapping
+      let MinDist = 1.0;
+      let NumObj = 500; // Make this one mesh
+      let ModelMat = mat4.create();
+      SetUpModelMatrix(ModelMat, gCharTrans);
+      await PlaceColecOnSurf(gCharTrans.vertices, gCharTrans.vertexNormals,ModelMat,'./models/Cube.obj', 
+      MinDist,NumObj, gSurfObjColec, gSurfColecVertIndicies);
 }
+
 
 
 
@@ -471,7 +518,7 @@ function DrawCallSetup()
       
     gGL.clear(gGL.COLOR_BUFFER_BIT | gGL.DEPTH_BUFFER_BIT);
 }
-function Draw(programInfo, Object, Camera, Light)
+function Draw(programInfo, Object, Camera, Light, Armature = null)
 {
       
         // Create a perspective matrix, a special matrix that is
@@ -529,7 +576,7 @@ function Draw(programInfo, Object, Camera, Light)
         
           // Tell WebGL how to pull out the positions from the position
          // buffer into the vertexPosition attribute.
-         setPositionAttribute(Object, programInfo, Camera, Light, gGL, gTimeSinceRun);
+         setPositionAttribute(Object, programInfo, Camera, Light, gGL, gTimeSinceRun, Armature);
       
         {
           gGL.bindBuffer(gGL.ELEMENT_ARRAY_BUFFER, Object.indexBuffer); //This needs to be the last active buffer 
@@ -634,6 +681,7 @@ function RaycastClick(Obj)
   switch(Obj){
     case gOpt1:
       gActiveMainLoop = TransformationLoop;
+      gCharArmature.StartTime = gTimeSinceRun * .001;
       break;
     default:
       break;
@@ -714,7 +762,7 @@ const MainLoop = ()=>
     if (gFrameCount % 2 == 0)
     {
       WaveUpdateMesh(gSimpleWave);
-      CalculateNormals(gSimpleWave, gGL);
+      CalculateNormals(gSimpleWave);
       CalculateBoatRot();
     }
     
@@ -795,7 +843,7 @@ const MainLoop = ()=>
     Draw(gProgramInfoFlat, gMoon, gCamera, gLight1);
     
     
-    StarLookAt(gGL, gStars, gCamera);
+    StarLookAt(gStars, gCamera);
     Draw(gProgramInfoStar, gStars, gCamera, gLight1);
     gGL.depthMask(false);
     gGL.disable(gGL.DEPTH_TEST); 
@@ -818,6 +866,7 @@ const MainLoop = ()=>
     Draw(gProgramInfoFlat, gCharHead, gCamera, gLight1);
     Draw(gProgramInfoFlat, gCharHair, gCamera, gLight1);
     gGL.disable(gGL.DEPTH_TEST);
+    
     gScreenSpaceQuad.Texture = gGlassRendText;
     gGL.bindFramebuffer(gGL.FRAMEBUFFER, null); 
     gGL.disable(gGL.CULL_FACE);
@@ -830,6 +879,10 @@ const MainLoop = ()=>
     gCycleNum++;
     requestAnimationFrame(gActiveMainLoop);
 }
+
+//===================================================================================
+//===================================================================================
+//===================================================================================
 const TransformationLoop = ()=>
 {
   gTime = new Date();
@@ -837,17 +890,18 @@ const TransformationLoop = ()=>
   gDeltaTime = newTime- gPreviousTime;
   gTimeSinceRun = newTime - gTimeStart;
   gPreviousTime = newTime;
+  
 
   Input();
   MouseLook(gCamera, gDeltaMouse);
   if (gFrameCount % 2 == 0)
   {
     WaveUpdateMesh(gSimpleWave);
-    CalculateNormals(gSimpleWave, gGL);
+    CalculateNormals(gSimpleWave);
     CalculateBoatRot();
   }
   //Animation
-
+  gCharArmature.ApplyAnimation(gTimeSinceRun * .001);
   //======================RENDER RAYCAST============================
   ClearFBO(null, gGL);
   ClearFBO(gMainFBO, gGL);
@@ -891,13 +945,36 @@ DrawCallSetup();
 //======================RENDER NORMALPASS============================
 gGL.bindFramebuffer(gGL.FRAMEBUFFER, null);
 gGL.cullFace(gGL.BACK);
-
-Draw(gProgramInfoTrans, gCharTrans, gCamera, gLight1);
+Draw(gProgramInfoTrans, gCharTrans, gCamera, gLight1, gCharArmature);
 Draw(gProgramInfoTrans, gCharHairTrans, gCamera, gLight1);
-for (const obj in gSurfObjColec)
+gGL.enable(gGL.CULL_FACE);
+gGL.cullFace(gGL.FRONT);
+let VertIndex;
+let ModelMatrix;
+let Pos = [0.0,0.0,0.0,0.0];
+let ScanY = gSinView[gTime % WAVE_BUFFER_SIZE] * 30;
+let ScanWidth = 3;
+let ScanYUpd = gSinView[(gTime * 10) % WAVE_BUFFER_SIZE] * 10;
+let ScanYUpdWidth = 2;
+if (gFrameCount % 2 == 0) //update surf obj positions
 {
-  Draw(gProgramInfoDef, obj, gCamera, gLight1);
+  for (let i = 0; i < gSurfObjColec.length; i++)
+  {
+    ModelMatrix = mat4.create();
+    VertIndex = Math.floor((Math.random() * gCharTrans.vertices.length / 3) - 4); 
+    SetUpModelMatrix(ModelMatrix, gCharTrans);
+    Pos = vec4.fromValues(gCharTrans.vertices[VertIndex*3], gCharTrans.vertices[VertIndex*3 + 1], gCharTrans.vertices[VertIndex*3 + 2], 1);
+    Pos = vec4.transformMat4(Pos, Pos, ModelMatrix);
+    if (!(Math.abs(Pos[0] - ScanYUpd) < ScanYUpdWidth)) {continue;}
+    gSurfObjColec[i].Position = [Pos[0], Pos[1], Pos[2]];
+  }
 }
+for (let i = 0; i < gSurfObjColec.length; i++)
+  {
+   if (Math.abs(gSurfObjColec[i].Position[1] - ScanY) < ScanWidth) {continue;}
+       Draw(gProgramInfoDef, gSurfObjColec[i], gCamera, gLight1);
+  }
+
 
 
 
@@ -905,6 +982,11 @@ gFrameCount++;
 gCycleNum++;
 requestAnimationFrame(gActiveMainLoop);
 }
+
+
+//===================================================================================
+//===================================================================================
+//===================================================================================
 
 function ResizeCanvas(gl, canvas)
 {
@@ -1036,20 +1118,20 @@ async function main() {
     gSkybox = new Quad(gShaderProgramSkybox, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
     [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null);
     let SkyboxOrigin = [0.0,0.0,0.0];
-    GenerateQuad(gSkybox,gGL,1.0,SkyboxOrigin);  
+    GenerateQuad(gSkybox,1.0,SkyboxOrigin);  
     gScreenSpaceQuad = new Quad(gShaderProgramSkybox, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
       [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null);
     let ScreenSpaceOrigin = [0.0,0.0,0.0];
-    GenerateQuad(gScreenSpaceQuad,gGL,1.0,ScreenSpaceOrigin);  
+    GenerateQuad(gScreenSpaceQuad,1.0,ScreenSpaceOrigin);  
     gCrossHair = new Quad(gShaderProgramSkybox, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
       [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null);
     let CrossHairOrigin = [0.0,0.0,0.0];
-    GenerateQuad(gCrossHair,gGL,.05,CrossHairOrigin);  
+    GenerateQuad(gCrossHair,.05,CrossHairOrigin);  
     
 
     gSimpleWave = new Wave(gShaderProgramWave, 0,0,0,[], [],[0.0,0.0,0.0],0,0,[], [], 
       [.1,.5,1.0,1.0], [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null);
-    GenerateWave(gSimpleWave, gProgramInfoWave, gGL);
+    GenerateWave(gSimpleWave, gProgramInfoWave);
     const Camera = makeStruct("Eye, ViewDir, UpDir, Width, Height, ObjectIndex");
     gCamera = new Camera([0.0,0.0,0.0],[0.0,0.0,1.0],[0.0,1.0,0.0], gCanvasWidth, gCanvasHeight, 0);
     const Light = makeStruct("Pos, Color, Intensity");
@@ -1067,7 +1149,7 @@ async function main() {
     let isHemiSphere = true;
     let RandRadAm = 2.0;
     let StarSize = 1.0;
-    SphereOfQuad(gGL,StarSphereOrigin,StarSphereRadius,StarSize,gStars,NumStarSphere, 
+    SphereOfQuad(StarSphereOrigin,StarSphereRadius,StarSize,gStars,NumStarSphere, 
       gSinView, gCosView,gArcSinView,gArcCosView, WAVE_BUFFER_SIZE, isHemiSphere, RandRadAm,
       gCamera);
 
@@ -1098,14 +1180,14 @@ async function main() {
     gGlassDepthMap = genDepthMap(gGL, gCanvasWidth, gCanvasHeight);
     gGlassFBO = genFBO(gGL, gGlassDepthMap, gGlassRendText);
     
+
+    gTime = new Date();
+    let newTime = gTime.getTime();
+    gDeltaTime = newTime- gPreviousTime;
+    gTimeSinceRun = newTime - gTimeStart;
+    gPreviousTime = newTime;
     await SetUpScene();
-    //Surface Mapping
-    let MinDist = 1.0;
-    let NumObj = 25;
-    let SurfObjData = await PlaceColecOnSurf(gCharTrans.vertices, gCharTrans.vertexNormals, './models/Cube.obj', MinDist,NumObj);
-    gSurfObjColec = SurfObjData.instances;
-    SurfColecVertIndicies = SurfObjData.vertIndicies;
-    //
+   
 
     BoatWaveIndexFind();
     gActiveMainLoop = MainLoop;
@@ -1119,19 +1201,7 @@ async function main() {
 
 //==========================NEXT TASKS==========================
 /*Shader Toy Inspo
-https://www.shadertoy.com/view/3XdyzH
-https://www.shadertoy.com/view/3X3czH
-https://www.shadertoy.com/view/WcGBDt
-https://www.shadertoy.com/view/3cGfzt
-https://www.shadertoy.com/view/3cKBWR
-https://www.shadertoy.com/view/3cyfzy
-https://www.shadertoy.com/view/WcVfRy
-https://www.shadertoy.com/view/WfGfWw
-https://www.shadertoy.com/view/WfyBWh
-
-
-WAVEMARCH GLASS
-https://www.shadertoy.com/view/flfyRS -- Try this one
-https://www.shadertoy.com/view/XsSGDh -- Simple option
+Fix armature,
+make sampler2d's only bind once at start of frame
 */
 

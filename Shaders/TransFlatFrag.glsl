@@ -1,6 +1,7 @@
 #version 300 es
     precision mediump float;   
     precision highp sampler3D;   
+    precision lowp sampler2DArray;   
     in vec3 Normals;
     in vec3 FragPos;
     in vec2 UVCord;
@@ -14,6 +15,8 @@
     uniform float lightIntensity;
     uniform float Time;
     uniform vec2 uResolution;
+    uniform sampler2DArray weightImage2DArray;
+
 
 
     vec3 RotateX (vec4 Input, float Rad, float Magnitude)
@@ -45,15 +48,18 @@
     }
     
     void main()
-    {
+    {   
+        
+
         float Frame = Time / 8000.0;
-        vec3 RotLightPos = RotateY(vec4(lightPos, 1.0), Frame*10.0, 500.0);
+        vec3 RotLightPos = RotateX(vec4(lightPos, 1.0), Frame*50.0, 50.0);
+
         float NoiseSize = 5.0;
         vec3 NoiseUV = vec3(UVCord.x, UVCord.y,1.0) * NoiseSize;
         vec3 NormalMap = texture(uTexture3D, NoiseUV).rgb;
         vec3 NormalizedNorm = normalize(NormalMap + (vDisplVal.xyz * viewPos));
         float ShaderMask = texture(uTexture3D, NoiseUV).r;
-        float ShaderMaskCutoff = 1.6 - abs(sin(Frame));
+        float ShaderMaskCutoff = 1.5 - abs(sin(Frame));
         vec4 Output = vec4(0.0);
         vec4 texColor = texture(uTexture, UVCord);
         if (ShaderMask < ShaderMaskCutoff)
@@ -62,7 +68,7 @@
             float diffAm = 1.0;
             vec3 lightDir = normalize(RotLightPos - FragPos);
             float diff = max(dot(-NormalizedNorm, lightDir), 0.0);
-            vec3 diffuse = diff * normalize(vec3(1.0) + lightColor) * lightIntensity * diffAm;
+            vec3 diffuse = diff * normalize(vec3(1.0) + lightColor) * (.4 + lightIntensity * diffAm * 2.0);
 
             //Specular
             float specularStrength = 10.0;

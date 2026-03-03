@@ -13,11 +13,11 @@
     uniform vec3 lightColor;
     uniform float lightIntensity;
     uniform sampler2D depthTexture;
-    uniform sampler2D uTexture;
+    uniform sampler2D uTextureScene;
     uniform sampler2D uNormal;
     uniform sampler2D uDisplacement;
     uniform vec2 uResolution;
-    uniform vec3 Origin;
+    uniform vec3 marchOrigin;
     uniform float Time;
     uniform float isHover;
 
@@ -60,7 +60,7 @@
         vec3 Center = vec3(0.0,0.0,0.0);
         vec3 rOrg = viewPos;
         vec3 RayDir = normalize(vWorldPos - viewPos);
-        vec4 raySphereData = raySphereDst(Radius, Origin,viewPos,RayDir);
+        vec4 raySphereData = raySphereDst(Radius, marchOrigin,viewPos,RayDir);
         vec3 Normal = raySphereData.xyz;
         float DistToSurf = raySphereData.w;
         float iorRatio = 1.0/1.31;
@@ -115,11 +115,10 @@
 
 
         vec3 refractVec = refract(RayDir, Normal, iorRatio);
-        vec4 color = isHover > 0.0 ? texture(uTexture, uv + refractVec.xy) * 3.5 : texture(uTexture, uv + refractVec.xy);
-        vec4 Transp = texture(uTexture, uv);
+        vec4 color = isHover > 0.0 ? texture(uTextureScene, uv + refractVec.xy) * 3.5 : texture(uTextureScene, uv + refractVec.xy);
+        vec4 Transp = texture(uTextureScene, uv);
     
         fragColor = ((Transp*.8 + color * .5) + diffuse + ambient + specular);
-        
    
     }
     

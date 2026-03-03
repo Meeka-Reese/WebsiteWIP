@@ -1,9 +1,17 @@
 #version 300 es
+    #define MAX_BONES 24
     precision lowp sampler3D;     
+    precision lowp sampler2DArray;   
     precision mediump float;     
     in vec4 aVertPos;
     in vec3 aNorm;
     in vec2 aUVCord;
+    in vec4 aWeightColec1;
+    in vec4 aWeightColec2;
+    in vec4 aWeightColec3;
+    in vec4 aWeightColec4;
+    in vec4 aWeightColec5;
+    in vec4 aWeightColec6;
     uniform mat4 uViewMatrix;
     uniform mat4 uProjMatrix;
     uniform mat4 uModelMatrix;
@@ -11,6 +19,10 @@
     uniform float Time;
     uniform vec3 uOrigin;
     uniform vec3 viewPos;
+    uniform int colecItemCount;
+    uniform mat4 boneMatrixColec[MAX_BONES];
+    uniform float boneParentIndicies[MAX_BONES];
+    uniform sampler2DArray weightImage2DArray;
 
     out vec3 Normals;
     out vec3 FragPos;
@@ -20,34 +32,64 @@
     out vec4 vClipPos;
     out vec4 vDisplVal;
 
+    float TryNeighbors(int i, float Offset)
+    {
+        float w1 = texture(weightImage2DArray, vec3(UVCord,i)).r;
+        float w2 = texture(weightImage2DArray, vec3(UVCord.x + Offset, UVCord.y,i)).r;
+        float w3 = texture(weightImage2DArray, vec3(UVCord.x - Offset, UVCord.y,i)).r;
+        float w4 = texture(weightImage2DArray, vec3(UVCord.x, UVCord.y + Offset,i)).r;
+        float w5 = texture(weightImage2DArray, vec3(UVCord.x, UVCord.y - Offset,i)).r;
+        float w6 = texture(weightImage2DArray, vec3(UVCord.x - Offset, UVCord.y - Offset,i)).r;
+        float w7 = texture(weightImage2DArray, vec3(UVCord.x + Offset, UVCord.y - Offset,i)).r;
+        float w8 = texture(weightImage2DArray, vec3(UVCord.x - Offset, UVCord.y + Offset,i)).r;
+        float w9 = texture(weightImage2DArray, vec3(UVCord.x + Offset, UVCord.y + Offset,i)).r;
+
+        float weightText = max(max(max(max(max(max(max(max(w1,w2), w3),w4),w5),w6),w7),w8),w9);
+        return weightText;
+    }
     void main()
     {
+        float Offset = .001;
+        UVCord = aUVCord;
+        vec4 ArmatureModPos = aVertPos;
+        for (int i = 0; i < colecItemCount; i++)
+        {
+            float weightText = TryNeighbors(i, Offset);
+            if (weightText > 0.0001)
+            {
+                vec4 newArmatureModPos = boneMatrixColec[i] * ArmatureModPos;
+                vec4 newPos = mix(ArmatureModPos, newArmatureModPos, weightText);
+                ArmatureModPos = newPos;
+            }
+            
+        }
+
+     
         float Frame = Time / 3000.0;
         vec3 MovedOrigin = vec3(uOrigin.x,1.0 + uOrigin.y, sin(Frame));
         float NoiseSize = 1.1 + sin(Frame);
         float NoiseMaskSize = .2 + sin(Frame);
         float NoiseGainTextSize = .5;
-        float NoiseGain = texture(uTexture3D, vec3(-aVertPos.y*NoiseGainTextSize, aVertPos.x*NoiseGainTextSize, aVertPos.z*NoiseGainTextSize + Frame)).r;
-        vec4 DisplacementTextMask = texture(uTexture3D, vec3(aVertPos.x*NoiseMaskSize, aVertPos.y*NoiseMaskSize, aVertPos.z*NoiseMaskSize + Frame));
-        float DispMagnitude = texture(uTexture3D, vec3(aVertPos.x*NoiseSize, aVertPos.y*NoiseSize, aVertPos.z*NoiseSize + Frame)).r;
-        vec4 DispDir = vec4(normalize(aVertPos.xyz - MovedOrigin.xyz),1.0);
+        float NoiseGain = texture(uTexture3D, vec3(-ArmatureModPos.y*NoiseGainTextSize, ArmatureModPos.x*NoiseGainTextSize, ArmatureModPos.z*NoiseGainTextSize + Frame)).r;
+        vec4 DisplacementTextMask = texture(uTexture3D, vec3(ArmatureModPos.x*NoiseMaskSize, ArmatureModPos.y*NoiseMaskSize, ArmatureModPos.z*NoiseMaskSize + Frame));
+        float DispMagnitude = texture(uTexture3D, vec3(ArmatureModPos.x*NoiseSize, ArmatureModPos.y*NoiseSize, ArmatureModPos.z*NoiseSize + Frame)).r;
+        vec4 DispDir = vec4(normalize(ArmatureModPos.xyz - MovedOrigin.xyz),1.0);
         DispMagnitude *= NoiseGain;
-        float MaskCutoff = abs(sin(Frame*2.0)) * 2.0;
+        float MaskCutoff = 1.8 + abs(sin(Frame*2.0)) * 1.4;
         DispMagnitude = DisplacementTextMask.r > MaskCutoff * .3 ? DispMagnitude : 0.0;
         DispDir = DisplacementTextMask.r > MaskCutoff ? DispDir : -DispDir;
         
-        VertPos = aVertPos.xyz; 
-        vec4 ViewPos = uViewMatrix * uModelMatrix * (aVertPos + (DispDir * DispMagnitude));
-        vec4 DisplacedPos = aVertPos + DispMagnitude;
-        vec4 Pos = uProjMatrix * uViewMatrix * uModelMatrix * DisplacedPos;
+        VertPos = ArmatureModPos.xyz; 
+        vec4 ViewPos = uViewMatrix * uModelMatrix * (ArmatureModPos + (DispDir * DispMagnitude));
+        vec4 DisplacedPos = ArmatureModPos + DispMagnitude;
+        vec4 Pos = uProjMatrix * uViewMatrix * uModelMatrix * ArmatureModPos;
         vec4 ProjNormals = uViewMatrix * vec4(aNorm,0.0);
-        vec4 world = uModelMatrix * aVertPos;
+        vec4 world = uModelMatrix * ArmatureModPos;
 
         vClipPos = Pos;
         vWorldPos = world.xyz;
         Normals = ProjNormals.xyz;
         FragPos = ViewPos.xyz;
-        UVCord = aUVCord;
         vDisplVal = vec4(DispDir.xyz * DispMagnitude,1.0);
 
          gl_Position = Pos;

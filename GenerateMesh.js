@@ -1,13 +1,15 @@
 import { Normalize } from './Utils.js';
 import { mat4 } from './Externals/esm/index.js';
 import { vec3 } from './Externals/esm/index.js';
+import { vec4 } from './Externals/esm/index.js';
 import { LoadOBJ } from './Externals/webgl-obj-loader.js';
-export function GenerateIco(Object, progamInfo, gl)
+import { gGL } from './webgl-demo.js';
+export function GenerateIco(Object, progamInfo)
 {
     //Not Finished or being used, likely doing clouds with raymarching. Look to https://www.youtube.com/watch?v=4QOcCGI6xOU&t=314s
-    const positionBuffer = gl.createBuffer();
-    const indiciesBuffer = gl.createBuffer();
-    const UVBuffer = gl.createBuffer(); // Not Implemented yet
+    const positionBuffer = gGL.createBuffer();
+    const indiciesBuffer = gGL.createBuffer();
+    const UVBuffer = gGL.createBuffer(); // Not Implemented yet
     let IcoSize = 1.0;
     let GoldenRatio = 1.61803398875;
     let w = IcoSize; 
@@ -59,13 +61,13 @@ export function GenerateIco(Object, progamInfo, gl)
     ]
 
 }
-export function GenerateWave(Object, programInfo, gl) // Being used for wave generation
+export function GenerateWave(Object, programInfo) // Being used for wave generation
 {
     
     // Create a buffer for the square's positions.
-    const positionBuffer = gl.createBuffer();
-    const indicesBuffer = gl.createBuffer();
-    const UVBuffer = gl.createBuffer();
+    const positionBuffer = gGL.createBuffer();
+    const indicesBuffer = gGL.createBuffer();
+    const UVBuffer = gGL.createBuffer();
 
 
     const RowNum = 43;
@@ -109,27 +111,27 @@ export function GenerateWave(Object, programInfo, gl) // Being used for wave gen
     
 
     Object.VertexCount = indices.length;
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer); // choose pos buffer as active buffer
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW); //apply data to active buffer
+    gGL.bindBuffer(gGL.ARRAY_BUFFER, positionBuffer); // choose pos buffer as active buffer
+    gGL.bufferData(gGL.ARRAY_BUFFER, new Float32Array(positions), gGL.STATIC_DRAW); //apply data to active buffer
 
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indicesBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+    gGL.bindBuffer(gGL.ELEMENT_ARRAY_BUFFER, indicesBuffer);
+    gGL.bufferData(gGL.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gGL.STATIC_DRAW);
     
-    gl.bindBuffer(gl.ARRAY_BUFFER, UVBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(UVs), gl.STATIC_DRAW);
+    gGL.bindBuffer(gGL.ARRAY_BUFFER, UVBuffer);
+    gGL.bufferData(gGL.ARRAY_BUFFER, new Float32Array(UVs), gGL.STATIC_DRAW);
 
     Object.vertexBuffer = positionBuffer;
     Object.indexBuffer = indicesBuffer;
     Object.textureBuffer = UVBuffer;
-    CalculateNormals(Object, gl);
+    CalculateNormals(Object, gGL);
     
     
 }
-export function GenerateQuad(Object, gl, size, Origin)
+export function GenerateQuad(Object, size, Origin)
 {
-    const positionBuffer = gl.createBuffer();
-    const indicesBuffer = gl.createBuffer();
-    const UVBuffer = gl.createBuffer();
+    const positionBuffer = gGL.createBuffer();
+    const indicesBuffer = gGL.createBuffer();
+    const UVBuffer = gGL.createBuffer();
     let positions = [
         -size, size, 0.0, //Top Left 
         size, size, 0.0, //Top Right 
@@ -150,14 +152,14 @@ export function GenerateQuad(Object, gl, size, Origin)
     Object.IndicesArray = indices;
     Object.VertexCount = indices.length;
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer); // choose pos buffer as active buffer
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW); //apply data to active buffer
+    gGL.bindBuffer(gGL.ARRAY_BUFFER, positionBuffer); // choose pos buffer as active buffer
+    gGL.bufferData(gGL.ARRAY_BUFFER, new Float32Array(positions), gGL.STATIC_DRAW); //apply data to active buffer
 
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indicesBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+    gGL.bindBuffer(gGL.ELEMENT_ARRAY_BUFFER, indicesBuffer);
+    gGL.bufferData(gGL.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gGL.STATIC_DRAW);
     
-    gl.bindBuffer(gl.ARRAY_BUFFER, UVBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(UVs), gl.STATIC_DRAW);
+    gGL.bindBuffer(gGL.ARRAY_BUFFER, UVBuffer);
+    gGL.bufferData(gGL.ARRAY_BUFFER, new Float32Array(UVs), gGL.STATIC_DRAW);
 
     Object.vertexBuffer = positionBuffer;
     Object.indexBuffer = indicesBuffer;
@@ -165,14 +167,14 @@ export function GenerateQuad(Object, gl, size, Origin)
     Object.Position = Origin;
     Object.Scale = [1.0,1.0,1.0];
     Object.Rotation = [0.0,0.0,0.0];
-    CalculateNormals(Object, gl);
+    CalculateNormals(Object, gGL);
     
 }
 
 
-export function CalculateNormals(Object, gl)
+export function CalculateNormals(Object)
 {
-    const normalsBuffer = gl.createBuffer();
+    const normalsBuffer = gGL.createBuffer();
     let positions = Object.PositionsArray;
     let normals = new Array(positions.length).fill(0);
     let vertexCount = Object.VertexCount;
@@ -217,17 +219,17 @@ export function CalculateNormals(Object, gl)
         normals[i*3+2] = normal[2];
     }
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals),gl.STATIC_DRAW);
+    gGL.bindBuffer(gGL.ARRAY_BUFFER, normalsBuffer);
+    gGL.bufferData(gGL.ARRAY_BUFFER, new Float32Array(normals),gGL.STATIC_DRAW);
     Object.normalBuffer = normalsBuffer;
 }
-export function SphereOfQuad(gl, Origin, Radius,StarSize, Mesh, NumberofMesh, SinPreComp, CosPreComp,ArcSinPreComp,ArcCosPreComp,WaveTableSize,
+export function SphereOfQuad(Origin, Radius,StarSize, Mesh, NumberofMesh, SinPreComp, CosPreComp,ArcSinPreComp,ArcCosPreComp,WaveTableSize,
     isHemi, RandomAm, Camera)
 {
-    const positionBuffer = gl.createBuffer();
-    const indicesBuffer = gl.createBuffer();
-    const UVBuffer = gl.createBuffer();
-    const QuadPosBuffer = gl.createBuffer();
+    const positionBuffer = gGL.createBuffer();
+    const indicesBuffer = gGL.createBuffer();
+    const UVBuffer = gGL.createBuffer();
+    const QuadPosBuffer = gGL.createBuffer();
     let positions = [];
     let indices = [];
     let UVs = [];
@@ -322,17 +324,17 @@ export function SphereOfQuad(gl, Origin, Radius,StarSize, Mesh, NumberofMesh, Si
     Mesh.PositionsArray = positions;
     Mesh.QuadPosArray = QuadPos;
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer); // choose pos buffer as active buffer
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW); //apply data to active buffer
+    gGL.bindBuffer(gGL.ARRAY_BUFFER, positionBuffer); // choose pos buffer as active buffer
+    gGL.bufferData(gGL.ARRAY_BUFFER, new Float32Array(positions), gGL.STATIC_DRAW); //apply data to active buffer
 
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indicesBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+    gGL.bindBuffer(gGL.ELEMENT_ARRAY_BUFFER, indicesBuffer);
+    gGL.bufferData(gGL.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gGL.STATIC_DRAW);
     
-    gl.bindBuffer(gl.ARRAY_BUFFER, UVBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(UVs), gl.STATIC_DRAW);
+    gGL.bindBuffer(gGL.ARRAY_BUFFER, UVBuffer);
+    gGL.bufferData(gGL.ARRAY_BUFFER, new Float32Array(UVs), gGL.STATIC_DRAW);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, QuadPosBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(QuadPos), gl.STATIC_DRAW);
+    gGL.bindBuffer(gGL.ARRAY_BUFFER, QuadPosBuffer);
+    gGL.bufferData(gGL.ARRAY_BUFFER, new Float32Array(QuadPos), gGL.STATIC_DRAW);
 
     Mesh.vertexBuffer = positionBuffer;
     Mesh.indexBuffer = indicesBuffer;
@@ -343,9 +345,9 @@ export function SphereOfQuad(gl, Origin, Radius,StarSize, Mesh, NumberofMesh, Si
     Mesh.Rotation = [0.0,0.0,0.0];
 
 }
-export function StarLookAt(gl, Object, Camera)
+export function StarLookAt(Object, Camera)
 {
-    const positionBuffer = gl.createBuffer();
+    const positionBuffer = gGL.createBuffer();
     let LocVert = Object.LocalPosArray;
     let positions = [];
     let UpVector = vec3.fromValues(0.0,1.0,0.0);
@@ -377,45 +379,54 @@ export function StarLookAt(gl, Object, Camera)
     }
     
     Object.PositionsArray = positions;
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+    gGL.bindBuffer(gGL.ARRAY_BUFFER, positionBuffer);
+    gGL.bufferData(gGL.ARRAY_BUFFER, new Float32Array(positions), gGL.STATIC_DRAW);
     Object.vertexBuffer = positionBuffer;
 }
 
-export async function PlaceColecOnSurf(TargetVertColec, TargetNormalsColec, ObjDir, MinDist, NumObj)
+export async function PlaceColecOnSurf(TargetVertColec, TargetNormalsColec, TargetModelMat, ObjDir, MinDist, NumObj, ObjColec, VertIndColec)
 {
-    let TargetSize = TargetVertColec.length;
-    let PrevObjPos = [0.0,0.0,0.0];
-    let ObjPos = [];
+
+    let TargetSize = TargetVertColec.length / 3.0;
+    let PrevObjPos = vec4.fromValues(0.0,0.0,0.0,0.0);
+    let ObjPos = vec4.create();
     let ObjNormals = [];
-    let ObjIndicies = [];
     let Distance;
-    let SurfObjColec = [];
     let DistanceFromPrev;
-    let MappedVerts = [];
+    let ObjectScale = 1.0;
     for (let i = 0; i < NumObj; i++)
     {
-        let VertIndex = (Math.random() * TargetSize) - 1.0; 
-        ObjPos = [TargetVertColec[VertIndex * 3.0], TargetVertColec[(VertIndex * 3.0) + 1.0], TargetVertColec[(VertIndex * 3.0) + 1]];
+        let VertIndex = Math.floor((Math.random() * TargetSize)) - 4; 
+        if (TargetVertColec.length - 1 < ((VertIndex * 3) + 2) || ((VertIndex * 3) + 2) < 0)
+        {
+            console.log("Invalid Index for index value " + ((VertIndex * 3) + 2) + "Colec length is " + TargetVertColec.length);
+            continue;
+        }
+        ObjPos = [TargetVertColec[VertIndex * 3], TargetVertColec[(VertIndex * 3) + 1], TargetVertColec[(VertIndex * 3) + 2], 1];
+        ObjPos = vec4.transformMat4(ObjPos, ObjPos, TargetModelMat);
         DistanceFromPrev = Math.abs((ObjPos[0] - PrevObjPos[0]) + (ObjPos[1] - PrevObjPos[1]) + (ObjPos[2] - PrevObjPos[2])) / 3.0;
-        if (DistanceFromPrev < MinDist) {continue;}
+        
+        //Min distance not implemeneted
 
-        ObjIndicies.push(VertIndex);
-        ObjNormals = [TargetNormalsColec[VertIndex * 3.0], TargetNormalsColec[(VertIndex * 3.0) + 1.0], TargetNormalsColec[(VertIndex * 3.0) + 1]];
+        VertIndColec.push(VertIndex);
+        ObjNormals = [TargetNormalsColec[VertIndex * 3.0], TargetNormalsColec[(VertIndex * 3.0) + 1.0], TargetNormalsColec[(VertIndex * 3.0) + 2]];
+        if (TargetNormalsColec.length - 1 < ((VertIndex * 3) + 2) || ((VertIndex * 3) + 2) < 0)
+        {
+            console.log("Invalid Index for index value " + ((VertIndex * 3) + 2) + "Colec length is " + TargetNormalsColec.length);
+            continue;
+        }
         let instance = await LoadOBJ(gGL, ObjDir);
-
-        instance.Position = ObjPos;
-        instance.Scale = [1.0,1.0,1.0]; //Stand in
-        instance.Rotation = [0.0,0.0,0.0]; // retreive normals to allign
-        SurfObjColec.push(instance);
+        if (instance == null) {console.log("Could not load Instance");}
+        instance.Position = [ObjPos[0], ObjPos[1],ObjPos[2]];
+        instance.Scale = [ObjectScale,ObjectScale,ObjectScale]; //Stand in
+        instance.Rotation = ObjNormals; // retreive normals to allign
+        instance.Color = [1.0,1.0,1.0,1.0];
+        ObjColec.push(instance);
         PrevObjPos = ObjPos;
     }
 
-    let OutputColecs =  
-    {
-        vertIndicies: ObjIndicies,
-        instances: SurfObjColec,
-    }
-    return OutputColecs;
-
 }
+
+
+
+

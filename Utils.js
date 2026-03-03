@@ -18,3 +18,8 @@ export function ToRadian(degrees)
 export function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+export function lerp( a, b, alpha )
+{
+  return a + alpha * (b - a)
+}

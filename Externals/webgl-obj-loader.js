@@ -1182,6 +1182,7 @@ class Mesh {
         this.Color = [0.0,0.0,0.0,0.0];
         this.isHover = false;
         this.Origin = [0.0,0.0,0.0];
+        this.marchOrigin = [0.0,0.0,0.0];
         this.vertices = [];
         /*
         The OBJ file format does a sort of compression when saving a model in a
