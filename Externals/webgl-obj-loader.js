@@ -1,9 +1,9 @@
-export async function LoadOBJ(gl, path)
+export async function LoadOBJ(gl, path, DebugInd = false)
 {
   const ObjLoad = await fetch(path);
   if(!ObjLoad.ok) throw new Error("Failed to load OBJ");
   let ObjText = await ObjLoad.text();
-  let obj = new OBJ.Mesh(ObjText);
+  let obj = new OBJ.Mesh(ObjText, null, DebugInd);
   OBJ.initMeshBuffers(gl, obj);
   return obj;
 }
@@ -1153,7 +1153,7 @@ class Mesh {
      *     and bitangents when loading of the OBJ is completed. This adds two new
      *     attributes to the Mesh instance: `tangents` and `bitangents`.
      */
-    constructor(objectData, options) {
+    constructor(objectData, options, DebugInd) {
         this.name = "";
         this.indicesPerMaterial = [];
         this.materialsByIndex = {};
@@ -1167,6 +1167,7 @@ class Mesh {
         this.textures = [];
         // the indicies to draw the faces
         this.indices = [];
+        this.originalIndicies = [];
         this.textureStride = options.enableWTextureCoord ? 3 : 2;
         this.Position = [0.0,0.0,0.0];
         this.Rotation = [0.0,0.0,0.0];
@@ -1288,6 +1289,7 @@ class Mesh {
             if (!line || line.startsWith("#")) {
                 continue;
             }
+            
             const elements = line.split(WHITESPACE_RE);
             elements.shift();
             if (VERTEX_RE.test(line)) {
@@ -1336,6 +1338,15 @@ class Mesh {
                 currentObjectByMaterialIndex = currentMaterialIndex;
             }
             else if (FACE_RE.test(line)) {
+                
+                let indColec = line.replace("f", "").replaceAll(" ", "/").split("/").filter(Boolean);
+                for (let i = 0; i < indColec.length; i ++)
+                {
+                    this.originalIndicies.push(parseInt(indColec[i]));
+                }
+        
+    
+                
                 // if this is a face
                 /*
                 split this face into an array of Vertex groups

@@ -2,7 +2,7 @@ import { mat4,vec3,vec4,quat } from './Externals/esm/index.js';
 import { loadTexture, LoadImage } from  './ShaderFunc.js';
 import { gGL } from './webgl-demo.js';
 import { CreateImageArray } from './ShaderFunc.js';
-import { Keyframe, Timeline, Anim1} from './Animation.js';
+import { Keyframe, Timeline, AnimationClip, AllClips} from './Animation.js';
 import { lerp } from './Utils.js';
 
 
@@ -56,9 +56,9 @@ export class Armature{
         this.boneMatrixColec = [];
         this.boneMatrixArray = new Float32Array(0);;
         this.boneParentIndicies = [];
-        this.Timeline = new Timeline();
-        Anim1(this.Timeline);
         this.StartTime = StartTime;
+        this.AnimationClips = [];
+        this.Timeline = new Timeline(this.AnimationClips,StartTime);//AnimationClips not set yet. Will throw error
 
         this.VertWeightDataColec = VertWeightDataColec;
         this.WeightBuffer1 = null;
@@ -67,7 +67,6 @@ export class Armature{
         this.WeightBuffer4 = null;
         this.WeightBuffer5 = null;
         this.WeightBuffer6 = null;
-        this.setUpUniforms();
     }
     async setUpUniforms()
     {
@@ -81,7 +80,7 @@ export class Armature{
 
         for (let i = 0; i < this.BoneColec.length; i++)
         {
-            this.weightArrayArray.push(this.BoneColec[i].WeightMapArray);
+            this.weightArrayArray.push(this.BoneColec[i].WeightMapArray.pixels);
             this.weightImagesColec.push(this.BoneColec[i].WeightMap);
             let Pos = vec3.fromValues(this.BoneColec[i].Position);
             let Rot = vec3.fromValues(this.BoneColec[i].Rotation);
@@ -96,8 +95,11 @@ export class Armature{
 
             this.boneParentIndicies.push(this.BoneColec[i].ParentIndex); //unused rn
         }
-
-        this.weightImage2DArray = await CreateImageArray(this.weightArrayArray, 1024, 1024);
+        let Width = this.BoneColec[0].WeightMapArray.width;
+        let Height = this.BoneColec[0].WeightMapArray.height;
+        console.log("Width is : " + Width + " Height is " + Height);
+        this.weightImage2DArray = await CreateImageArray(this.weightArrayArray, Width, Height);
+        //await this.SetUpWeightBuffer();
 
     }
     async SetUpWeightBuffer()
@@ -108,19 +110,20 @@ export class Armature{
         const weightBuff4 = gGL.createBuffer();
         const weightBuff5 = gGL.createBuffer();
         const weightBuff6 = gGL.createBuffer();
-        
+        if (this.VertWeightDataColec == null) {console.error("VERTWEIGHTDATA IS NULL")}
+        else {console.log(this.VertWeightDataColec)}
         gGL.bindBuffer(gGL.ARRAY_BUFFER, weightBuff1); 
-        gGL.bufferData(gGL.ARRAY_BUFFER, new Float16Array(VertWeightDataColec[0]), gGL.STATIC_DRAW); 
+        gGL.bufferData(gGL.ARRAY_BUFFER, new Float16Array(this.VertWeightDataColec[0]), gGL.STATIC_READ); 
         gGL.bindBuffer(gGL.ARRAY_BUFFER, weightBuff2); 
-        gGL.bufferData(gGL.ARRAY_BUFFER, new Float16Array(VertWeightDataColec[1]), gGL.STATIC_DRAW);
+        gGL.bufferData(gGL.ARRAY_BUFFER, new Float16Array(this.VertWeightDataColec[1]), gGL.STATIC_READ);
         gGL.bindBuffer(gGL.ARRAY_BUFFER, weightBuff3); 
-        gGL.bufferData(gGL.ARRAY_BUFFER, new Float16Array(VertWeightDataColec[2]), gGL.STATIC_DRAW); 
+        gGL.bufferData(gGL.ARRAY_BUFFER, new Float16Array(this.VertWeightDataColec[2]), gGL.STATIC_READ); 
         gGL.bindBuffer(gGL.ARRAY_BUFFER, weightBuff4);
-        gGL.bufferData(gGL.ARRAY_BUFFER, new Float16Array(VertWeightDataColec[3]), gGL.STATIC_DRAW);
+        gGL.bufferData(gGL.ARRAY_BUFFER, new Float16Array(this.VertWeightDataColec[3]), gGL.STATIC_READ);
         gGL.bindBuffer(gGL.ARRAY_BUFFER, weightBuff5);
-        gGL.bufferData(gGL.ARRAY_BUFFER, new Float16Array(VertWeightDataColec[4]), gGL.STATIC_DRAW);
+        gGL.bufferData(gGL.ARRAY_BUFFER, new Float16Array(this.VertWeightDataColec[4]), gGL.STATIC_READ);
         gGL.bindBuffer(gGL.ARRAY_BUFFER, weightBuff6);
-        gGL.bufferData(gGL.ARRAY_BUFFER, new Float16Array(VertWeightDataColec[5]), gGL.STATIC_DRAW);
+        gGL.bufferData(gGL.ARRAY_BUFFER, new Float16Array(this.VertWeightDataColec[5]), gGL.STATIC_READ);
 
         this.WeightBuffer1 = weightBuff1;
         this.WeightBuffer2 = weightBuff2;
@@ -197,6 +200,19 @@ export class Armature{
             ActiveBone.Rotation = [OutRot[0], OutRot[1], OutRot[2]];
             ActiveBone.Scale = [OutScale[0], OutScale[1], OutScale[2]];
         }
+        let clip;
+        let ClipsIndToUpdate = [];
+        for (let i = 0; i < this.Timeline.AnimationClips.length; i++)
+        {
+            clip = this.Timeline.AnimationClips[i];
+            if (clip.StartTime + clip.Duration < DeltaTime)
+            {
+                if (!clip.Looping) {this.Timeline.AnimationClips.splice(i, 1); continue;}
+
+                ClipsIndToUpdate.push(i);
+            }
+        }
+        this.Timeline.setKeyframes(CurrentTime, ClipsIndToUpdate);
         this.ApplyTransform();
     }
 }
@@ -218,7 +234,7 @@ export async function LoadBones(MainDirectory, ImageNameColec, ParentColec) //Wo
         TotalDirectory = MainDirectory + ImageNameColec[i] + ".png";
         let WeightMap = await loadTexture(gGL, TotalDirectory);
         let WeightMapArray = await LoadImage(TotalDirectory);
-        let BoneInst = new Bone(Pos, Scale, Rot, null, WeightMap, WeightMapArray.pixels, i);
+        let BoneInst = new Bone(Pos, Scale, Rot, null, WeightMap, WeightMapArray, i);
         BoneColec.push(BoneInst);//ImageNameColec[i], 
         BoneStringColec.push(ImageNameColec[i]);
     }

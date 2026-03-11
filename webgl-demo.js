@@ -3,16 +3,16 @@ Create FBO for Raycast with Object ID. Have definition of all raycast
 objects and make the rendered texture value be the index of the object
 */
 //=======================SHADERS=============================
-let gVertSourceDef, gVertSkybox, gVertStar, gVertRaycast, gVertTrans;
+let gVertSourceDef, gVertSkybox, gVertStar, gVertRaycast, gVertTrans, gVertFlesh;
 
 let gFragSourceWave, gFragSourceFlat, gFragSourceCloud, gFragSkybox, gFragStar, gFragColor,
-gFragVolGlow, gFragDef, gFragRaycast, gFragGlass, gFragScreenFlat, gFragTransFlat;
+gFragVolGlow, gFragDef, gFragRaycast, gFragGlass, gFragScreenFlat, gFragTransFlat, gFragFlesh, gFragElenco;
 
 
 let gShaderProgramDef, gShaderProgramWave, gShaderProgramFlat, gShaderProgramCloud,
 gShaderProgramSkybox, gShaderProgramStar, gShaderProgramColor, gShaderProgramVolGlow,
 gShaderProgramRaycast, gShaderProgramGlass, gShaderProgramScreenRender, gShaderProgramScreenImage,
-gShaderProgramTrans;
+gShaderProgramTrans, gShaderProgramFlesh, gShaderProgramElenco;
 
 let gProgramInfoDef = {};
 let gProgramInfoWave = {};
@@ -27,7 +27,8 @@ let gProgramInfoGlass = {};
 let gProgramInfoScreenRender = {};
 let gProgramInfoScreenImage = {};
 let gProgramInfoTrans = {};
-
+let gProgramInfoFlesh = {};
+let gProgramInfoElenco = {};
 
 
 //Depth
@@ -70,6 +71,8 @@ import { GenerateWave,CalculateNormals,GenerateQuad,SphereOfQuad,StarLookAt,Plac
 import { CreateWorley3D } from './GenerateNoise.js';
 import { LoadOBJ } from './Externals/webgl-obj-loader.js'; 
 import { Bone, Armature, LoadBones} from './Armature.js';
+import { PlayAudio, StopAudio } from './AudioManager.js';
+import { MidiObj } from './MidiManager.js';
 
 
 //=======================GLOBALS=============================
@@ -94,16 +97,18 @@ let gCharHead, gCharHair;
 let gScreenSpaceQuad;
 let gCrossHair;
 let gOpt1, gOpt2, gOpt3; //set up raytracing Options
+let gElencoVis;
 
 
 //Transformation Scene
-let gCharTrans, gCharHairTrans;
+let gCharTrans, gCharHairTrans, gFleshGround;
 let gCharBoneColec = [];
 let gCharArmature;
 let gRCDict = new Map();
 let gSurfObjColec = [];
 let gCompSurfObj;
 let gSurfColecVertIndicies = []; //Used to store which verts surface objects are linked with
+let gMidiObj;
 
 
 //
@@ -146,6 +151,8 @@ let gCanvasWidth;
 let gCanvasHeight;
 
 
+//=========GLOBAL AUDIO============
+let Sound1 = null;
 
 
 //-----------------------GLOBALS-----------------------------
@@ -171,9 +178,10 @@ async function SetUpScene()
    let ImgSize = 8;
    let ImgBufNoise = await CreateWorley3D(4, ImgSize);
    let Noise3D = await createTexture3DFromBuffer(gGL, ImgBufNoise, ImgSize, ImgSize, ImgSize);
+   let BlueNoise = await loadTexture(gGL, './Textures/BlueNoise.png',4);
    gNoiseCube.Texture3D = Noise3D;
    gNoiseCube.Texture = await loadTexture(gGL, './Textures/CloudDetailNoise.png',4);
-   gNoiseCube.TextureBN = await loadTexture(gGL, './Textures/BlueNoise.png',4);
+   gNoiseCube.TextureBN = BlueNoise;
 
   gBoatMesh = await LoadOBJ(gGL, './models/SailBoat.obj');
   gBoatMesh.Texture = await loadTexture(gGL, './Textures/SailBoat.png',4);
@@ -207,15 +215,22 @@ async function SetUpScene()
 
   gCrossHair.Texture = await loadTexture(gGL,'./Textures/crosshair.png',4);
 
+  gElencoVis.Texture = await loadTexture(gGL, './Textures/Elenco.png', 4);
+
   //== Transform Scene ==
   
-  gCharTrans = await LoadOBJ(gGL, './models/CharFullBodyUp.obj');
+  gCharTrans = await LoadOBJ(gGL, './models/CharFullBodyUp.obj', true);
   gCharTrans.Texture = await loadTexture(gGL, './Textures/GirlTextureFull.png',4);
   gCharTrans.Texture3D = Noise3D;
 
   gCharHairTrans = await LoadOBJ(gGL, './models/CharHairTrans.obj');
   gCharHairTrans.Texture = await loadTexture(gGL, './Textures/Girl.png',4);
   gCharHairTrans.Texture3D = Noise3D;
+  gFleshGround = await LoadOBJ(gGL, './models/HighResPlane.obj');
+  gFleshGround.Texture3D = Noise3D;
+  gFleshGround.TextureBN = await loadTexture(gGL, './Textures/GlassNoiseNorm.png',4);
+  gFleshGround.Texture = await loadTexture(gGL, './Textures/Veins.png',4);
+
 
 
   
@@ -291,6 +306,11 @@ async function SetUpScene()
   gCharHairTrans.Position = [0.0,0.0,0.0];
   gCharHairTrans.Rotation = [0.0,0.0,0.0];
   gCharHairTrans.Scale = [1.0,1.0,1.0];
+  let FleshGroundScale = 100.0;
+  gFleshGround.Position = [0.0,-20.0,0.0];
+  gFleshGround.Rotation = [0.0,0.0,0.0];
+  gFleshGround.Scale = [FleshGroundScale,FleshGroundScale,FleshGroundScale];
+  gFleshGround.Color = [1.0,0.0,.4, 1.0];
 
   //==== Armature Setup ====== Gonna do a really dumb inefficient way. I'm too lazy to fix my Blender script to include parent in name
   /*"Torso.png, Chest.png, LShould.png, LForearm.png 
@@ -308,13 +328,16 @@ async function SetUpScene()
                               "RForearm", "RArm", "Chest", "Torso", "WaistL", "ThighL", "CalfL", "Torso", "WaistR",
                               "ThighR", "CalfR", "Head"];
 
-  let VertWeightDataColec = LoadWeightsTXT('./WeightTxt/',CharBoneImageNameColec);                         
+  //let VertWeightDataColec = await LoadWeightsTXT('./WeightTxt/',CharBoneImageNameColec, gCharTrans);   
+  let VertWeightDataColec = null; // set to null rn to not load                       
   console.log(CharBoneImageNameColec.length + " " + CharBoneParentsColec.length);
-  let BoneData = await LoadBones("./Textures/ArmatureWeights/",CharBoneImageNameColec, CharBoneParentsColec);
+  let BoneData = await LoadBones("./WeightImagesUpsc/",CharBoneImageNameColec, CharBoneParentsColec);
   gCharBoneColec = BoneData.colec;
+  //console.log(gCharTrans.originalIndicies);
   let CharStringColec = [];
   CharStringColec = BoneData.stringColec;
   gCharArmature = new Armature(gCharBoneColec, gCharTrans, CharStringColec, VertWeightDataColec, gTimeSinceRun * .001);
+  await gCharArmature.setUpUniforms();
 
   
     //==========================FILL RAYCAST ARRAY======================================
@@ -578,7 +601,7 @@ function Draw(programInfo, Object, Camera, Light, Armature = null)
          // buffer into the vertexPosition attribute.
          setPositionAttribute(Object, programInfo, Camera, Light, gGL, gTimeSinceRun, Armature);
       
-        {
+        
           gGL.bindBuffer(gGL.ELEMENT_ARRAY_BUFFER, Object.indexBuffer); //This needs to be the last active buffer 
           
           const offset = 0;
@@ -590,7 +613,6 @@ function Draw(programInfo, Object, Camera, Light, Armature = null)
           let vertexCount = "VertexCount" in Object ? Object.VertexCount : Object.indexBuffer.numItems; 
           
           gGL.drawElements(gGL.TRIANGLES, vertexCount, gGL.UNSIGNED_SHORT, offset);
-        }
       
 }
 function getMousePixel(event) {
@@ -681,6 +703,8 @@ function RaycastClick(Obj)
   switch(Obj){
     case gOpt1:
       gActiveMainLoop = TransformationLoop;
+      Sound1 = PlayAudio("./AudioFiles/DemoTransformation.wav");
+      gMidiObj.StartMidi();
       gCharArmature.StartTime = gTimeSinceRun * .001;
       break;
     default:
@@ -854,7 +878,7 @@ const MainLoop = ()=>
 
     gScreenSpaceQuad.Texture = gRenderText;
     gGlassSphere.Texture = gRenderText;
-    gGL.bindFramebuffer(gGL.FRAMEBUFFER, gGlassFBO); 
+    gGL.bindFramebuffer(gGL.FRAMEBUFFER, gGlassFBO);   
     gGL.viewport(0, 0, gCanvasWidth, gCanvasHeight);
     gGL.disable(gGL.CULL_FACE);
     gGL.disable(gGL.DEPTH_TEST);
@@ -872,6 +896,7 @@ const MainLoop = ()=>
     gGL.disable(gGL.CULL_FACE);
     Draw(gProgramInfoScreenRender, gScreenSpaceQuad, gCamera, gLight1);
     Draw(gProgramInfoScreenImage, gCrossHair, gCamera, gLight1);
+   // Draw(gProgramInfoElenco, gElencoVis, gCamera, gLight1);
     
   
 
@@ -946,7 +971,8 @@ DrawCallSetup();
 gGL.bindFramebuffer(gGL.FRAMEBUFFER, null);
 gGL.cullFace(gGL.BACK);
 Draw(gProgramInfoTrans, gCharTrans, gCamera, gLight1, gCharArmature);
-Draw(gProgramInfoTrans, gCharHairTrans, gCamera, gLight1);
+//Draw(gProgramInfoTrans, gCharHairTrans, gCamera, gLight1);
+Draw(gProgramInfoFlesh, gFleshGround, gCamera, gLight1);
 gGL.enable(gGL.CULL_FACE);
 gGL.cullFace(gGL.FRONT);
 let VertIndex;
@@ -1045,6 +1071,7 @@ async function main() {
   gVertStar = await loadShaderFiles(gVertStar, './Shaders/StarVert.glsl');
   gVertRaycast = await loadShaderFiles(gVertRaycast, './Shaders/RaycastVert.glsl');
   gVertTrans = await loadShaderFiles(gVertTrans, './Shaders/TransVert.glsl');
+  gVertFlesh = await loadShaderFiles(gVertFlesh, './Shaders/FleshVert.glsl');
   //Frag
   gFragSourceWave = await loadShaderFiles(gFragSourceWave, './Shaders/WaveFrag.glsl');
   gFragSourceFlat = await loadShaderFiles(gFragSourceFlat, './Shaders/FlatFrag.glsl');
@@ -1058,6 +1085,8 @@ async function main() {
   gFragGlass = await loadShaderFiles(gFragGlass, './Shaders/GlassFrag.glsl');
   gFragScreenFlat = await loadShaderFiles(gFragScreenFlat, './Shaders/ScreenFlatFrag.glsl');
   gFragTransFlat = await loadShaderFiles(gFragTransFlat,'./Shaders/TransFlatFrag.glsl');
+  gFragFlesh = await loadShaderFiles(gFragFlesh, './Shaders/FleshFrag.glsl');
+  gFragElenco = await loadShaderFiles(gFragElenco, './Shaders/ElencoScreenFrag.glsl');
 
 
   gShaderProgramWave = initShader(gGL, gVertSourceDef,gFragSourceWave);
@@ -1073,6 +1102,8 @@ async function main() {
   gShaderProgramScreenRender = initShader(gGL, gVertSkybox, gFragScreenFlat);
   gShaderProgramScreenImage = initShader(gGL, gVertSkybox, gFragSourceFlat);
   gShaderProgramTrans = initShader(gGL, gVertTrans, gFragTransFlat);
+  gShaderProgramFlesh = initShader(gGL, gVertFlesh, gFragFlesh);
+  gShaderProgramElenco = initShader(gGL, gVertSkybox, gFragElenco);
   
 
 
@@ -1090,6 +1121,8 @@ async function main() {
      gProgramInfoScreenRender, gShaderProgramScreenRender,
      gProgramInfoScreenImage, gShaderProgramScreenImage,
      gProgramInfoTrans, gShaderProgramTrans,
+     gProgramInfoFlesh, gShaderProgramFlesh,
+     gProgramInfoElenco, gShaderProgramElenco,
      );
   
     SinPreComp(gSinView,WAVE_BUFFER_SIZE);
@@ -1098,7 +1131,7 @@ async function main() {
     ArcSinPreComp(gArcSinView, WAVE_BUFFER_SIZE);
     ArcCosPreComp(gArcCosView, WAVE_BUFFER_SIZE);
 
-
+ 
     const Wave = makeStruct("ShaderProgram, vertexBuffer, indexBuffer, VertexCount, normalBuffer, \
     textureBuffer, PosOffset, RowNum, ColNum, PositionsArray, IndicesArray, Color, \
     Position, Rotation, Scale, \
@@ -1119,14 +1152,21 @@ async function main() {
     [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null);
     let SkyboxOrigin = [0.0,0.0,0.0];
     GenerateQuad(gSkybox,1.0,SkyboxOrigin);  
+
     gScreenSpaceQuad = new Quad(gShaderProgramSkybox, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
       [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null);
     let ScreenSpaceOrigin = [0.0,0.0,0.0];
     GenerateQuad(gScreenSpaceQuad,1.0,ScreenSpaceOrigin);  
+
     gCrossHair = new Quad(gShaderProgramSkybox, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
       [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null);
     let CrossHairOrigin = [0.0,0.0,0.0];
     GenerateQuad(gCrossHair,.05,CrossHairOrigin);  
+
+    gElencoVis = new Quad(gShaderProgramElenco, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
+      [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null);
+    let ElencoOrigion = [0.0,0.0,0.0];
+    GenerateQuad(gElencoVis, 1.0, ElencoOrigion);
     
 
     gSimpleWave = new Wave(gShaderProgramWave, 0,0,0,[], [],[0.0,0.0,0.0],0,0,[], [], 
@@ -1187,6 +1227,8 @@ async function main() {
     gTimeSinceRun = newTime - gTimeStart;
     gPreviousTime = newTime;
     await SetUpScene();
+    gMidiObj = new MidiObj();
+    await gMidiObj.LoadFile('./MidiFiles/Trigger.mid');
    
 
     BoatWaveIndexFind();

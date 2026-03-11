@@ -32,29 +32,44 @@
     out vec4 vClipPos;
     out vec4 vDisplVal;
 
-    float TryNeighbors(int i, float Offset)
-    {
-        float w1 = texture(weightImage2DArray, vec3(UVCord,i)).r;
-        float w2 = texture(weightImage2DArray, vec3(UVCord.x + Offset, UVCord.y,i)).r;
-        float w3 = texture(weightImage2DArray, vec3(UVCord.x - Offset, UVCord.y,i)).r;
-        float w4 = texture(weightImage2DArray, vec3(UVCord.x, UVCord.y + Offset,i)).r;
-        float w5 = texture(weightImage2DArray, vec3(UVCord.x, UVCord.y - Offset,i)).r;
-        float w6 = texture(weightImage2DArray, vec3(UVCord.x - Offset, UVCord.y - Offset,i)).r;
-        float w7 = texture(weightImage2DArray, vec3(UVCord.x + Offset, UVCord.y - Offset,i)).r;
-        float w8 = texture(weightImage2DArray, vec3(UVCord.x - Offset, UVCord.y + Offset,i)).r;
-        float w9 = texture(weightImage2DArray, vec3(UVCord.x + Offset, UVCord.y + Offset,i)).r;
-
-        float weightText = max(max(max(max(max(max(max(max(w1,w2), w3),w4),w5),w6),w7),w8),w9);
-        return weightText;
+    float rand(vec2 co){
+        return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
     }
+    float FindWeight(vec2 UVCord, int i, float DispAm)
+    {
+        float w1 = texture(weightImage2DArray, vec3(UVCord.x,UVCord.y, i)).r;
+        float w2 = texture(weightImage2DArray, vec3(UVCord.x+DispAm,UVCord.y, i)).r;
+        float w3 = texture(weightImage2DArray, vec3(UVCord.x-DispAm,UVCord.y, i)).r;
+        float w4 = texture(weightImage2DArray, vec3(UVCord.x,UVCord.y+DispAm, i)).r;
+        float w5 = texture(weightImage2DArray, vec3(UVCord.x,UVCord.y-DispAm, i)).r;
+        return max(max(max(max(w1, w2),w3),w4),w5);
+
+    }
+  
     void main()
     {
-        float Offset = .001;
         UVCord = aUVCord;
+        float Frame = Time / 3000.0;
+        int IntFrame = int(Frame * 10.0) % colecItemCount;
+
+        //==================ADDING DITHER TO UV========================
+        float DitherScaler = .001;
+        float RandSignX = rand(UVCord * .3);
+        float RandSignY = rand(UVCord * .24);
+        float DitherX = rand(UVCord) * DitherScaler;
+        float DitherY = rand(UVCord*1.2) * DitherScaler;
+        if (mod(RandSignX, 2.0) < 1.0) {DitherX *= -1.0;} //Flip sign randomly
+        if (mod(RandSignY, 2.0) < 1.0) {DitherY *= -1.0;} //Flip sign randomly
+
+        //==================FIND ARMATURE DISPLACEMENT====================
         vec4 ArmatureModPos = aVertPos;
+         float weightText = 0.0;
+         vec2 DitheredUV = vec2(UVCord.x + DitherX, UVCord.y + DitherY);
+         float WeightSampDisp = .001;
         for (int i = 0; i < colecItemCount; i++)
         {
-            float weightText = TryNeighbors(i, Offset);
+            weightText = FindWeight(DitheredUV, i + IntFrame, WeightSampDisp);
+
             if (weightText > 0.0001)
             {
                 vec4 newArmatureModPos = boneMatrixColec[i] * ArmatureModPos;
@@ -63,9 +78,9 @@
             }
             
         }
+        
 
-     
-        float Frame = Time / 3000.0;
+        //=====================NOISE DISPLACEMENT===========================
         vec3 MovedOrigin = vec3(uOrigin.x,1.0 + uOrigin.y, sin(Frame));
         float NoiseSize = 1.1 + sin(Frame);
         float NoiseMaskSize = .2 + sin(Frame);
@@ -82,10 +97,11 @@
         VertPos = ArmatureModPos.xyz; 
         vec4 ViewPos = uViewMatrix * uModelMatrix * (ArmatureModPos + (DispDir * DispMagnitude));
         vec4 DisplacedPos = ArmatureModPos + DispMagnitude;
-        vec4 Pos = uProjMatrix * uViewMatrix * uModelMatrix * ArmatureModPos;
+        vec4 Pos = uProjMatrix * uViewMatrix * uModelMatrix * (ArmatureModPos + (DispDir * DispMagnitude));
         vec4 ProjNormals = uViewMatrix * vec4(aNorm,0.0);
         vec4 world = uModelMatrix * ArmatureModPos;
 
+        //=====================SEND TO FRAG=================================
         vClipPos = Pos;
         vWorldPos = world.xyz;
         Normals = ProjNormals.xyz;

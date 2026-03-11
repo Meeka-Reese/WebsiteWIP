@@ -10,7 +10,9 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
     ProgramInfoGlass, ShaderProgramGlass,
     ProgramInfoScreenRender, ShaderProgramScreenRender,
     ProgramInfoScreenImage, ShaderProgramScreenImage,
-    ProgramInfoTrans, ShaderProgramTrans,) {
+    ProgramInfoTrans, ShaderProgramTrans,
+    ProgramInfoFlesh, ShaderProgramFlesh,
+    ProgramInfoElenco, ShaderProgramElenco,) {
 
     ProgramInfoDef.program = ShaderProgramDef;
     ProgramInfoDef.attribLocations = {
@@ -250,6 +252,43 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         boneMatrixColec: GL.getUniformLocation(ShaderProgramTrans, "boneMatrixColec"),
     }
 
+    ProgramInfoFlesh.program = ShaderProgramFlesh;
+    ProgramInfoFlesh.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramFlesh, "aVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramFlesh, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramFlesh, "aUVCord"),
+    }
+    ProgramInfoFlesh.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramFlesh, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramFlesh, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramFlesh, "uModelMatrix"),
+        lightPosition: GL.getUniformLocation(ShaderProgramFlesh, "lightPos"),
+        viewPosition: GL.getUniformLocation(ShaderProgramFlesh, "viewPos"),
+        lightColor: GL.getUniformLocation(ShaderProgramFlesh, "lightColor"),
+        lightIntensity: GL.getUniformLocation(ShaderProgramFlesh, "lightIntensity"),
+        objCol: GL.getUniformLocation(ShaderProgramFlesh,"objCol"),
+        time: GL.getUniformLocation(ShaderProgramFlesh, "Time"),
+        texture: GL.getUniformLocation(ShaderProgramFlesh, "uTexture"),
+        texture3D: GL.getUniformLocation(ShaderProgramFlesh, "uTexture3D"),
+        textureBN: GL.getUniformLocation(ShaderProgramFlesh, "uTextureBlueNoise"),
+    }
+
+    ProgramInfoElenco.program = ShaderProgramElenco;
+    ProgramInfoElenco.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramElenco, "aVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramElenco, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramElenco, "aUVCord"),
+    }
+    ProgramInfoElenco.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramElenco, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramElenco, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramElenco, "uModelMatrix"),
+        texture: GL.getUniformLocation(ShaderProgramElenco, "uTexture"),
+        resolution: GL.getUniformLocation(ShaderProgramElenco, "uResolution"),
+        time: GL.getUniformLocation(ShaderProgramElenco, "Time"),
+    }
+    
+
 
 
 
@@ -402,7 +441,7 @@ export function loadTexture(gl, url, numChans = 4) {
     programInfo.attribLocations.WeightColec5 >= 0 &&
     programInfo.attribLocations.WeightColec6 >= 0)
     {
-        gl.bindBuffer(gl.ARRAY_BUFFER, Armature.WeightBuffer1); //UV
+        gl.bindBuffer(gl.ARRAY_BUFFER, Armature.WeightBuffer1); 
         gl.vertexAttribPointer(
             programInfo.attribLocations.WeightColec1,
             4,
@@ -413,7 +452,7 @@ export function loadTexture(gl, url, numChans = 4) {
         );
         gl.enableVertexAttribArray(programInfo.attribLocations.WeightColec1);
         
-        gl.bindBuffer(gl.ARRAY_BUFFER, Armature.WeightBuffer2); //UV
+        gl.bindBuffer(gl.ARRAY_BUFFER, Armature.WeightBuffer2); 
         gl.vertexAttribPointer(
             programInfo.attribLocations.WeightColec2,
             4,
@@ -424,7 +463,7 @@ export function loadTexture(gl, url, numChans = 4) {
         );
         gl.enableVertexAttribArray(programInfo.attribLocations.WeightColec2);
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, Armature.WeightBuffer3); //UV
+        gl.bindBuffer(gl.ARRAY_BUFFER, Armature.WeightBuffer3);
         gl.vertexAttribPointer(
             programInfo.attribLocations.WeightColec3,
             4,
@@ -435,7 +474,7 @@ export function loadTexture(gl, url, numChans = 4) {
         );
         gl.enableVertexAttribArray(programInfo.attribLocations.WeightColec3);
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, Armature.WeightBuffer4); //UV
+        gl.bindBuffer(gl.ARRAY_BUFFER, Armature.WeightBuffer4); 
         gl.vertexAttribPointer(
             programInfo.attribLocations.WeightColec4,
             4,
@@ -446,7 +485,7 @@ export function loadTexture(gl, url, numChans = 4) {
         );
         gl.enableVertexAttribArray(programInfo.attribLocations.WeightColec4);
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, Armature.WeightBuffer5); //UV
+        gl.bindBuffer(gl.ARRAY_BUFFER, Armature.WeightBuffer5);
         gl.vertexAttribPointer(
             programInfo.attribLocations.WeightColec5,
             4,
@@ -457,7 +496,7 @@ export function loadTexture(gl, url, numChans = 4) {
         );
         gl.enableVertexAttribArray(programInfo.attribLocations.WeightColec5);
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, Armature.WeightBuffer6); //UV
+        gl.bindBuffer(gl.ARRAY_BUFFER, Armature.WeightBuffer6); 
         gl.vertexAttribPointer(
             programInfo.attribLocations.WeightColec6,
             4,
@@ -904,7 +943,7 @@ export async function CreateImageArray(ImageColec, width, height) {
 }
 
 
-export async function LoadWeightsTXT(Directory, BoneNameColec)
+export async function LoadWeightsTXT(Directory, BoneNameColec, Obj)
 {
     const promises = BoneNameColec.map((boneName) => 
         fetch(Directory + boneName + ".txt")
@@ -919,7 +958,19 @@ export async function LoadWeightsTXT(Directory, BoneNameColec)
     const WeightColec = (await Promise.all(promises));
     if (WeightColec.length <= 0) {console.error("TEXT FILE AT " + Directory + " COULD NOT LOAD!"); return -1;}
     let Rows = WeightColec.length;
-    let Cols = WeightColec[0].length;
+    let ActiveInd;
+    if (Obj.originalIndicies.length == 0){console.log("INDICIES COLECTION NOT FILLED!");}
+    else{console.log("Rows Length is " + Rows + " indicies length is " + Obj.originalIndicies.length)}
+    let ReMappedWeightColec = new Array(Rows).fill().map(() => []);
+    for (let r = 0; r < Rows; r ++)
+    {
+        for (let i = 0; i < Obj.originalIndicies.length;  i++)
+        {
+            ActiveInd = Obj.originalIndicies[i];
+            ReMappedWeightColec[r][i] = WeightColec[r][ActiveInd];
+        }
+    }
+    let Cols = ReMappedWeightColec[0].length;
     let WeightsForBuffColec = new Array(6).fill().map(() => []);
     let MaxBoneCount = 24;
     const WeightAttArr = new Array(Rows * Cols);
@@ -929,7 +980,7 @@ export async function LoadWeightsTXT(Directory, BoneNameColec)
         for (let r = 0; r < Rows; r++)
         {
             ind = Math.floor(r / 4.0); 
-            WeightsForBuffColec[ind].push(WeightColec[r][c]);
+            WeightsForBuffColec[ind].push(ReMappedWeightColec[r][c]);
         }
         for (let r2 = 0; r2 < MaxBoneCount - Rows; r2 ++)
         {
@@ -937,6 +988,7 @@ export async function LoadWeightsTXT(Directory, BoneNameColec)
             WeightsForBuffColec[ind].push(-1.0)
         }
     }
-    return WeightsForBuffColec // need to return collection of 6
+    
+    return WeightsForBuffColec 
 }
 
