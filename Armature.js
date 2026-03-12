@@ -1,8 +1,8 @@
 import { mat4,vec3,vec4,quat } from './Externals/esm/index.js';
 import { loadTexture, LoadImage } from  './ShaderFunc.js';
-import { gGL } from './webgl-demo.js';
+import { gGL, gTimeSinceRun } from './webgl-demo.js';
 import { CreateImageArray } from './ShaderFunc.js';
-import { Keyframe, Timeline, AnimationClip, AllClips} from './Animation.js';
+import { Keyframe, Timeline, AnimationClip, CharClips} from './Animation.js';
 import { lerp } from './Utils.js';
 
 
@@ -42,7 +42,7 @@ export class Bone {
     
 }
 export class Armature{
-    constructor(BoneColec, Mesh, BoneStringColec, VertWeightDataColec, StartTime)
+    constructor(BoneColec, Mesh, BoneStringColec, VertWeightDataColec, StartTime, AllClips)
     {
         this.BoneColec = BoneColec;
         this.BoneStringColec = BoneStringColec;
@@ -58,7 +58,9 @@ export class Armature{
         this.boneParentIndicies = [];
         this.StartTime = StartTime;
         this.AnimationClips = [];
+        this.AllClips = AllClips;
         this.Timeline = new Timeline(this.AnimationClips,StartTime);//AnimationClips not set yet. Will throw error
+        this.Timeline.addAnimationClip(AllClips.ClipIdle); //init default idle ani
 
         this.VertWeightDataColec = VertWeightDataColec;
         this.WeightBuffer1 = null;
@@ -172,7 +174,7 @@ export class Armature{
     ApplyAnimation(CurrentTime)
     {
         let ActiveBone;
-        let DeltaTime = CurrentTime - this.StartTime;
+        let DeltaTime = gTimeSinceRun * 0.001;
         for (let i = 0; i < this.Timeline.Keyframes.length; i++)
         {
             let keyframe = this.Timeline.Keyframes[i];
@@ -181,6 +183,7 @@ export class Armature{
             let Alpha = keyframe.Time != 0 ? Math.min((DeltaTime - keyframe.StartTime) / (keyframe.Time - keyframe.StartTime), 1) : 1;
             let ActiveBoneIndex = this.BoneStringColec.indexOf(keyframe.BoneName);
             ActiveBone = this.BoneColec[ActiveBoneIndex];
+            //console.log("i is " + i + " Active Bone is " + ActiveBone + " keyframe is " +this.Timeline.Keyframes);
             let CurrentPos = vec3.fromValues(ActiveBone.Position[0], ActiveBone.Position[1], ActiveBone.Position[2]);
             let TargetPos = vec3.fromValues(keyframe.Position[0], keyframe.Position[1], keyframe.Position[2]);
             let OutPos = vec3.create();
@@ -202,17 +205,22 @@ export class Armature{
         }
         let clip;
         let ClipsIndToUpdate = [];
-        for (let i = 0; i < this.Timeline.AnimationClips.length; i++)
+        for (let i = this.Timeline.AnimationClips.length - 1; i >= 0; i--)
         {
             clip = this.Timeline.AnimationClips[i];
-            if (clip.StartTime + clip.Duration < DeltaTime)
+            const start = Number(clip.StartTime);
+            if (i == 0) {console.log(start);}
+            const duration = Number(clip.Duration);
+            if (start + duration < DeltaTime)
             {
+                console.log("Yay");
+                console.log("Prevlength " + this.Timeline.AnimationClips.length);
                 if (!clip.Looping) {this.Timeline.AnimationClips.splice(i, 1); continue;}
-
+                
                 ClipsIndToUpdate.push(i);
             }
         }
-        this.Timeline.setKeyframes(CurrentTime, ClipsIndToUpdate);
+        this.Timeline.setKeyframes(ClipsIndToUpdate);
         this.ApplyTransform();
     }
 }

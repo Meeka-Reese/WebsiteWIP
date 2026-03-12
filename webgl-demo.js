@@ -71,6 +71,7 @@ import { GenerateWave,CalculateNormals,GenerateQuad,SphereOfQuad,StarLookAt,Plac
 import { CreateWorley3D } from './GenerateNoise.js';
 import { LoadOBJ } from './Externals/webgl-obj-loader.js'; 
 import { Bone, Armature, LoadBones} from './Armature.js';
+import { CharClips } from './Animation.js';
 import { PlayAudio, StopAudio } from './AudioManager.js';
 import { MidiObj } from './MidiManager.js';
 
@@ -109,12 +110,14 @@ let gSurfObjColec = [];
 let gCompSurfObj;
 let gSurfColecVertIndicies = []; //Used to store which verts surface objects are linked with
 let gMidiObj;
+let gBoneModel;
+export let gBoneModelColec;
 
 
 //
 let gPreviousTime;
 let gDeltaTime;
-let gTimeSinceRun;
+export let gTimeSinceRun;
 let gTimeStart;
 let gTime = new Date();
 export let gGL;
@@ -231,8 +234,6 @@ async function SetUpScene()
   gFleshGround.TextureBN = await loadTexture(gGL, './Textures/GlassNoiseNorm.png',4);
   gFleshGround.Texture = await loadTexture(gGL, './Textures/Veins.png',4);
 
-
-
   
 
   //
@@ -336,8 +337,13 @@ async function SetUpScene()
   //console.log(gCharTrans.originalIndicies);
   let CharStringColec = [];
   CharStringColec = BoneData.stringColec;
-  gCharArmature = new Armature(gCharBoneColec, gCharTrans, CharStringColec, VertWeightDataColec, gTimeSinceRun * .001);
+  let AllCharClips = new CharClips();
+  await AllCharClips.setupClips();
+  console.log("CalfL Clip is " + AllCharClips.ClipKickL);
+  gCharArmature = new Armature(gCharBoneColec, gCharTrans, CharStringColec, VertWeightDataColec, gTimeSinceRun * .001, AllCharClips);
   await gCharArmature.setUpUniforms();
+  gMidiObj = new MidiObj(gCharArmature.Timeline, AllCharClips);
+  await gMidiObj.LoadFile('./MidiFiles/Trigger.mid');
 
   
     //==========================FILL RAYCAST ARRAY======================================
@@ -358,7 +364,15 @@ async function SetUpScene()
 
 
 
-
+export async function SpawnModel(Position, Rotation, Scale, Dir, ModelColec)
+{
+  let Model = await LoadOBJ(gGL, Dir);
+  Model.Position = Position;
+  Model.Rotation = Rotation;
+  Model.Scale = Scale;
+  Model.Color = [1.0,1.0,1.0,1.0];
+  ModelColec.push(Model);
+}
 
 function WaveUpdateMesh(WaveObj)
 { 
@@ -995,11 +1009,16 @@ if (gFrameCount % 2 == 0) //update surf obj positions
     gSurfObjColec[i].Position = [Pos[0], Pos[1], Pos[2]];
   }
 }
-for (let i = 0; i < gSurfObjColec.length; i++)
+for (let i = 0; i < gSurfObjColec.length; i++) //Cubes
   {
    if (Math.abs(gSurfObjColec[i].Position[1] - ScanY) < ScanWidth) {continue;}
        Draw(gProgramInfoDef, gSurfObjColec[i], gCamera, gLight1);
   }
+
+for (let i = 0; i < gBoneModelColec.length; i++) //Bones
+{
+  Draw(gProgramInfoDef, gBoneModelColec[i], gCamera, gLight1);
+}
 
 
 
@@ -1227,8 +1246,6 @@ async function main() {
     gTimeSinceRun = newTime - gTimeStart;
     gPreviousTime = newTime;
     await SetUpScene();
-    gMidiObj = new MidiObj();
-    await gMidiObj.LoadFile('./MidiFiles/Trigger.mid');
    
 
     BoatWaveIndexFind();
