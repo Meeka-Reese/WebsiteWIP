@@ -1,4 +1,5 @@
 #version 300 es
+    #define CC_CHANNEL_NUM 8
     precision lowp sampler3D;  
     precision mediump float;  
     in vec4 aVertPos;
@@ -9,6 +10,7 @@
     uniform mat4 uModelMatrix;
     uniform sampler3D uTexture3D;
     uniform float Time;
+    uniform float ccVals[CC_CHANNEL_NUM];
     out vec3 Normals;
     out vec3 FragPos;
     out vec2 UVCord;
@@ -21,10 +23,11 @@
     {
         UVCord = aUVCord;
         float Frame = Time / 8000.0;
-        float Disp = texture(uTexture3D, vec3(UVCord, sin(Frame) * .5)).r;
+        float Disp = texture(uTexture3D, vec3(UVCord * 2.0, sin(Frame) * .5)).r;
         float DispAm = 1.0;
+        Disp *= DispAm;
         float yOffset = -1.0;
-        vec4 DispVec = vec4(0.0,(Disp * DispAm) + yOffset, 0.0, 0.0);
+        vec4 DispVec = vec4((Disp * DispAm),(Disp * DispAm), (Disp * DispAm), 0.0);
         VertPos = aVertPos.xyz + DispVec.xyz; 
         vec4 ViewPos = uViewMatrix * uModelMatrix * aVertPos;
         vec4 Pos = uProjMatrix * uViewMatrix * uModelMatrix * (aVertPos + DispVec);

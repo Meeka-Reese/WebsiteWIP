@@ -209,12 +209,10 @@ export class Armature{
         {
             clip = this.Timeline.AnimationClips[i];
             const start = Number(clip.StartTime);
-            if (i == 0) {console.log(start);}
+            // if (i == 0) {console.log(start);}
             const duration = Number(clip.Duration);
             if (start + duration < DeltaTime)
             {
-                console.log("Yay");
-                console.log("Prevlength " + this.Timeline.AnimationClips.length);
                 if (!clip.Looping) {this.Timeline.AnimationClips.splice(i, 1); continue;}
                 
                 ClipsIndToUpdate.push(i);

@@ -1,5 +1,6 @@
 #version 300 es
     #define MAX_BONES 24
+    #define CC_CHANNEL_NUM 8
     precision lowp sampler3D;     
     precision lowp sampler2DArray;   
     precision mediump float;     
@@ -23,6 +24,7 @@
     uniform mat4 boneMatrixColec[MAX_BONES];
     uniform float boneParentIndicies[MAX_BONES];
     uniform sampler2DArray weightImage2DArray;
+    uniform float ccVals[CC_CHANNEL_NUM]; // set to 8
 
     out vec3 Normals;
     out vec3 FragPos;
@@ -42,7 +44,11 @@
         float w3 = texture(weightImage2DArray, vec3(UVCord.x-DispAm,UVCord.y, i)).r;
         float w4 = texture(weightImage2DArray, vec3(UVCord.x,UVCord.y+DispAm, i)).r;
         float w5 = texture(weightImage2DArray, vec3(UVCord.x,UVCord.y-DispAm, i)).r;
-        return max(max(max(max(w1, w2),w3),w4),w5);
+        float w6 = texture(weightImage2DArray, vec3(UVCord.x+DispAm,UVCord.y-DispAm, i)).r;
+        float w7 = texture(weightImage2DArray, vec3(UVCord.x-DispAm,UVCord.y-DispAm, i)).r;
+        float w8 = texture(weightImage2DArray, vec3(UVCord.x+DispAm,UVCord.y+DispAm, i)).r;
+        float w9 = texture(weightImage2DArray, vec3(UVCord.x-DispAm,UVCord.y+DispAm, i)).r;
+        return max(max(max(max(max(max(max(max(w1, w2),w3),w4),w5),w6),w7),w8),w9);
 
     }
   
@@ -50,6 +56,9 @@
     {
         UVCord = aUVCord;
         float Frame = Time / 3000.0;
+        float HoverAmount = 1.0;
+        float HoverSpeed = 2.0;
+        float HoverY = sin(Frame * HoverSpeed) * HoverAmount;
         int IntFrame = int(Frame * 10.0) % colecItemCount;
 
         //==================ADDING DITHER TO UV========================
@@ -68,7 +77,7 @@
          float WeightSampDisp = .001;
         for (int i = 0; i < colecItemCount; i++)
         {
-            weightText = FindWeight(DitheredUV, i + IntFrame, WeightSampDisp);
+            weightText = FindWeight(DitheredUV, i, WeightSampDisp);
 
             if (weightText > 0.0001)
             {
@@ -78,6 +87,7 @@
             }
             
         }
+        ArmatureModPos.y += HoverY;
         
 
         //=====================NOISE DISPLACEMENT===========================
@@ -87,10 +97,11 @@
         float NoiseGainTextSize = .5;
         float NoiseGain = texture(uTexture3D, vec3(-ArmatureModPos.y*NoiseGainTextSize, ArmatureModPos.x*NoiseGainTextSize, ArmatureModPos.z*NoiseGainTextSize + Frame)).r;
         vec4 DisplacementTextMask = texture(uTexture3D, vec3(ArmatureModPos.x*NoiseMaskSize, ArmatureModPos.y*NoiseMaskSize, ArmatureModPos.z*NoiseMaskSize + Frame));
-        float DispMagnitude = texture(uTexture3D, vec3(ArmatureModPos.x*NoiseSize, ArmatureModPos.y*NoiseSize, ArmatureModPos.z*NoiseSize + Frame)).r;
+        //float DispMagnitude = texture(uTexture3D, vec3(ArmatureModPos.x*NoiseSize, ArmatureModPos.y*NoiseSize, ArmatureModPos.z*NoiseSize + Frame)).r;
+        float DispMagnitude = ccVals[0] * .2; // using instead to automate
         vec4 DispDir = vec4(normalize(ArmatureModPos.xyz - MovedOrigin.xyz),1.0);
         DispMagnitude *= NoiseGain;
-        float MaskCutoff = 1.8 + abs(sin(Frame*2.0)) * 1.4;
+        float MaskCutoff = 1.8 * 1.4;
         DispMagnitude = DisplacementTextMask.r > MaskCutoff * .3 ? DispMagnitude : 0.0;
         DispDir = DisplacementTextMask.r > MaskCutoff ? DispDir : -DispDir;
         

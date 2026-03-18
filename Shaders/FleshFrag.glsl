@@ -14,6 +14,7 @@
     uniform sampler3D uTexture3D;
     uniform sampler2D uTextureBlueNoise;
     uniform sampler2D uTexture; // Veins
+    uniform vec2 UVScale;
 
 
 
@@ -21,10 +22,14 @@
     {
         vec3 BumpMap = texture(uTextureBlueNoise, UVCord).rgb;
         float Frame = Time / 3000.0;
-        float Disp = texture(uTexture3D, vec3(UVCord, Frame)).r;
-        float FatText = texture(uTexture3D, vec3(UVCord*2.3, (Frame*.25)+UVCord.x + UVCord.y)).r;
-        float DarkBloodText = texture(uTexture3D, vec3(UVCord*2.44 + BumpMap.rg, (Frame*.1)+UVCord.x + UVCord.y)).r; //mix in blue noise
-        float Veins = texture(uTexture, UVCord + vec2(Disp)*.05).r;
+        vec2 ScaledUV = UVCord * UVScale; 
+        float Disp = texture(uTexture3D, vec3(ScaledUV, Frame)).r;
+        float FatText = texture(uTexture3D, vec3(ScaledUV*1.2, (Frame*.1)+ScaledUV.x + ScaledUV.y)).r;
+        float GreenText = texture(uTexture3D, vec3(ScaledUV*.4, (Frame*.25)+ScaledUV.x + ScaledUV.y)).r * .3;
+        float LighterText = texture(uTexture3D, vec3(ScaledUV*.5, (Frame*.25)+ScaledUV.x + ScaledUV.y)).r * .5; 
+        float DarkBloodText = texture(uTexture3D, vec3(ScaledUV*1.5 + BumpMap.rg, (Frame*.1)+ScaledUV.x + ScaledUV.y)).r; //mix in blue noise
+        float Veins = texture(uTexture, ScaledUV + vec2(Disp)*.05).r;
+        float BN = texture(uTextureBlueNoise, UVCord * 2.0 * DarkBloodText + LighterText).r;
         Veins += abs(sin(Frame * 10.0)) * .5;
         float VeinsThresh = .8;
         vec3 VeinColor = vec3(0.0);
@@ -59,7 +64,8 @@
         vec3 specular = specularStrength * spec * vec3(1.0,.3,.4);
         
        
-        vec3 Comp = max(min((diffuse + ambient + specular),DarkBlood),Fats);
+        vec3 Comp = max(min((diffuse + ambient + specular + vec3(LighterText, 0.0, 0.0) + vec3(0.0, GreenText, 0.0)),DarkBlood),Fats);
+        Comp *=BN;
         if (VeinColor.r > 0.0) {Comp = VeinColor;}
         fragColor = vec4((Comp) * Disp * DispAm,objCol.a);
     }

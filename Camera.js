@@ -7,7 +7,7 @@ import { quat } from './Externals/esm/index.js';
 let gSpeed = .1;
 let gRotationSpeed = .15;
 let gTotalYaw;
-let gTotalPitch;
+let gTotalPitch = 0.0;
 export function CameraMove(Camera, Direction, DeltaMs)
 {
     //Forward = 0
@@ -59,6 +59,7 @@ export function MouseLook(Camera, DeltaMouse)
     if (gTotalPitch > 89.9|| gTotalPitch < -89.9)
     {
         pitch = 0;
+        gTotalPitch = gTotalPitch > 0.0 ? 89.9 : -89.9;
     }
 
    // Yaw (left/right) - rotate around world up axis

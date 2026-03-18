@@ -48,7 +48,7 @@ export class Timeline
     const updateAll = clipsToUpdate.length === 1 && clipsToUpdate[0] === -1;
     const currentTime = (gTimeSinceRun * 0.001) - this.StartTime;
 
-    console.log(`setKeyframes called | updateAll: ${updateAll} | clipsToUpdate: [${clipsToUpdate}]`);
+    //console.log(`setKeyframes called | updateAll: ${updateAll} | clipsToUpdate: [${clipsToUpdate}]`);
 
     this.Keyframes = [];
 
@@ -95,22 +95,26 @@ export class CharClips
     constructor()
     {
         this.ClipIdle;
+        this.ClipReachOut;
         this.ClipKickL;
     }
     async setupClips()
     {
         //=====================IDLE ANIMATION======================
+        let k1, k2, k3, k4;
         let IdleColec = [];
+        k1 = new Keyframe(0.0, 1.0, [0.0,0.0,0.0], [10.0,0.0,0.0], [1.0,1.0,1.0], "Torso");
+        k2 = new Keyframe(0.0, 2.0, [0.0,0.0,0.0], [-10.0,0.0,0.0], [1.0,1.0,1.0], "Torso");
 
-        let k1 = new Keyframe(0.0, 1.0, [0.0,0.0,0.0], [10.0,0.0,0.0], [1.0,1.0,1.0], "Torso");
-        let k2 = new Keyframe(0.0, 2.0, [0.0,0.0,0.0], [-20.0,0.0,0.0], [1.0,1.0,1.0], "Torso");
-
-        let k3 = new Keyframe(0.0, 1.0, [0.0,0.0,0.0], [0.0,0.0,5.0], [1.0,1.0,1.0], "LShould");
-        let k4 = new Keyframe(0.0, 1.7, [0.0,0.0,0.0], [0.0,0.0,-5.0], [1.0,1.0,1.0], "LShould");
-        let k5 = new Keyframe(0.0, 1.0, [0.0,0.0,0.0], [0.0,0.0,3.0], [1.0,1.0,1.0], "RShould");
-        let k6 = new Keyframe(0.0, 1.9, [0.0,0.0,0.0], [0.0,0.0,-6.0], [1.0,1.0,1.0], "RShould");
-        IdleColec.push(k1, k2, k3, k4, k5, k6);
+        IdleColec.push(k1, k2);
         this.ClipIdle = new AnimationClip(IdleColec, 0.0, 2.0, true);
+
+        let ReachOutColec = [];
+
+        k1 = new Keyframe(0.0, 0.0, [0.0,0.0,0.0], [0.0,0.0,0.0], [1.0,1.0,1.0], "LShould");
+        k2 = new Keyframe(0.5, 10.0, [0.0,1.0,3.0], [-90.0,0.0,0.0], [1.0,1.0,1.0], "LShould");
+        ReachOutColec.push(k1, k2);
+        this.ClipReachOut = new AnimationClip(ReachOutColec, 0.0, 5.0, false);
 
         let KickLColec = [];
 

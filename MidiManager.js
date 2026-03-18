@@ -1,4 +1,4 @@
-import { SpawnModel, gBoneModelColec } from "./webgl-demo";
+import { SpawnModel, gBoneModelColec } from "./webgl-demo.js";
 
 export class MidiObj
 {
@@ -7,6 +7,7 @@ export class MidiObj
         this.Player = new MidiPlayer.Player(this.MidiCallback.bind(this));
         this.Timeline = Timeline;
         this.AnimationClips = AllClips;
+        this.ccVals = new Array(8);
     }
     async LoadFile(dir)
     {
@@ -27,28 +28,45 @@ export class MidiObj
     async MidiCallback(event)
     {
         let EventName = event.name;
-        let PitchNum = 76; //Kick
+        let PitchNum = event.noteNumber;
+        let CCNum = event.number;
+        //console.log(event);
         switch(EventName)
         {
             case("Note on"):
                 console.log("Note on");
                 switch(PitchNum)
                 {
-                    case(76):
+                    case(60):
                         console.log("Kick");
                         this.Timeline.addAnimationClip(this.AnimationClips.ClipKickL); //Explicitly setting this which is dumb but can restructure if we set up for new models
                         break;
-                    case(77):
+                    case(61):
                         console.log("Tom");
-                        let Position = [Math.random()*10.0, 5.0, 2.0];
+                        let Position = [-30.0 + Math.random()*60.0, -60.0 + Math.random()*60.0, -30.0 + Math.random()*60.0];
                         let Rotation = [Math.random() * 90.0, Math.random() * 90.0, Math.random() * 90.0];
-                        let Scale = [1.0, 1.0, 1.0];
+                        let Size = 3.0;
+                        let Scale = [Size, Size, Size];
                         let Dir = './models/Bone.obj';
-                        await SpawnModel(Position, Rotation, Scale, Dir, gBoneModelColec);
+                        let TextDir = "./Textures/Bone.png";
+                        await SpawnModel(Position, Rotation, Scale, Dir, gBoneModelColec, TextDir, null);
+                        break;
+                    case(62):
+                        console.log("Reach");
+                        this.Timeline.addAnimationClip(this.AnimationClips.ClipReachOut);
                         break;
                 }
 
                 break;
+            case("Controller Change"):
+                switch(CCNum)
+                {
+                    case(1):
+                        this.ccVals[0] = event.value / 127.0;
+                        break;
+                }
+            break;
+            
             
         }
     }

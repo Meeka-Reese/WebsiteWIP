@@ -12,8 +12,14 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
     ProgramInfoScreenImage, ShaderProgramScreenImage,
     ProgramInfoTrans, ShaderProgramTrans,
     ProgramInfoFlesh, ShaderProgramFlesh,
-    ProgramInfoElenco, ShaderProgramElenco,) {
-
+    ProgramInfoElenco, ShaderProgramElenco,
+    ProgramInfoFleshPart, ShaderProgramFleshPart,
+    ProgramInfoMorph, ShaderProgramMorph,
+    ProgramInfoTreeMorph, ShaderProgramTreeMorph,
+    ProgramInfoBloodCloud, ShaderProgramBloodCloud,
+    ProgramInfoScreenBGTrans, ShaderProgramScreenBGTrans,
+    ) {
+        //SOON TO DO - REORGANIZE TEXTURES SO THEY USE MULTIPLE TEXTURE SLOTS WITH GENERIC NAMES INSTEAD OF "TEXTUREBN"
     ProgramInfoDef.program = ShaderProgramDef;
     ProgramInfoDef.attribLocations = {
         vertexPosition: GL.getAttribLocation(ShaderProgramDef, "aVertPos"),
@@ -63,6 +69,7 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         ViewMatrix: GL.getUniformLocation(ShaderProgramFlat, "uViewMatrix"),
         modelMatrix: GL.getUniformLocation(ShaderProgramFlat, "uModelMatrix"),
         texture: GL.getUniformLocation(ShaderProgramFlat, "uTexture"),
+        alpha: GL.getUniformLocation(ShaderProgramFlat, "Alpha"),
     };
     ProgramInfoCloud.program = ShaderProgramCloud;
     ProgramInfoCloud.attribLocations = {
@@ -217,6 +224,7 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         modelMatrix: GL.getUniformLocation(ShaderProgramScreenImage, "uModelMatrix"),
         texture: GL.getUniformLocation(ShaderProgramScreenImage, "uTexture"),
         resolution: GL.getUniformLocation(ShaderProgramScreenImage, "uResolution"),
+        alpha: GL.getUniformLocation(ShaderProgramScreenImage, "Alpha"),
 
     }
 
@@ -250,6 +258,7 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         boneParentIndicies: GL.getUniformLocation(ShaderProgramTrans, "boneParentIndicies"),
         colecItemCount: GL.getUniformLocation(ShaderProgramTrans, "colecItemCount"),
         boneMatrixColec: GL.getUniformLocation(ShaderProgramTrans, "boneMatrixColec"),
+        ccVals: GL.getUniformLocation(ShaderProgramTrans, "ccVals"),
     }
 
     ProgramInfoFlesh.program = ShaderProgramFlesh;
@@ -271,6 +280,8 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         texture: GL.getUniformLocation(ShaderProgramFlesh, "uTexture"),
         texture3D: GL.getUniformLocation(ShaderProgramFlesh, "uTexture3D"),
         textureBN: GL.getUniformLocation(ShaderProgramFlesh, "uTextureBlueNoise"),
+        ccVals: GL.getUniformLocation(ShaderProgramFlesh, "ccVals"),
+        uvScale: GL.getUniformLocation(ShaderProgramFlesh, "UVScale"),
     }
 
     ProgramInfoElenco.program = ShaderProgramElenco;
@@ -287,10 +298,96 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         resolution: GL.getUniformLocation(ShaderProgramElenco, "uResolution"),
         time: GL.getUniformLocation(ShaderProgramElenco, "Time"),
     }
+
+    ProgramInfoFleshPart.program = ShaderProgramFleshPart;
+    ProgramInfoFleshPart.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramFleshPart, "aVertPos"),
+        UVPosition: GL.getAttribLocation(ShaderProgramFleshPart, "aUVCord"),
+        QuadPos: GL.getAttribLocation(ShaderProgramFleshPart, "aQuadPos"),
+    };
+    ProgramInfoFleshPart.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramFleshPart, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramFleshPart, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramFleshPart, "uModelMatrix"),
+        time: GL.getUniformLocation(ShaderProgramFleshPart, "Time"),
+        depthTexture: GL.getUniformLocation(ShaderProgramFleshPart, "depthTexture"),
+        resolution: GL.getUniformLocation(ShaderProgramFleshPart, "uResolution"),
+    };
+
+    ProgramInfoMorph.program = ShaderProgramMorph;
+    ProgramInfoMorph.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramMorph, "aVertPos"),
+        targetVertexPosition: GL.getAttribLocation(ShaderProgramMorph, "aTargetVertPos"),
+        targetVertexPosition2: GL.getAttribLocation(ShaderProgramMorph, "aTargetVertPos2"),
+        targetVertexPosition3: GL.getAttribLocation(ShaderProgramMorph, "aTargetVertPos3"),
+        normalPosition: GL.getAttribLocation(ShaderProgramMorph, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramMorph, "aUVCord"),
+    };
+    ProgramInfoMorph.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramMorph, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramMorph, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramMorph, "uModelMatrix"),
+        texture: GL.getUniformLocation(ShaderProgramMorph, "uTexture"),
+        textureBN: GL.getUniformLocation(ShaderProgramMorph, "uTexture2"), //using textureBN rn as alt because I'm going to restructure soon 
+        alpha: GL.getUniformLocation(ShaderProgramMorph, "Alpha"),
+        time: GL.getUniformLocation(ShaderProgramMorph, "Time"),
+    };
+
+    ProgramInfoTreeMorph.program = ShaderProgramTreeMorph;
+    ProgramInfoTreeMorph.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramTreeMorph, "aVertPos"),
+        targetVertexPosition: GL.getAttribLocation(ShaderProgramTreeMorph, "aTargetVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramTreeMorph, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramTreeMorph, "aUVCord"),
+    };
+    ProgramInfoTreeMorph.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramTreeMorph, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramTreeMorph, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramTreeMorph, "uModelMatrix"),
+        texture: GL.getUniformLocation(ShaderProgramTreeMorph, "uTexture"),
+        textureBN: GL.getUniformLocation(ShaderProgramTreeMorph, "uTexture2"), //using textureBN rn as alt because I'm going to restructure soon 
+        alpha: GL.getUniformLocation(ShaderProgramTreeMorph, "Alpha"),
+        time: GL.getUniformLocation(ShaderProgramTreeMorph, "Time"),
+    };
+
+    ProgramInfoBloodCloud.program = ShaderProgramBloodCloud;
+    ProgramInfoBloodCloud.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramBloodCloud, "aVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramBloodCloud, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramBloodCloud, "aUVCord"),
+    };
+    ProgramInfoBloodCloud.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramBloodCloud, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramBloodCloud, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramBloodCloud, "uModelMatrix"),
+        texture: GL.getUniformLocation(ShaderProgramBloodCloud, "uTexture"),
+        textureBN: GL.getUniformLocation(ShaderProgramBloodCloud, "uTextureBlueNoise"),
+        texture3D: GL.getUniformLocation(ShaderProgramBloodCloud, "uTexture3D"),
+        time: GL.getUniformLocation(ShaderProgramBloodCloud, "Time"),
+        cameraViewDir: GL.getUniformLocation(ShaderProgramBloodCloud, "CameraViewDir"),
+        viewPosition: GL.getUniformLocation(ShaderProgramBloodCloud, "viewPos"),
+        depthTexture: GL.getUniformLocation(ShaderProgramBloodCloud, "depthTexture"),
+        resolution: GL.getUniformLocation(ShaderProgramBloodCloud, "uResolution"),
+    };
+
+    ProgramInfoScreenBGTrans.program = ShaderProgramScreenBGTrans;
+    ProgramInfoScreenBGTrans.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramScreenBGTrans, "aVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramScreenBGTrans, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramScreenBGTrans, "aUVCord"),
+    }
+    ProgramInfoScreenBGTrans.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramScreenBGTrans, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramScreenBGTrans, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramScreenBGTrans, "uModelMatrix"),
+        resolution: GL.getUniformLocation(ShaderProgramScreenBGTrans, "uResolution"),
+        texture: GL.getUniformLocation(ShaderProgramScreenBGTrans, "uTexture"),
+        time: GL.getUniformLocation(ShaderProgramScreenBGTrans, "Time"),
+        textureBN: GL.getUniformLocation(ShaderProgramScreenBGTrans, "CharText"),
+
+
+    }
     
-
-
-
 
 }
 //
@@ -381,7 +478,7 @@ export function loadTexture(gl, url, numChans = 4) {
   function isPowerOf2(value) {
     return (value & (value - 1)) === 0;
   }
-  export function setPositionAttribute(Object, programInfo, Camera, Light, gl, Time, Armature = null)
+  export function setPositionAttribute(Object, programInfo, Camera, Light, gl, Time, Armature = null, MidiManager)
 {
     
     gl.bindBuffer(gl.ARRAY_BUFFER, Object.vertexBuffer); //Verts
@@ -394,6 +491,47 @@ export function loadTexture(gl, url, numChans = 4) {
         0,
     );
     gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
+    if (Object.vertexBuffer2 != null && "targetVertexPosition" in programInfo.attribLocations && programInfo.attribLocations.targetVertexPosition >= 0)
+    {
+        gl.bindBuffer(gl.ARRAY_BUFFER, Object.vertexBuffer2);
+        gl.vertexAttribPointer(
+            programInfo.attribLocations.targetVertexPosition,
+            3, //num componenets
+            gl.FLOAT,
+            false, //don't normalize
+            0,
+            0,
+        );
+        gl.enableVertexAttribArray(programInfo.attribLocations.targetVertexPosition);
+    }
+    if (Object.vertexBuffer3 != null && "targetVertexPosition2" in programInfo.attribLocations && programInfo.attribLocations.targetVertexPosition2 >= 0)
+    {
+        gl.bindBuffer(gl.ARRAY_BUFFER, Object.vertexBuffer3);
+        gl.vertexAttribPointer(
+            programInfo.attribLocations.targetVertexPosition2,
+            3, //num componenets
+            gl.FLOAT,
+            false, //don't normalize
+            0,
+            0,
+        );
+        gl.enableVertexAttribArray(programInfo.attribLocations.targetVertexPosition2);
+    }
+    if (Object.vertexBuffer4 != null && "targetVertexPosition3" in programInfo.attribLocations && programInfo.attribLocations.targetVertexPosition3 >= 0)
+    {
+        gl.bindBuffer(gl.ARRAY_BUFFER, Object.vertexBuffer4);
+        gl.vertexAttribPointer(
+            programInfo.attribLocations.targetVertexPosition3,
+            3, //num componenets
+            gl.FLOAT,
+            false, //don't normalize
+            0,
+            0,
+        );
+        gl.enableVertexAttribArray(programInfo.attribLocations.targetVertexPosition3);
+    }
+  
+    
     if ('normalPosition' in programInfo.attribLocations && programInfo.attribLocations.normalPosition >= 0)
     {
         gl.bindBuffer(gl.ARRAY_BUFFER, Object.normalBuffer); //Normals
@@ -658,6 +796,27 @@ export function loadTexture(gl, url, numChans = 4) {
     else if(("origin" in programInfo))
     {console.log("Origin Uniform Could Not Be Found!")}
 
+    if (programInfo.uniformLocations.alpha != null)
+    {
+        let Alpha = "Alpha" in Object ? Object.Alpha : 1.0;
+        gl.uniform1f(programInfo.uniformLocations.alpha, Alpha);
+    }
+    else if(("alpha" in programInfo))
+    {console.log("Alpha Uniform Could Not Be Found!")} //ccVals
+ 
+    if (programInfo.uniformLocations.ccVals != null)
+    {
+        gl.uniform1fv(programInfo.uniformLocations.ccVals, MidiManager.ccVals);
+    }
+    else if(("alpha" in programInfo))
+    {console.log("Alpha Uniform Could Not Be Found!")} 
+
+    if (programInfo.uniformLocations.uvScale != null)
+    {
+        gl.uniform2fv(programInfo.uniformLocations.uvScale, Object.uvScale);
+    }
+    else if(("uvScale" in programInfo))
+    {console.log("UVScale Uniform Could Not Be Found!")} 
 
     //==== Bone Uniforms ====
     if (Armature != null)
