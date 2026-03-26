@@ -5,6 +5,7 @@
     uniform sampler2D uTexture;
     uniform sampler2D CharText;
     uniform float Time;
+    uniform float Lightness;
 
     float rand(vec2 co){
         return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
@@ -28,5 +29,6 @@
         float Cut = .16;
         Col = Text.r > Cut ? Col3 : Col2;
         Col = Text.r > Cut * 2.5 ? Col1 : Col;
-        fragColor = vec4(Col * .3,1.0);
+        float Light = max(((Lightness * .3)),.01);
+        fragColor = vec4(Col * Light,1.0);
     }

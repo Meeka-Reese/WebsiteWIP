@@ -15,6 +15,7 @@
     uniform sampler2D uTextureBlueNoise;
     uniform sampler2D uTexture; // Veins
     uniform vec2 UVScale;
+    uniform float Lightness;
 
 
 
@@ -67,5 +68,7 @@
         vec3 Comp = max(min((diffuse + ambient + specular + vec3(LighterText, 0.0, 0.0) + vec3(0.0, GreenText, 0.0)),DarkBlood),Fats);
         Comp *=BN;
         if (VeinColor.r > 0.0) {Comp = VeinColor;}
+        float Light = min((Lightness + .1),1.0);
+        Comp.rgb *= Light;
         fragColor = vec4((Comp) * Disp * DispAm,objCol.a);
     }

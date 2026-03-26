@@ -4,13 +4,16 @@
     in vec4 aTargetVertPos;
     in vec4 aTargetVertPos2;
     in vec4 aTargetVertPos3;
+    in vec4 aTargetVertPos4;
     in vec3 aNorm;
     in vec2 aUVCord;
     uniform mat4 uViewMatrix;
     uniform mat4 uProjMatrix;
     uniform mat4 uModelMatrix;
     uniform float Alpha;
+    uniform float lifeSpan;
     uniform float Time;
+    uniform float spawnTime;
     out vec3 Normals;
     out vec3 FragPos;
     out vec2 UVCord;
@@ -23,10 +26,12 @@
     void main()
     {
         float Frame = Time * .001;
-        float a = mod(Frame, 4.0);
+        float a = Frame - spawnTime;
+        float lifeSpanFrac = lifeSpan / 4.0;
         vec4 NewVertPos = vec4(mix(aTargetVertPos.xyz, aTargetVertPos2.xyz, min(a, 1.0)),1.0); 
-        NewVertPos = vec4(mix(NewVertPos.xyz, aVertPos.xyz, min(max(a - 1.0, 0.0),1.0)),1.0);
-        NewVertPos = vec4(mix(NewVertPos.xyz, aTargetVertPos3.xyz, min(max(a/2.0 - 1.0, 0.0),1.0)),1.0);
+        NewVertPos = vec4(mix(NewVertPos.xyz, aVertPos.xyz, min(max(a - lifeSpanFrac, 0.0),1.0)),1.0);
+        NewVertPos = vec4(mix(NewVertPos.xyz, aTargetVertPos3.xyz, min(max(a - (lifeSpanFrac * 2.0), 0.0),1.0)),1.0);
+        NewVertPos = vec4(mix(NewVertPos.xyz, aTargetVertPos4.xyz, min(max(a - (lifeSpanFrac * 3.0), 0.0),1.0)),1.0);
         VertPos = NewVertPos.xyz;
         vec4 ViewPos = uViewMatrix * uModelMatrix * NewVertPos;
         vec4 Pos = uProjMatrix * uViewMatrix * uModelMatrix * NewVertPos;

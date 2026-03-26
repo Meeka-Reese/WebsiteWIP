@@ -59,7 +59,7 @@
         vec3 NormalMap = texture(uTexture3D, NoiseUV).rgb;
         vec3 NormalizedNorm = normalize(NormalMap + (vDisplVal.xyz * viewPos));
         float ShaderMask = texture(uTexture3D, NoiseUV).r;
-        float ShaderMaskCutoff = 1.5 - abs(sin(Frame));
+        float ShaderMaskCutoff = 1.3 - abs(sin(Frame));
         vec4 Output = vec4(0.0);
         vec4 texColor = texture(uTexture, UVCord);
         if (ShaderMask < ShaderMaskCutoff)
@@ -76,7 +76,9 @@
             vec3 reflectDir = reflect(-lightDir, -NormalizedNorm);
             float spec = pow(max(dot(viewDir, reflectDir), 0.0), 1000.0);
             vec3 specular = specularStrength * spec * vec3(1.0,1.0,1.0);
-            texColor.rgb *= diffuse.r + specular.r;
+            float BaseLight = pow(abs(sin(Frame)), 2.0);
+            
+            texColor.rgb *= diffuse.r + specular.r + vec3(BaseLight);
 
             Output = texColor;
         }

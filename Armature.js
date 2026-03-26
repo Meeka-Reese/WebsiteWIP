@@ -3,11 +3,11 @@ import { loadTexture, LoadImage } from  './ShaderFunc.js';
 import { gGL, gTimeSinceRun } from './webgl-demo.js';
 import { CreateImageArray } from './ShaderFunc.js';
 import { Keyframe, Timeline, AnimationClip, CharClips} from './Animation.js';
-import { lerp } from './Utils.js';
+import { lerp, Vec3ArrLerp} from './Utils.js';
 
 
 export class Bone {
-    constructor(Position, Scale, Rotation, ParentIndex, WeightMap, WeightMapArray, Index)
+    constructor(Position, Scale, Rotation, ParentIndex, WeightMap, WeightMapArray, Index, Origin)
     {
         this.Position = Position;
         this.Scale = Scale;
@@ -17,6 +17,7 @@ export class Bone {
         this.WeightMapArray = WeightMapArray;
         let ModelMat = mat4.create();
         this.Index = Index;
+        this.Origin = Origin;
     }
     Transform(Position, Scale, Rotation)
     {
@@ -57,10 +58,8 @@ export class Armature{
         this.boneMatrixArray = new Float32Array(0);;
         this.boneParentIndicies = [];
         this.StartTime = StartTime;
-        this.AnimationClips = [];
         this.AllClips = AllClips;
-        this.Timeline = new Timeline(this.AnimationClips,StartTime);//AnimationClips not set yet. Will throw error
-        this.Timeline.addAnimationClip(AllClips.ClipIdle); //init default idle ani
+        this.Timeline = new Timeline(StartTime);
 
         this.VertWeightDataColec = VertWeightDataColec;
         this.WeightBuffer1 = null;
@@ -69,6 +68,10 @@ export class Armature{
         this.WeightBuffer4 = null;
         this.WeightBuffer5 = null;
         this.WeightBuffer6 = null;
+
+        this.PreviousBonePos = new Map();
+        this.PreviousBoneRot = new Map();
+        this.PreviousBoneScale = new Map();
     }
     async setUpUniforms()
     {
@@ -140,6 +143,7 @@ export class Armature{
     {
         for (let i = 0; i < this.BoneColec.length; i++)
         {
+            let Bone = this.BoneColec[i];
             let Pos = vec3.fromValues(this.BoneColec[i].Position[0], this.BoneColec[i].Position[1], this.BoneColec[i].Position[2]);
             let Rot = vec3.fromValues(this.BoneColec[i].Rotation[0], this.BoneColec[i].Rotation[1], this.BoneColec[i].Rotation[2]);
             let Scale = vec3.fromValues(this.BoneColec[i].Scale[0],this.BoneColec[i].Scale[1],this.BoneColec[i].Scale[2]);
@@ -148,7 +152,7 @@ export class Armature{
             quat.fromEuler(q, Rot[0], Rot[1], Rot[2]);
             mat4.fromQuat(RotationMatrix,q);
             let ModelMatrix = mat4.create();
-            ModelMatrix = mat4.fromRotationTranslationScale(ModelMatrix, q, Pos, Scale);
+            ModelMatrix = mat4.fromRotationTranslationScaleOrigin(ModelMatrix, q, Pos, Scale, Bone.Origin);
             this.boneMatrixColec[i] = ModelMatrix;
         }
         const numMatrices = this.boneMatrixColec.length;
@@ -178,30 +182,55 @@ export class Armature{
         for (let i = 0; i < this.Timeline.Keyframes.length; i++)
         {
             let keyframe = this.Timeline.Keyframes[i];
-            if (DeltaTime > Keyframe.Time || DeltaTime < keyframe.StartTime) {continue;}
-            //console.log("Updating Animation, Current Time is : " + DeltaTime + "keyframe Time is : " + keyframe.Time);
-            let Alpha = keyframe.Time != 0 ? Math.min((DeltaTime - keyframe.StartTime) / (keyframe.Time - keyframe.StartTime), 1) : 1;
+            //console.log(keyframe.Time - keyframe.StartTime);
+            if (!(DeltaTime < keyframe.Time && DeltaTime > keyframe.StartTime)) {continue;}
+            let Alpha = keyframe.Time != 0 ? Math.min((DeltaTime - keyframe.StartTime) / (keyframe.Time - keyframe.StartTime), 1) : 1; // Alpha working
+            
             let ActiveBoneIndex = this.BoneStringColec.indexOf(keyframe.BoneName);
             ActiveBone = this.BoneColec[ActiveBoneIndex];
-            //console.log("i is " + i + " Active Bone is " + ActiveBone + " keyframe is " +this.Timeline.Keyframes);
-            let CurrentPos = vec3.fromValues(ActiveBone.Position[0], ActiveBone.Position[1], ActiveBone.Position[2]);
-            let TargetPos = vec3.fromValues(keyframe.Position[0], keyframe.Position[1], keyframe.Position[2]);
-            let OutPos = vec3.create();
-            OutPos = vec3.lerp(OutPos, CurrentPos, TargetPos, Alpha);
 
-            let CurrentRot = vec3.fromValues(ActiveBone.Rotation[0], ActiveBone.Rotation[1], ActiveBone.Rotation[2]);
-            let TargetRot = vec3.fromValues(keyframe.Rotation[0], keyframe.Rotation[1], keyframe.Rotation[2]);
-            let OutRot = vec3.create();
-            OutRot = vec3.lerp(OutRot, CurrentRot, TargetRot, Alpha);
+            let LastKeyframeColec = this.Timeline.KeyframeMap.get(keyframe.BoneName);
+            console.log("Colec Length " + LastKeyframeColec.length);
+            let RecentKeyframe = null;
+            if (LastKeyframeColec != undefined) 
+            {
+                let RecentTime = 999999.99;
+                for (let i = 0; i < LastKeyframeColec.length; i++)
+                {
+                    let DeltaKeyTime = keyframe.Time - LastKeyframeColec[i].Time;
+                    if (DeltaKeyTime > 0.0 && DeltaKeyTime < RecentTime) {RecentKeyframe = LastKeyframeColec[i]; RecentTime = DeltaKeyTime;}
+                }
+            }
+            if (RecentKeyframe == null) {console.warn("RECENT KEYFRAME IS NULL FOR " + ActiveBone.BoneName);}
+            if (keyframe.PreviousPos == null)
+            {
+                keyframe.PreviousPos = RecentKeyframe == null ? ActiveBone.Position: RecentKeyframe.Position;
+            }
+            if (keyframe.PreviousRot == null)
+            {
+                keyframe.PreviousRot = RecentKeyframe == null ? ActiveBone.Rotation : RecentKeyframe.Rotation;
+                console.log("Previous Rot set at " + keyframe.PreviousRot);
+            }
+            if (keyframe.PreviousScale == null)
+            {
+                keyframe.PreviousScale = RecentKeyframe == null ? ActiveBone.Scale : RecentKeyframe.Scale;
+            }
 
-            let CurrentScale = vec3.fromValues(ActiveBone.Scale[0], ActiveBone.Scale[1], ActiveBone.Scale[2]);
-            let TargetScale = vec3.fromValues(keyframe.Scale[0], keyframe.Scale[1], keyframe.Scale[2]);
-            let OutScale = vec3.create();
-            OutScale = vec3.lerp(OutScale, CurrentScale, TargetScale, Alpha);
+        
+     
+            let OutPosArr = Vec3ArrLerp(keyframe.PreviousPos, keyframe.Position, Alpha);
+            let OutRotArr = Vec3ArrLerp(keyframe.PreviousRot, keyframe.Rotation, Alpha);
+            let OutScaleArr = Vec3ArrLerp(keyframe.PreviousScale, keyframe.Scale, Alpha);
+
+            let OutPos = vec3.fromValues(OutPosArr[0], OutPosArr[1], OutPosArr[2]);
+            let OutRot = vec3.fromValues(OutRotArr[0], OutRotArr[1], OutRotArr[2]);
+            let OutScale = vec3.fromValues(OutScaleArr[0], OutScaleArr[1], OutScaleArr[2]);
 
             ActiveBone.Position = [OutPos[0], OutPos[1], OutPos[2]];
             ActiveBone.Rotation = [OutRot[0], OutRot[1], OutRot[2]];
             ActiveBone.Scale = [OutScale[0], OutScale[1], OutScale[2]];
+
+            
         }
         let clip;
         let ClipsIndToUpdate = [];
@@ -240,7 +269,8 @@ export async function LoadBones(MainDirectory, ImageNameColec, ParentColec) //Wo
         TotalDirectory = MainDirectory + ImageNameColec[i] + ".png";
         let WeightMap = await loadTexture(gGL, TotalDirectory);
         let WeightMapArray = await LoadImage(TotalDirectory);
-        let BoneInst = new Bone(Pos, Scale, Rot, null, WeightMap, WeightMapArray, i);
+        let Origin = vec3.fromValues(0.0,0.0,0.0);
+        let BoneInst = new Bone(Pos, Scale, Rot, null, WeightMap, WeightMapArray, i, Origin);
         BoneColec.push(BoneInst);//ImageNameColec[i], 
         BoneStringColec.push(ImageNameColec[i]);
     }

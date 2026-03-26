@@ -1188,10 +1188,14 @@ class Mesh {
         this.vertexBuffer2 = null;
         this.vertexBuffer3 = null;
         this.vertexBuffer4 = null;
+        this.vertexBuffer5 = null;
+        this.StartY = 0.0; //For Falling Models
         this.spawnTime = 0.0;
         this.lifeSpan = 1.0;
         this.Alpha = 1.0;
         this.uvScale = [1.0, 1.0];
+        this.lightness = 1.0;
+        this.saturation = 1.0;
         /*
         The OBJ file format does a sort of compression when saving a model in a
         program like Blender. There are at least 3 sections (4 including textures)

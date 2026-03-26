@@ -77,7 +77,7 @@
          float WeightSampDisp = .001;
         for (int i = 0; i < colecItemCount; i++)
         {
-            weightText = FindWeight(DitheredUV, i, WeightSampDisp);
+            weightText = texture(weightImage2DArray, vec3(UVCord.x,UVCord.y, i)).r;
 
             if (weightText > 0.0001)
             {

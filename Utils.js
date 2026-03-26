@@ -21,5 +21,14 @@ export function sleep(ms) {
 
 export function lerp( a, b, alpha )
 {
-  return a + alpha * (b - a)
+  return a + alpha * (b - a);
 }
+export function Vec3ArrLerp(a, b, alpha)
+{
+  let x = lerp(a[0], b[0], alpha);
+  let y = lerp(a[1], b[1], alpha);
+  let z = lerp(a[2], b[2], alpha);
+  let OutVec = [x, y, z];
+  return OutVec;
+}
+

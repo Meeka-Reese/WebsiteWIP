@@ -7,14 +7,14 @@ let gVertSourceDef, gVertSkybox, gVertStar, gVertRaycast, gVertTrans, gVertFlesh
 
 let gFragSourceWave, gFragSourceFlat, gFragSourceCloud, gFragSkybox, gFragStar, gFragColor,
 gFragVolGlow, gFragDef, gFragRaycast, gFragGlass, gFragScreenFlat, gFragTransFlat, gFragFlesh, gFragElenco,
-gFragFleshPart, gFragMorph, gFragTreeMorph, gFragBloodCloud, gFragScreenBGTrans;
+gFragFleshPart, gFragMorph, gFragTreeMorph, gFragBloodCloud, gFragScreenBGTrans, gFragPostProcessing;
 
 
 let gShaderProgramDef, gShaderProgramWave, gShaderProgramFlat, gShaderProgramCloud,
 gShaderProgramSkybox, gShaderProgramStar, gShaderProgramFleshPart, gShaderProgramColor, gShaderProgramVolGlow,
 gShaderProgramRaycast, gShaderProgramGlass, gShaderProgramScreenRender, gShaderProgramScreenImage,
 gShaderProgramTrans, gShaderProgramFlesh, gShaderProgramElenco, gShaderProgramMorph, gShaderProgramTreeMorph,
-gShaderProgramBloodCloud, gShaderProgramScreenBGTrans;
+gShaderProgramBloodCloud, gShaderProgramScreenBGTrans, gShaderProgramPostProcessing;
 
 let gProgramInfoDef = {};
 let gProgramInfoWave = {};
@@ -36,6 +36,7 @@ let gProgramInfoMorph = {};
 let gProgramInfoTreeMorph = {};
 let gProgramInfoBloodCloud = {};
 let gProgramInfoScreenBGTrans = {};
+let gProgramInfoPostProcessing = {};
 
 //Depth
 let gDepthFBO;
@@ -62,10 +63,15 @@ let gGlassRendText;
 let gRenderText;
 let gTexForTransp;
 
+//Bloom fbo
+let gBloomDepthMap;
+let gBloomRendText;
+let gBloomFBO;
+
 
 //Imported functions
 import { Move,Rotate,Scale } from './translations.js';
-import { Normalize,ToRadian,sleep } from './Utils.js';
+import { Normalize,ToRadian,lerp,sleep } from './Utils.js';
 import { CameraMove, MouseLook, GetViewMatrix } from './Camera.js';
 import { SinPreComp,CosPreComp,TanPreComp,ArcSinPreComp,ArcCosPreComp } from './PreCompWave.js';
 import { createNoise3D } from './Externals/simplex-noise.js';
@@ -109,7 +115,7 @@ let gElencoVis;
 
 //Transformation Scene
 let gCharTrans, gCharHairTrans, gFleshGroundL, gSpeakerL, gFleshHair, gFleshGroundR, gSpeakerR, gFlower, gBloodCloud
-,gScreenSpaceQuadTrans; //Not using hair rn
+,gScreenSpaceQuadTrans, gPostProcessingQuad; //Not using hair rn
 let gCharBoneColec = [];
 let gCharArmature;
 let gRCDict = new Map();
@@ -118,9 +124,12 @@ let gCompSurfObj;
 let gSurfColecVertIndicies = []; //Used to store which verts surface objects are linked with
 let gMidiObj;
 let gBoneModel;
-export let gBoneModelColec = [];
+export let gBoneColec = [];
+export let gFlowerColec = [];
 let gFleshParticles;
 let gTreeColec = [];
+export let gAlmondColec = [];
+export let gGlobalTempo = 186.62;
 
 
 //
@@ -516,16 +525,38 @@ async function SetUpScene()
   console.log(CharBoneImageNameColec.length + " " + CharBoneParentsColec.length);
   let BoneData = await LoadBones("./WeightImagesUpsc/",CharBoneImageNameColec, CharBoneParentsColec);
   gCharBoneColec = BoneData.colec;
+
+  gCharBoneColec[0].Origin = vec3.fromValues(0.0, 0.0, 0.0); //Torso
+  gCharBoneColec[1].Origin = vec3.fromValues(0.0, 1.0, 0.0); //Chest
+  gCharBoneColec[2].Origin = vec3.fromValues(-1.0, 2.0, 0.0); //LShould
+  gCharBoneColec[3].Origin = vec3.fromValues(-1.0, 1.0, 0.0); //LForearm
+  gCharBoneColec[4].Origin = vec3.fromValues(-1.0, 0.0, 0.0); //LArm
+  gCharBoneColec[5].Origin = vec3.fromValues(-1.0, -1.0, 0.0); //LHand
+  gCharBoneColec[6].Origin = vec3.fromValues(1.0, 2.0, 0.0); //RShould
+  gCharBoneColec[7].Origin = vec3.fromValues(1.0, 1.0, 0.0); //RForearm
+  gCharBoneColec[8].Origin = vec3.fromValues(1.0, 0.0, 0.0); //RArm
+  gCharBoneColec[9].Origin = vec3.fromValues(1.0, -1.0, 0.0); //RHand
+  gCharBoneColec[10].Origin = vec3.fromValues(0.0, 3.0, 0.0); //Head
+  gCharBoneColec[11].Origin = vec3.fromValues(-1.0, -.5, 0.0); //WaistL
+  gCharBoneColec[12].Origin = vec3.fromValues(-1.0, -1.0, 0.0); //ThighL
+  gCharBoneColec[13].Origin = vec3.fromValues(-1.0, -1.5, 0.0); //CalfL
+  gCharBoneColec[14].Origin = vec3.fromValues(-1.0, -2.0, 0.0); //FootL
+  gCharBoneColec[15].Origin = vec3.fromValues(1.0, -.5, 0.0); //WaistR
+  gCharBoneColec[16].Origin = vec3.fromValues(1.0, -1.0, 0.0); //ThighR
+  gCharBoneColec[17].Origin = vec3.fromValues(1.0, -1.5, 0.0); //CalfR
+  gCharBoneColec[18].Origin = vec3.fromValues(1.0, -2.0, 0.0); //FootR
+  gCharBoneColec[19].Origin = vec3.fromValues(0.0, 4.0, 0.0); //Head.001
+
+
   //console.log(gCharTrans.originalIndicies);
   let CharStringColec = [];
   CharStringColec = BoneData.stringColec;
   let AllCharClips = new CharClips();
   await AllCharClips.setupClips();
-  console.log("CalfL Clip is " + AllCharClips.ClipKickL);
   gCharArmature = new Armature(gCharBoneColec, gCharTrans, CharStringColec, VertWeightDataColec, gTimeSinceRun * .001, AllCharClips);
   await gCharArmature.setUpUniforms();
   gMidiObj = new MidiObj(gCharArmature.Timeline, AllCharClips);
-  await gMidiObj.LoadFile('./MidiFiles/ccTest.mid');
+  await gMidiObj.LoadFile('./MidiFiles/RetimedTrigger.mid');
 
   
     //==========================FILL RAYCAST ARRAY======================================
@@ -546,7 +577,8 @@ async function SetUpScene()
 
 
 
-export async function SpawnModel(Position, Rotation, Scale, Dir, ModelColec, TextDir, SecondDir = null)
+export async function SpawnModel(Position, Rotation, Scale, Dir, ModelColec, TextDir, lifeSpan, 
+  SecondDir = null, ThirdDir = null, FourthDir = null, FithDir = null,)
 {
   let Model = await LoadOBJ(gGL, Dir);
   if (SecondDir != null)
@@ -555,14 +587,30 @@ export async function SpawnModel(Position, Rotation, Scale, Dir, ModelColec, Tex
     Model.vertexBuffer2 = Model2.vertexBuffer;
     Model.TextureBN = await loadTexture(gGL, TextDir, 4);
   }
+  if (ThirdDir != null)
+  {
+    let Model3 = await LoadOBJ(gGL, ThirdDir);
+    Model.vertexBuffer3 = Model3.vertexBuffer;
+  }
+  if (FourthDir != null)
+  {
+    let Model4 = await LoadOBJ(gGL, FourthDir);
+    Model.vertexBuffer4 = Model4.vertexBuffer;
+  }
+  if (FithDir != null)
+  {
+    let Model5 = await LoadOBJ(gGL, FithDir);
+    Model.vertexBuffer5 = Model5.vertexBuffer;
+  }
   Model.Texture = await loadTexture(gGL, TextDir, 4);
   Model.Position = Position;
   Model.Rotation = Rotation;
   Model.Scale = Scale;
   Model.Color = [1.0,1.0,1.0,1.0];
   Model.spawnTime = gTimeSinceRun * .001;
-  Model.lifeSpan = 5.0;
+  Model.lifeSpan = lifeSpan;
   Model.Alpha = 1.0;
+  Model.StartY = Model.Position[1];
   ModelColec.push(Model);
 }
 function WaveUpdateMesh(WaveObj)
@@ -872,6 +920,7 @@ function Input()
     if (gKeysPressed['s']){Direction = 1; CameraMove(gCamera, Direction, gDeltaTime);}
     if (gKeysPressed['a']){Direction = 2; CameraMove(gCamera, Direction, gDeltaTime);}
     if (gKeysPressed['d']){Direction = 3; CameraMove(gCamera, Direction, gDeltaTime);}
+    if (gKeysPressed['Tab'] && document.pointerLockElement === gCanvas){document.exitPointerLock();gKeysPressed['Tab'] = false;} // so I don't leave zoom callws :(
 }
 function CheckRaycast(SelectColor, DeselectColor)
 {
@@ -908,8 +957,10 @@ function RaycastClick(Obj)
   switch(Obj){
     case gOpt1:
       gActiveMainLoop = TransformationLoop;
-      Sound1 = PlayAudio("./AudioFiles/DemoTransformation.wav");
+      Sound1 = PlayAudio("./AudioFiles/TransformProjDemo.wav");
       gMidiObj.StartMidi();
+      gCamera.Eye[2] = -150.0;
+      gCamera.Eye[1] = 25.0;
       gCharArmature.StartTime = gTimeSinceRun * .001;
       break;
     default:
@@ -1132,15 +1183,20 @@ const TransformationLoop = ()=>
   }
   //Animation
   gCharArmature.ApplyAnimation(gTimeSinceRun * .001);
-  let HairScale = .45 + gMidiObj.ccVals[0] * .5;
-  gFleshHair.Scale = [HairScale, HairScale,HairScale];
-  gFleshParticles.Scale[1] = 4.0 + (Math.abs(gCosView[Math.floor(gTimeSinceRun * .15) % WAVE_BUFFER_SIZE]) + gCharTrans.Position[1]);
+  gScreenSpaceQuadTrans.lightness = gMidiObj.ccVals[1];
+  for (let i = 0; i < gTreeColec.length; i++)
+  {
+    gTreeColec[i].lightness = gMidiObj.ccVals[1];
+  }
+  gFleshGroundL.lightness = gMidiObj.ccVals[1];
+  gFleshGroundR.lightness = gMidiObj.ccVals[1];
   gFleshParticles.Position[1] = -300.0 + (Math.abs(gSinView[Math.floor(gTimeSinceRun * .24) % WAVE_BUFFER_SIZE]) + gCharTrans.Position[1]) * 50.0;
   //======================RENDER RAYCAST============================
   ClearFBO(null, gGL);
   ClearFBO(gMainFBO, gGL);
   ClearFBO(gRaycastFBO, gGL);
   ClearFBO(gGlassFBO, gGL);
+  ClearFBO(gBloomFBO, gGL);
 
   gGL.bindFramebuffer(gGL.FRAMEBUFFER, gRaycastFBO);
   gGL.viewport(0, 0, gCanvasWidth, gCanvasHeight);
@@ -1174,10 +1230,22 @@ const TransformationLoop = ()=>
   gGL.clear(gGL.DEPTH_BUFFER_BIT); 
   gBloodCloud.DepthTexture = gDepthMap;
   //
+
+  //======================RENDER BLOOM============================
+  gGL.bindFramebuffer(gGL.FRAMEBUFFER, gBloomFBO);
+  gGL.viewport(0, 0, gCanvasWidth/2.0, gCanvasHeight/2.0);
+  gGL.enable(gGL.DEPTH_TEST);    
+  gGL.clear(gGL.DEPTH_BUFFER_BIT); 
+  gGL.enable(gGL.CULL_FACE); 
+  Draw(gProgramInfoTrans, gCharTrans, gCamera, gLight1, gCharArmature, gMidiObj);
+  Draw(gProgramInfoTrans, gCharHairTrans, gCamera, gLight1, null, gMidiObj);
+  gGL.bindFramebuffer(gGL.FRAMEBUFFER, gMainFBO);  
+  gPostProcessingQuad.TextureBN = gBloomRendText;
+  gGL.viewport(0, 0, gCanvasWidth, gCanvasHeight);
+
   DrawCallSetup();
 
   //======================RENDER NORMALPASS============================
-  gGL.bindFramebuffer(gGL.FRAMEBUFFER, null);
   gGL.cullFace(gGL.BACK);
   gGL.disable(gGL.CULL_FACE);
   gGL.disable(gGL.DEPTH_TEST);
@@ -1189,8 +1257,7 @@ const TransformationLoop = ()=>
   gGL.disable(gGL.CULL_FACE);
   Draw(gProgramInfoFlesh, gFleshGroundL, gCamera, gLight1, null, gMidiObj);//Speaker not used remove later
   Draw(gProgramInfoFlesh, gFleshGroundR, gCamera, gLight1, null, gMidiObj);
-  Draw(gProgramInfoMorph, gFlower, gCamera, gLight1);
-  // Draw(gProgramInfoDef, gFleshHair, gCamera, gLight2);
+
   gGL.enable(gGL.CULL_FACE);
   gGL.cullFace(gGL.FRONT);
   let VertIndex;
@@ -1221,18 +1288,47 @@ const TransformationLoop = ()=>
 
   let ActiveBone;
   let age;
-  for (let i = 0; i < gBoneModelColec.length; i++) //Bones
+  for (let i = 0; i < gBoneColec.length; i++) //Bones
   {
-    ActiveBone = gBoneModelColec[i];
+    ActiveBone = gBoneColec[i];
     age = ActiveBone.spawnTime + ActiveBone.lifeSpan;
     ActiveBone.Alpha = .9 - (((gTimeSinceRun * .001) - ActiveBone.spawnTime) / ActiveBone.lifeSpan);
-    console.log("Bone Alpha is " + ActiveBone.Alpha);
     Draw(gProgramInfoFlat, ActiveBone, gCamera, gLight1);
     if (age < (gTimeSinceRun * .001))
     {
-      gBoneModelColec.splice(i, 1);
+      gBoneColec.splice(i, 1);
     }
   }
+  gGL.disable(gGL.CULL_FACE);
+  let ActiveFlower;
+  for (let i = 0; i < gFlowerColec.length; i++)
+  {
+    ActiveFlower = gFlowerColec[i];
+    age = ActiveFlower.spawnTime + ActiveFlower.lifeSpan;
+    //ActiveFlower.Alpha = .9 - (((gTimeSinceRun * .001) - ActiveFlower.spawnTime) / ActiveFlower.lifeSpan);
+    Draw(gProgramInfoMorph, ActiveFlower, gCamera, gLight1);
+    if (age < (gTimeSinceRun * .001))
+    {
+      gFlowerColec.splice(i, 1);
+    }
+  }
+  let ActiveAlmond;
+  let GoalY = -50.0; // Yn
+  let StartY; //Y0
+  let N = 1.5;
+  let t;
+  for (let i=0; i < gAlmondColec.length; i++)
+  {
+    ActiveAlmond = gAlmondColec[i];
+    StartY = ActiveAlmond.StartY;
+    t = ((gTimeSinceRun* .001) - ActiveAlmond.spawnTime) / ActiveAlmond.lifeSpan;
+    //ActiveAlmond.Position[1] = StartY * Math.pow(Math.pow((GoalY / StartY), (1/N)), t);
+    ActiveAlmond.Position[1] = lerp(StartY, GoalY, t);
+    if (t >= 1.0) {gAlmondColec.splice(i,1);} //t is above 1 when lifespan is filled
+    Draw(gProgramInfoFlat, ActiveAlmond, gCamera, gLight1);
+  }
+
+
   for (let i = 0; i < gTreeColec.length; i++)
   {
     Draw(gProgramInfoTreeMorph, gTreeColec[i], gCamera, gLight1);
@@ -1241,10 +1337,9 @@ const TransformationLoop = ()=>
     StarLookAt(gFleshParticles, gCamera);
     Draw(gProgramInfoFleshPart, gFleshParticles, gCamera, gLight1);
     gGL.disable(gGL.DEPTH_TEST);
-    //Draw(gProgramInfoBloodCloud, gBloodCloud, gCamera, gLight1);
-
-
-
+    gPostProcessingQuad.Texture = gRenderText;
+    gGL.bindFramebuffer(gGL.FRAMEBUFFER, null);  
+    Draw(gProgramInfoPostProcessing, gPostProcessingQuad, gCamera, gLight1, null, gMidiObj);
 
   gFrameCount++;
   gCycleNum++;
@@ -1336,6 +1431,7 @@ async function main() {
   gFragTreeMorph = await loadShaderFiles(gFragTreeMorph, './Shaders/TreeMorphFrag.glsl');
   gFragBloodCloud = await loadShaderFiles(gFragTreeMorph, './Shaders/BloodCloudFrag.glsl');
   gFragScreenBGTrans = await loadShaderFiles(gFragTreeMorph, './Shaders/ScreenBGFrag.glsl');
+  gFragPostProcessing = await loadShaderFiles(gFragTreeMorph, './Shaders/PostProcessingFrag.glsl');
 
 
   gShaderProgramWave = initShader(gGL, gVertSourceDef,gFragSourceWave);
@@ -1358,6 +1454,7 @@ async function main() {
   gShaderProgramTreeMorph = initShader(gGL, gVertTreeMorph, gFragTreeMorph);
   gShaderProgramBloodCloud = initShader(gGL, gVertSourceDef, gFragBloodCloud);
   gShaderProgramScreenBGTrans = initShader(gGL, gVertSkybox, gFragScreenBGTrans);
+  gShaderProgramPostProcessing = initShader(gGL, gVertSkybox, gFragPostProcessing);
   
 
 
@@ -1382,6 +1479,7 @@ async function main() {
      gProgramInfoTreeMorph, gShaderProgramTreeMorph,
      gProgramInfoBloodCloud, gShaderProgramBloodCloud,
      gProgramInfoScreenBGTrans, gShaderProgramScreenBGTrans,
+     gProgramInfoPostProcessing, gShaderProgramPostProcessing,
      );
   
     SinPreComp(gSinView,WAVE_BUFFER_SIZE);
@@ -1417,9 +1515,15 @@ async function main() {
     let ScreenSpaceOrigin = [0.0,0.0,0.0];
     GenerateQuad(gScreenSpaceQuad,1.0,ScreenSpaceOrigin);  
 
+
+    //=========Trans=============
     gScreenSpaceQuadTrans = new Quad(gShaderProgramSkybox, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
       [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null);
       GenerateQuad(gScreenSpaceQuadTrans,1.0,ScreenSpaceOrigin);  
+
+    gPostProcessingQuad = new Quad(gShaderProgramSkybox, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
+      [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null);
+    GenerateQuad(gPostProcessingQuad,1.0,ScreenSpaceOrigin);  
 
     gCrossHair = new Quad(gShaderProgramSkybox, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
       [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null);
@@ -1494,6 +1598,9 @@ async function main() {
     gGlassRendText = genEmptyTex(gGL, gCanvasWidth, gCanvasHeight);
     gGlassDepthMap = genDepthMap(gGL, gCanvasWidth, gCanvasHeight);
     gGlassFBO = genFBO(gGL, gGlassDepthMap, gGlassRendText);
+    gBloomDepthMap = genDepthMap(gGL, gCanvasWidth, gCanvasHeight);
+    gBloomRendText = genEmptyTex(gGL, gCanvasWidth, gCanvasHeight);
+    gBloomFBO = genFBO(gGL, gBloomDepthMap, gBloomRendText);
     
 
     gTime = new Date();

@@ -18,6 +18,7 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
     ProgramInfoTreeMorph, ShaderProgramTreeMorph,
     ProgramInfoBloodCloud, ShaderProgramBloodCloud,
     ProgramInfoScreenBGTrans, ShaderProgramScreenBGTrans,
+    gProgramInfoPostProcessing, ShaderProgramPostProcessing,
     ) {
         //SOON TO DO - REORGANIZE TEXTURES SO THEY USE MULTIPLE TEXTURE SLOTS WITH GENERIC NAMES INSTEAD OF "TEXTUREBN"
     ProgramInfoDef.program = ShaderProgramDef;
@@ -282,6 +283,7 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         textureBN: GL.getUniformLocation(ShaderProgramFlesh, "uTextureBlueNoise"),
         ccVals: GL.getUniformLocation(ShaderProgramFlesh, "ccVals"),
         uvScale: GL.getUniformLocation(ShaderProgramFlesh, "UVScale"),
+        lightness: GL.getUniformLocation(ShaderProgramFlesh, "Lightness"),
     }
 
     ProgramInfoElenco.program = ShaderProgramElenco;
@@ -320,6 +322,7 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         targetVertexPosition: GL.getAttribLocation(ShaderProgramMorph, "aTargetVertPos"),
         targetVertexPosition2: GL.getAttribLocation(ShaderProgramMorph, "aTargetVertPos2"),
         targetVertexPosition3: GL.getAttribLocation(ShaderProgramMorph, "aTargetVertPos3"),
+        targetVertexPosition4: GL.getAttribLocation(ShaderProgramMorph, "aTargetVertPos4"),
         normalPosition: GL.getAttribLocation(ShaderProgramMorph, "aNorm"),
         UVPosition: GL.getAttribLocation(ShaderProgramMorph, "aUVCord"),
     };
@@ -331,6 +334,8 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         textureBN: GL.getUniformLocation(ShaderProgramMorph, "uTexture2"), //using textureBN rn as alt because I'm going to restructure soon 
         alpha: GL.getUniformLocation(ShaderProgramMorph, "Alpha"),
         time: GL.getUniformLocation(ShaderProgramMorph, "Time"),
+        lifeSpan: GL.getUniformLocation(ShaderProgramMorph, "lifeSpan"),
+        spawnTime: GL.getUniformLocation(ShaderProgramMorph, "spawnTime"),
     };
 
     ProgramInfoTreeMorph.program = ShaderProgramTreeMorph;
@@ -348,6 +353,7 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         textureBN: GL.getUniformLocation(ShaderProgramTreeMorph, "uTexture2"), //using textureBN rn as alt because I'm going to restructure soon 
         alpha: GL.getUniformLocation(ShaderProgramTreeMorph, "Alpha"),
         time: GL.getUniformLocation(ShaderProgramTreeMorph, "Time"),
+        lightness: GL.getUniformLocation(ShaderProgramTreeMorph, "Lightness"),
     };
 
     ProgramInfoBloodCloud.program = ShaderProgramBloodCloud;
@@ -384,8 +390,25 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         texture: GL.getUniformLocation(ShaderProgramScreenBGTrans, "uTexture"),
         time: GL.getUniformLocation(ShaderProgramScreenBGTrans, "Time"),
         textureBN: GL.getUniformLocation(ShaderProgramScreenBGTrans, "CharText"),
+        lightness: GL.getUniformLocation(ShaderProgramScreenBGTrans, "Lightness"),
+    }
 
-
+    gProgramInfoPostProcessing.program = ShaderProgramPostProcessing;
+    gProgramInfoPostProcessing.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramPostProcessing, "aVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramPostProcessing, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramPostProcessing, "aUVCord"),
+    }
+    gProgramInfoPostProcessing.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramPostProcessing, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramPostProcessing, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramPostProcessing, "uModelMatrix"),
+        texture: GL.getUniformLocation(ShaderProgramPostProcessing, "uTexture"),
+        resolution: GL.getUniformLocation(ShaderProgramPostProcessing, "uResolution"),
+        time: GL.getUniformLocation(ShaderProgramPostProcessing, "Time"),
+        textureBN: GL.getUniformLocation(ShaderProgramPostProcessing, "BloomText"),
+        ccVals: GL.getUniformLocation(ShaderProgramPostProcessing, "ccVals"),
+        
     }
     
 
@@ -529,6 +552,20 @@ export function loadTexture(gl, url, numChans = 4) {
             0,
         );
         gl.enableVertexAttribArray(programInfo.attribLocations.targetVertexPosition3);
+    }
+
+    if (Object.vertexBuffer5 != null && "targetVertexPosition4" in programInfo.attribLocations && programInfo.attribLocations.targetVertexPosition4 >= 0)
+    {
+        gl.bindBuffer(gl.ARRAY_BUFFER, Object.vertexBuffer5);
+        gl.vertexAttribPointer(
+            programInfo.attribLocations.targetVertexPosition4,
+            3, //num componenets
+            gl.FLOAT,
+            false, //don't normalize
+            0,
+            0,
+        );
+        gl.enableVertexAttribArray(programInfo.attribLocations.targetVertexPosition4);
     }
   
     
@@ -817,6 +854,28 @@ export function loadTexture(gl, url, numChans = 4) {
     }
     else if(("uvScale" in programInfo))
     {console.log("UVScale Uniform Could Not Be Found!")} 
+
+    if (programInfo.uniformLocations.lifeSpan != null)
+    {
+        gl.uniform1f(programInfo.uniformLocations.lifeSpan, Object.lifeSpan);
+    }
+    else if(("lifeSpan" in programInfo))
+    {console.log("lifeSpan Uniform Could Not Be Found!")} 
+
+    if (programInfo.uniformLocations.spawnTime != null)
+    {
+        gl.uniform1f(programInfo.uniformLocations.spawnTime, Object.spawnTime);
+    }
+    else if(("spawnTime" in programInfo))
+    {console.log("spawnTime Uniform Could Not Be Found!")} 
+
+    if (programInfo.uniformLocations.lightness != null)
+    {
+        gl.uniform1f(programInfo.uniformLocations.lightness, Object.lightness);
+    }
+    else if(("lightness" in programInfo))
+    {console.log("lightness Uniform Could Not Be Found!")} 
+
 
     //==== Bone Uniforms ====
     if (Armature != null)
