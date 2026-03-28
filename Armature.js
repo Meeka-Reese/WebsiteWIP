@@ -190,7 +190,7 @@ export class Armature{
             ActiveBone = this.BoneColec[ActiveBoneIndex];
 
             let LastKeyframeColec = this.Timeline.KeyframeMap.get(keyframe.BoneName);
-            console.log("Colec Length " + LastKeyframeColec.length);
+            //console.log("Colec Length " + LastKeyframeColec.length);
             let RecentKeyframe = null;
             if (LastKeyframeColec != undefined) 
             {

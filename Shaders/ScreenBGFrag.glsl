@@ -29,6 +29,6 @@
         float Cut = .16;
         Col = Text.r > Cut ? Col3 : Col2;
         Col = Text.r > Cut * 2.5 ? Col1 : Col;
-        float Light = max(((Lightness * .3)),.01);
+        float Light = max(((Lightness * .5)),.01);
         fragColor = vec4(Col * Light,1.0);
     }

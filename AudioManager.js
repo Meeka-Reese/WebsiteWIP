@@ -4,8 +4,9 @@ export function PlayAudio(dir)
     audio.play();
     return audio;
 }
-export function StopAudio(audio)
+export async function StopAudio(audio)
 {
-    audio.stop();
+    audio.pause();
+    audio.currentTime = 0;
     return null;
 }

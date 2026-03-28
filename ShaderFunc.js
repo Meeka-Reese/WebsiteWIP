@@ -234,12 +234,6 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         vertexPosition: GL.getAttribLocation(ShaderProgramTrans, "aVertPos"),
         normalPosition: GL.getAttribLocation(ShaderProgramTrans, "aNorm"),
         UVPosition: GL.getAttribLocation(ShaderProgramTrans, "aUVCord"),
-        WeightColec1: GL.getAttribLocation(ShaderProgramTrans, "aWeightColec1"),
-        WeightColec2: GL.getAttribLocation(ShaderProgramTrans, "aWeightColec2"),
-        WeightColec3: GL.getAttribLocation(ShaderProgramTrans, "aWeightColec3"),
-        WeightColec4: GL.getAttribLocation(ShaderProgramTrans, "aWeightColec4"),
-        WeightColec5: GL.getAttribLocation(ShaderProgramTrans, "aWeightColec5"),
-        WeightColec6: GL.getAttribLocation(ShaderProgramTrans, "aWeightColec6"),
     }
     ProgramInfoTrans.uniformLocations = {
         projectionMatrix: GL.getUniformLocation(ShaderProgramTrans, "uProjMatrix"),

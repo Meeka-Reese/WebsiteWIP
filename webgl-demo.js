@@ -132,6 +132,7 @@ export let gAlmondColec = [];
 export let gGlobalTempo = 186.62;
 
 
+
 //
 let gPreviousTime;
 let gDeltaTime;
@@ -920,6 +921,7 @@ function Input()
     if (gKeysPressed['s']){Direction = 1; CameraMove(gCamera, Direction, gDeltaTime);}
     if (gKeysPressed['a']){Direction = 2; CameraMove(gCamera, Direction, gDeltaTime);}
     if (gKeysPressed['d']){Direction = 3; CameraMove(gCamera, Direction, gDeltaTime);}
+    if (gKeysPressed['p'] && gActiveMainLoop == TransformationLoop){PlayTransformSong();}
     if (gKeysPressed['Tab'] && document.pointerLockElement === gCanvas){document.exitPointerLock();gKeysPressed['Tab'] = false;} // so I don't leave zoom callws :(
 }
 function CheckRaycast(SelectColor, DeselectColor)
@@ -957,8 +959,8 @@ function RaycastClick(Obj)
   switch(Obj){
     case gOpt1:
       gActiveMainLoop = TransformationLoop;
-      Sound1 = PlayAudio("./AudioFiles/TransformProjDemo.wav");
-      gMidiObj.StartMidi();
+      // Sound1 = PlayAudio("./AudioFiles/Transform24BitMaster.wav");
+      // gMidiObj.StartMidi();
       gCamera.Eye[2] = -150.0;
       gCamera.Eye[1] = 25.0;
       gCharArmature.StartTime = gTimeSinceRun * .001;
@@ -966,6 +968,13 @@ function RaycastClick(Obj)
     default:
       break;
   }
+}
+async function PlayTransformSong()
+{
+    await gMidiObj.StopMidi();
+    if (Sound1 != null) {await StopAudio(Sound1);}
+    gMidiObj.StartMidi();
+    Sound1 = PlayAudio("./AudioFiles/Transform24BitMaster.wav");
 }
 function ClickFunc(event)
 {

@@ -229,7 +229,8 @@
         vec4 ScreenText = texture(uTexture, screenSpace + (Displacement.rg * DispAm));
         vec3 HSL = RGB2HSL(ScreenText.rgb);
         HSL.r = HSL.r + (sin(Frame) * 30.0);
-        HSL.g *= ccVals[5] + .1;
+        HSL.g *= ccVals[5] + .2;
+        if (HSL.g > .8) {HSL.g *= 1.5;} //Magnify upper bounds
         vec3 NewRGB = HSL2RGB(HSL); 
         vec4 n[9];
         make_kernel(n, uTexture, screenSpace);

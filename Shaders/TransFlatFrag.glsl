@@ -1,4 +1,5 @@
 #version 300 es
+    #define CC_CHANNEL_NUM 8
     precision mediump float;   
     precision highp sampler3D;   
     precision lowp sampler2DArray;   
@@ -16,6 +17,7 @@
     uniform float Time;
     uniform vec2 uResolution;
     uniform sampler2DArray weightImage2DArray;
+    uniform float ccVals[CC_CHANNEL_NUM];
 
 
 
@@ -76,7 +78,7 @@
             vec3 reflectDir = reflect(-lightDir, -NormalizedNorm);
             float spec = pow(max(dot(viewDir, reflectDir), 0.0), 1000.0);
             vec3 specular = specularStrength * spec * vec3(1.0,1.0,1.0);
-            float BaseLight = pow(abs(sin(Frame)), 2.0);
+            float BaseLight = min(pow(abs(sin(Frame)), 2.0) + (1.0 - ccVals[1]),1.0);
             
             texColor.rgb *= diffuse.r + specular.r + vec3(BaseLight);
 
