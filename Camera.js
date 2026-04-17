@@ -4,8 +4,8 @@ import { mat4 } from './Externals/esm/index.js';
 import { vec3 } from './Externals/esm/index.js';
 import { vec4 } from './Externals/esm/index.js';
 import { quat } from './Externals/esm/index.js';
-let gSpeed = .1;
-let gRotationSpeed = .15;
+let gSpeed = .11;
+let gRotationSpeed = .7;
 let gTotalYaw;
 let gTotalPitch = 0.0;
 export function CameraMove(Camera, Direction, DeltaMs)
@@ -51,41 +51,50 @@ export function CameraMove(Camera, Direction, DeltaMs)
 
 export function MouseLook(Camera, DeltaMouse)
 {
-    let RotationSpeed = .1;
-    let yaw = -DeltaMouse[0] * gRotationSpeed;
+    let RotationSpeed = gRotationSpeed * gSpeed;
+    let WorldUp = [0.0, 1.0, 0.0];
+
+    // === YAW ===
+    let yaw = -DeltaMouse[0] * RotationSpeed;
     gTotalYaw += yaw;
-    let pitch = -DeltaMouse[1] * gRotationSpeed;
+
+    let yawRotation = mat4.create();
+    mat4.fromRotation(yawRotation, ToRadian(yaw), WorldUp);
+
+    let viewDir4 = [Camera.ViewDir[0], Camera.ViewDir[1], Camera.ViewDir[2], 0.0];
+    let afterYaw = vec4.create();
+    vec4.transformMat4(afterYaw, viewDir4, yawRotation);
+    Camera.ViewDir = Normalize([afterYaw[0], afterYaw[1], afterYaw[2]]);
+
+    let rightVector = Normalize(math.cross(Camera.ViewDir, WorldUp));
+    Camera.UpDir = Normalize(math.cross(rightVector, Camera.ViewDir));
+
+    // === PITCH ===
+    let pitch = -DeltaMouse[1] * RotationSpeed;
     gTotalPitch += pitch;
-    if (gTotalPitch > 89.9|| gTotalPitch < -89.9)
+
+    // Clamp before applying
+    if (gTotalPitch > 89.0)
     {
-        pitch = 0;
-        gTotalPitch = gTotalPitch > 0.0 ? 89.9 : -89.9;
+        pitch -= (gTotalPitch - 89.0);
+        gTotalPitch = 89.0;
+    }
+    else if (gTotalPitch < -89.0)
+    {
+        pitch -= (gTotalPitch + 89.0);
+        gTotalPitch = -89.0;
     }
 
-   // Yaw (left/right) - rotate around world up axis
-    let yawRotation = mat4.create(); // Create identity matrix
-    let WorldUp = [0.0,1.0,0.0];
-    let radYaw = ToRadian(yaw);
-    mat4.fromRotation(yawRotation, radYaw, WorldUp);
-
-// Calculate camera's right vector
-    let rightVector = Normalize(math.cross(Camera.ViewDir, Camera.UpDir));
-
-// Pitch (up/down) - rotate around camera's right axis
     let pitchRotation = mat4.create();
-    let radPitch = ToRadian(pitch);
-    mat4.fromRotation(pitchRotation, radPitch, rightVector);
+    mat4.fromRotation(pitchRotation, ToRadian(pitch), rightVector);
 
-    //Combine Rotation
-    let CombinedRotation = mat4.create();
-    mat4.multiply(CombinedRotation, pitchRotation, yawRotation);
-    // Apply rotations to view direction
-    let viewDir4 = [Camera.ViewDir[0], Camera.ViewDir[1], Camera.ViewDir[2], 0.0];
-    let newViewDir = vec4.create();
-    vec4.transformMat4(newViewDir, viewDir4, CombinedRotation);
+    let afterPitch = vec4.create();
+    let viewDir4b = [Camera.ViewDir[0], Camera.ViewDir[1], Camera.ViewDir[2], 0.0];
+    vec4.transformMat4(afterPitch, viewDir4b, pitchRotation);
+    Camera.ViewDir = Normalize([afterPitch[0], afterPitch[1], afterPitch[2]]);
 
-    // Update camera's view direction (normalize and convert back to vec3)
-    Camera.ViewDir = Normalize([newViewDir[0], newViewDir[1], newViewDir[2]]);
+    rightVector = Normalize(math.cross(Camera.ViewDir, WorldUp));
+    Camera.UpDir = Normalize(math.cross(rightVector, Camera.ViewDir));
 }
 export function GetViewMatrix(Camera)
 {

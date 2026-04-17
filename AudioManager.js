@@ -1,4 +1,5 @@
-export function PlayAudio(dir)
+export const gAudioContext = new AudioContext();
+export async function PlayAudio(dir)
 {
     let audio = new Audio(dir);
     audio.play();

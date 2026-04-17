@@ -1204,3 +1204,15 @@ export async function LoadWeightsTXT(Directory, BoneNameColec, Obj)
     return WeightsForBuffColec 
 }
 
+export function RemapToInd(Indicies, Array)
+{
+    let ReMappedArray;
+    for (let i = 0; i< Indicies.length; i++)
+    {
+        let NewIndex = Indicies[i];
+        let NewValue = Array[NewIndex - 1];
+        ReMappedArray.push(NewValue);
+    }
+    return ReMappedArray;
+}
+

@@ -106,7 +106,8 @@
     }
     void main()
     {
-        float DepthTexture = texture(depthTexture, gl_FragCoord.xy/uResolution).r;
+        vec2 newUV = vec2((gl_FragCoord.x) / uResolution.x, (gl_FragCoord.y) / (uResolution.y));
+        float DepthTexture = texture(depthTexture, newUV).r;
         float near = 0.1;
         float far = 200.0;
         float z = DepthTexture * 2.0 - 1.0;

@@ -1,3 +1,6 @@
+//Current Bugs Camera rotations issue, Canvas rescaling with vert shader issue
+
+
 /*
 Create FBO for Raycast with Object ID. Have definition of all raycast 
 objects and make the rendered texture value be the index of the object
@@ -77,15 +80,20 @@ import { SinPreComp,CosPreComp,TanPreComp,ArcSinPreComp,ArcCosPreComp } from './
 import { createNoise3D } from './Externals/simplex-noise.js';
 import { SetProgramInfo,loadTexture,setPositionAttribute,createTexture2DFromBuffer,
   createTexture3DFromBuffer,genFBO,genDepthMap,genEmptyTex,ClearFBO,
-  loadShaderFiles,initShader, LoadWeightsTXT} from './ShaderFunc.js';
+  loadShaderFiles,initShader, LoadWeightsTXT, RemapToInd} from './ShaderFunc.js';
 import { mat4,vec2,vec3,vec4,quat } from './Externals/esm/index.js';
 import { GenerateWave,CalculateNormals,GenerateQuad,SphereOfQuad,StarLookAt,PlaceColecOnSurf} from './GenerateMesh.js';
 import { CreateWorley3D } from './GenerateNoise.js';
 import { LoadOBJ } from './Externals/webgl-obj-loader.js'; 
 import { Bone, Armature, LoadBones} from './Armature.js';
 import { CharClips } from './Animation.js';
-import { PlayAudio, StopAudio } from './AudioManager.js';
+import { PlayAudio, StopAudio, gAudioContext} from './AudioManager.js';
 import { MidiObj } from './MidiManager.js';
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+
+
+
 
 
 //=======================GLOBALS=============================
@@ -111,11 +119,12 @@ let gScreenSpaceQuad;
 let gCrossHair;
 let gOpt1, gOpt2, gOpt3; //set up raytracing Options
 let gElencoVis;
+let gIsLoading = true;
 
 
 //Transformation Scene
 let gCharTrans, gCharHairTrans, gFleshGroundL, gSpeakerL, gFleshHair, gFleshGroundR, gSpeakerR, gFlower, gBloodCloud
-,gScreenSpaceQuadTrans, gPostProcessingQuad; //Not using hair rn
+,gScreenSpaceQuadTrans, gPostProcessingQuad, gHomeButton, gPlayButton, gPauseButton, gUIBacking; //Not using hair rn
 let gCharBoneColec = [];
 let gCharArmature;
 let gRCDict = new Map();
@@ -131,6 +140,11 @@ let gTreeColec = [];
 export let gAlmondColec = [];
 export let gGlobalTempo = 186.62;
 
+//About Me Scene
+let gSceneAboutMe = new THREE.Scene();
+let gCharMeDict = new Map();
+let gCharTextColec;
+
 
 
 //
@@ -145,6 +159,7 @@ let gCycleNum = 0;
 let gBoatWaveIndices = [0,0,0,0];
 let gBoatRangeIndices = [0,0,0,0];
 let gFrameCount = 0;
+let gInitLoad = true;
 
 //Precomps
 let WAVE_BUFFER_SIZE = 4096;
@@ -174,7 +189,12 @@ let gCanvasHeight;
 
 
 //=========GLOBAL AUDIO============
-let Sound1 = null;
+const Sound1 = document.getElementById("TransformSong");
+let Track1 = gAudioContext.createMediaElementSource(Sound1);
+Track1.connect(gAudioContext.destination);
+const Sound2 = document.getElementById("MainTheme");
+let Track2 = gAudioContext.createMediaElementSource(Sound2);
+Track2.connect(gAudioContext.destination);
 
 
 //-----------------------GLOBALS-----------------------------
@@ -194,13 +214,14 @@ function makeStruct(keys) {
 async function SetUpScene()
 {
   //== Main Scene ==
-
+  let LoadTxt = document.getElementById("LoadTxt");
    //Gen Noise
-   let ImgSize = 8;
+   let ImgSize = 4;
    let ImgBufNoise = await CreateWorley3D(4, ImgSize);
 
    //===================================TEXTURES========================================
    let Noise3DText = await createTexture3DFromBuffer(gGL, ImgBufNoise, ImgSize, ImgSize, ImgSize);
+   LoadTxt.style.color = '#ffb700';
    let BlueNoiseText = await loadTexture(gGL, './Textures/BlueNoise.png',4);
    let CloudDetailNoiseText = await loadTexture(gGL, './Textures/CloudDetailNoise.png',4);
    let SailBoatText = await loadTexture(gGL, './Textures/SailBoat.png',4);
@@ -215,7 +236,15 @@ async function SetUpScene()
    let VeinTree1Text = await loadTexture(gGL, './Textures/VeinTreeThin.png',4);
    let VeinTree2Text = await loadTexture(gGL, './Textures/VeinTreeThin2.png',4);
    let ElencoText = await loadTexture(gGL, './Textures/Elenco.png', 4);
-
+   let EarRingText = await loadTexture(gGL, './Textures/CharMeTexts/EarRing.png', 4);
+   let BodyText = await loadTexture(gGL, './Textures/CharMeTexts/Body.png', 4);
+   let HairText = await loadTexture(gGL, './Textures/CharMeTexts/Hair.png', 4);
+   let ShirtText = await loadTexture(gGL, './Textures/CharMeTexts/Shirt.png', 4);
+   let ShoeText = await loadTexture(gGL, './Textures/CharMeTexts/Shoe.png', 4);
+   let SkirtText = await loadTexture(gGL, './Textures/CharMeTexts/Skirt.png', 4);
+   let SocksText = await loadTexture(gGL, './Textures/CharMeTexts/Socks.png', 4);
+   let ShoeLaceText = await loadTexture(gGL, './Textures/CharMeTexts/ShoeLace.png', 4);
+   LoadTxt.style.color = '#fbff00';
    //===================================OBJECTS========================================
   
    gNoiseCube = await LoadOBJ(gGL, './models/Cube.obj');
@@ -242,6 +271,8 @@ async function SetUpScene()
 
   gOpt1 = await LoadOBJ(gGL, './models/Arrow.obj');
 
+  gOpt2 = await LoadOBJ(gGL, './models/Arrow.obj');
+
   gCharHead = await LoadOBJ(gGL, './models/CharHead.obj');
   gCharHead.Texture = GirlText;
 
@@ -256,7 +287,8 @@ async function SetUpScene()
   gCrossHair.Texture = CrosshairText;
 
   gElencoVis.Texture = ElencoText;
-
+  
+  LoadTxt.style.color = '#aaff00';
   //== Transform Scene ==
   
   gCharTrans = await LoadOBJ(gGL, './models/CharFullBodyUp.obj', true);
@@ -289,6 +321,11 @@ async function SetUpScene()
   gFlower.Texture = FlowerBloomText;
   gFlower.TextureBN = FlowerBloomText;
 
+  gHomeButton = await LoadOBJ(gGL, './models/Home.obj');
+  gPlayButton = await LoadOBJ(gGL, './models/Play.obj');
+  gPauseButton = await LoadOBJ(gGL, './models/Pause.obj');
+  gUIBacking = await LoadOBJ(gGL, './models/UIBacking.obj');
+
   let VeinThick1 = await LoadOBJ(gGL, './models/VeinsThick.obj');
   let VeinThick2 = await LoadOBJ(gGL, './models/VeinsThick2.obj');
   let LocTreeColec = new Array(11);
@@ -319,11 +356,21 @@ async function SetUpScene()
 
   gScreenSpaceQuadTrans.Texture = GlassDisplacementText;
   gScreenSpaceQuadTrans.TextureBN = GirlFullText;
-  
 
 
-  //
+//-=-=-=-=-=-=-=-=-=-=-=-=-=======About Me Scene================-=-=-=-=-=-=-=-=-=-=-=-=-
 
+gCharMeDict = await LoadThreeScene('./models/TestChar.glb', gSceneAboutMe); //Skirt, Body, EarRing, Hair, Shirt, ShoeL, ShoeR, Socks, ShoeLaceL, ShoeLaceR
+gCharMeDict.get("Skirt").Texture =  SkirtText;
+gCharMeDict.get("Body").Texture =  BodyText;
+gCharMeDict.get("EarRing").Texture =  EarRingText;
+gCharMeDict.get("Hair").Texture =  HairText;
+gCharMeDict.get("Shirt").Texture =  ShirtText;
+gCharMeDict.get("ShoeL").Texture =  ShoeText;
+gCharMeDict.get("ShoeR").Texture =  ShoeText;
+gCharMeDict.get("Socks").Texture =  SocksText;
+gCharMeDict.get("ShoeLaceL").Texture =  ShoeLaceText;
+gCharMeDict.get("ShoeLaceR").Texture =  ShoeLaceText;
 
    //==========================SET PARENTING======================================
    //== Main Scene ==
@@ -338,11 +385,19 @@ async function SetUpScene()
   gSpeakerR.ParentScale = gFleshGroundR;
   gFleshHair.ParentTrans = gFleshGroundL;
   gFleshHair.ParentScale = gFleshGroundL;
+  gHomeButton.ParentTrans = gUIBacking;
+  gHomeButton.ParentScale = gUIBacking;
+  gPauseButton.ParentTrans = gUIBacking;
+  gPauseButton.ParentScale = gUIBacking;
+  gPlayButton.ParentTrans = gUIBacking;
+  gPlayButton.ParentScale = gUIBacking;
+  
 
-
+  LoadTxt.style.color = '#08c979';
   //==========================SET POSITION======================================
   //== Main Scene ==
-  gBoatMesh.Scale = [2.0, 2.0, 2.0];
+  let BoatScale = 3.0;
+  gBoatMesh.Scale = [BoatScale, BoatScale, BoatScale];
   gBoatMesh.Rotation = [0.0,0.0,0.0];
   gBoatMesh.Position = [45.0,0.0,35.0];
   gMoon.Position = [10,40,10];
@@ -380,6 +435,10 @@ async function SetUpScene()
   gOpt1.Rotation = [0.0,90.0,0.0];
   gOpt1.Scale = [optSize,optSize,optSize];
   gOpt1.Color = [.7,.7,.7,1.0];
+  gOpt2.Position = [0.0,2.0,85.0];
+  gOpt2.Rotation = [0.0,60.0,0.0];
+  gOpt2.Scale = [optSize,optSize,optSize];
+  gOpt2.Color = [.7,.7,.7,1.0];
   let gCharSize = 10.0;
   gCharHead.Position = [0.0,-28.0,1.0];
   gCharHead.Rotation = [0.0,180.0,0.0];
@@ -437,6 +496,30 @@ async function SetUpScene()
   gBloodCloud.Rotation = [0.0,0.0,0.0];
   gBloodCloud.Position = [50.0,50.0,40.0];
   gBloodCloud.Scale = [gBloodCloudSize,gBloodCloudSize,gBloodCloudSize];
+
+  let UIScale = 10.0;
+  gHomeButton.Position = [0.0, 0.0, 2.75];
+  gHomeButton.Rotation = [0.0, 0.0, 0.0];
+  gHomeButton.Scale = [1.0, 1.0, 1.0];
+  gHomeButton.Color = [.8, .8, .8, 1.0];
+
+  gPlayButton.Position = [0.0, 0.0, .75];
+  gPlayButton.Rotation = [0.0, 0.0, 0.0];
+  gPlayButton.Scale = [1.0, 1.0, 1.0];
+  gPlayButton.Color = [0.0, .8, .8, 1.0];
+
+  gPauseButton.Position = [0.0, 0.0, -2.0];
+  gPauseButton.Rotation = [0.0, 0.0, 0.0];
+  gPauseButton.Scale = [1.0, 1.0, 1.0];
+  gPauseButton.Color = [.8, .8, .8, 1.0];
+
+  gUIBacking.Position = [120.0,0.0,0.0];
+  gUIBacking.Rotation = [0.0,180.0,0.0];
+  gUIBacking.Scale = [UIScale, UIScale, UIScale];
+  gUIBacking.Color = [.8, .1, .2, 1.0];
+
+
+
 
 //==========TREES==========
   let TreeScale = 20.0;
@@ -558,14 +641,14 @@ async function SetUpScene()
   await gCharArmature.setUpUniforms();
   gMidiObj = new MidiObj(gCharArmature.Timeline, AllCharClips);
   await gMidiObj.LoadFile('./MidiFiles/RetimedTrigger.mid');
-
+  LoadTxt.style.color = '#09e2ed';
   
     //==========================FILL RAYCAST ARRAY======================================
     //== Main Scene ==
-    gRaycastColecMain.push(gOpt1);
+    gRaycastColecMain.push(gOpt1, gOpt2);
     gRCDict.set(gOpt1, gGlassSphere);
     //== Transform Scene ==
-
+    gRaycastColecTransform.push(gHomeButton, gPauseButton, gPlayButton);
 
       //Surface Mapping
       let MinDist = 1.0;
@@ -616,9 +699,9 @@ export async function SpawnModel(Position, Rotation, Scale, Dir, ModelColec, Tex
 }
 function WaveUpdateMesh(WaveObj)
 { 
-    let WaveAmp = [.6,1.2,.4, .2];
-    let WaveSize = [3.5,2.6,2.0, 7.6];
-    let WaveSpeeds = [1.2,1.35,2.2, 1.4];
+    let WaveAmp = [1.6,2.2,1.4, 1.2];
+    let WaveSize = [.3,.26,.2, .76];
+    let WaveSpeeds = [.7,1.1,1.5, .8];
     let NoiseDetail = [.3, .2,.3];
     let NoiseAmp = .5;
     let TimeSec = gTime.getTime() * .001;
@@ -922,6 +1005,8 @@ function Input()
     if (gKeysPressed['a']){Direction = 2; CameraMove(gCamera, Direction, gDeltaTime);}
     if (gKeysPressed['d']){Direction = 3; CameraMove(gCamera, Direction, gDeltaTime);}
     if (gKeysPressed['p'] && gActiveMainLoop == TransformationLoop){PlayTransformSong();}
+    if (gKeysPressed['y']) { document.getElementById("PlayMusic").style.opacity = 0.0; Sound2.play();}
+    if (gKeysPressed['n']) { document.getElementById("PlayMusic").style.opacity = 0.0;}
     if (gKeysPressed['Tab'] && document.pointerLockElement === gCanvas){document.exitPointerLock();gKeysPressed['Tab'] = false;} // so I don't leave zoom callws :(
 }
 function CheckRaycast(SelectColor, DeselectColor)
@@ -940,18 +1025,43 @@ function CheckRaycast(SelectColor, DeselectColor)
  
   let ObjIndex = (MousePixel[0] - 1); // -1 for indexing against array
   gRaycastIndex = ObjIndex;
+
   for (let Obj of gRaycastColecMain)//reset all to deselect color
+    {
+      Obj.Color = DeselectColor;
+      let DispObj = gRCDict.get(Obj);
+      if (DispObj != null && "isHover" in DispObj){DispObj.isHover = 0.0;}
+    }
+
+    for (let Obj of gRaycastColecTransform)//reset all to deselect color
+    {
+      Obj.Color = DeselectColor;
+      let DispObj = gRCDict.get(Obj);
+      if (DispObj != null && "isHover" in DispObj){DispObj.isHover = 0.0;}
+    }
+
+
+  if (gActiveMainLoop == MainLoop)
   {
-    Obj.Color = DeselectColor;
-    let DispObj = gRCDict.get(Obj);
-    if (DispObj != null && "isHover" in DispObj){DispObj.isHover = 0.0;}
-  }
+    if (ObjIndex == -1) {return null;}
+
+    let ObjSelec = gRaycastColecMain[ObjIndex];
+    if (ObjSelec == undefined) {return null;}
+    ObjSelec.Color = SelectColor;
+    let DispObj = gRCDict.get(ObjSelec);
+    if (DispObj != null && "isHover" in DispObj){DispObj.isHover = 1.0;}
+}
+else if(gActiveMainLoop == TransformationLoop)
+{
   if (ObjIndex == -1) {return null;}
 
-  let ObjSelec = gRaycastColecMain[ObjIndex];
+  let ObjSelec = gRaycastColecTransform[ObjIndex];
   ObjSelec.Color = SelectColor;
   let DispObj = gRCDict.get(ObjSelec);
   if (DispObj != null && "isHover" in DispObj){DispObj.isHover = 1.0;}
+}
+  
+  
 
 }
 function RaycastClick(Obj)
@@ -959,22 +1069,62 @@ function RaycastClick(Obj)
   switch(Obj){
     case gOpt1:
       gActiveMainLoop = TransformationLoop;
-      // Sound1 = PlayAudio("./AudioFiles/Transform24BitMaster.wav");
-      // gMidiObj.StartMidi();
+      console.log("ENTERING TRANSFORMATION LOOP");
       gCamera.Eye[2] = -150.0;
       gCamera.Eye[1] = 25.0;
       gCharArmature.StartTime = gTimeSinceRun * .001;
+      Sound2.currentTime = 0;
+      Sound2.pause();
+      Sound1.pause();
+      Sound1.currentTime = 0;
+      gMidiObj.StartMidi();
+      gMidiObj.StopMidi();
+      gCharArmature.Timeline.clearAniClips();
+      document.getElementById("PlayMusic").style.opacity = 0.0;
       break;
+    case gOpt2:
+      gActiveMainLoop = AboutMeLoop;
+      gCamera.Eye[2] = -150.0;
+      gCamera.Eye[1] = 25.0;
+      Sound2.currentTime = 0;
+      Sound2.pause();
+      Sound1.pause();
+      Sound1.currentTime = 0;
+      document.getElementById("PlayMusic").style.opacity = 0.0;
+      break;
+    case gHomeButton:
+      gCamera.Eye = [0.0,10.0,0.0];
+      gCamera.ViewDir = [0.0,0.0,1.0];
+      gActiveMainLoop = MainLoop;
+      console.log("ENTERING MAIN LOOP");
+      Sound1.pause();
+      Sound1.currentTime = 0;
+      gMidiObj.StopMidi();
+      Sound2.pause();
+      Sound2.currentTime = 0;
+      Sound2.play();
+      break
+    case gPauseButton:
+      console.log("Pausing");
+      Sound1.pause();
+      //Sound1.currentTime = 0;
+      gMidiObj.StopMidi();
+      break
+    case gPlayButton:
+      console.log("Playing");
+      PlayTransformSong();
+      break
     default:
       break;
   }
 }
 async function PlayTransformSong()
 {
-    await gMidiObj.StopMidi();
-    if (Sound1 != null) {await StopAudio(Sound1);}
+    await gMidiObj.StopMidi(); 
+    Sound1.pause();
+    //Sound1.currentTime = 0;
+    Sound1.play();
     gMidiObj.StartMidi();
-    Sound1 = PlayAudio("./AudioFiles/Transform24BitMaster.wav");
 }
 function ClickFunc(event)
 {
@@ -1013,15 +1163,14 @@ document.addEventListener('pointerlockerror', () => {
     switch (gActiveMainLoop)
     {
       case MainLoop:
-        gCamera.Eye = [0.0,0.0,0.0];
+        gCamera.Eye = [0.0,10.0,0.0];
         gCamera.ViewDir = [0.0,0.0,1.0];
         rcObj = gRaycastColecMain[gRaycastIndex];
         break;
       case TransformationLoop:
-        gCamera.Eye = [0.0,0.0,0.0];
-        gCamera.ViewDir = [0.0,0.0,1.0];
         rcObj = gRaycastColecTransform[gRaycastIndex];
         break;
+      
     }
     if (rcObj != null) {RaycastClick(rcObj);}
   }
@@ -1042,12 +1191,13 @@ const MainLoop = ()=>
 {
     gTime = new Date();
     let newTime = gTime.getTime();
-    gDeltaTime = newTime- gPreviousTime;
+    gDeltaTime = newTime - gPreviousTime;
     gTimeSinceRun = newTime - gTimeStart;
     gPreviousTime = newTime;
 
     Input();
-    MouseLook(gCamera, gDeltaMouse);
+    gMouseMoved = Math.abs(gDeltaMouse[0]) + Math.abs(gDeltaMouse[1]) >= .001 ? true : false;
+    MouseLook(gCamera, gDeltaMouse, gDeltaTime);
     if (gFrameCount % 2 == 0)
     {
       WaveUpdateMesh(gSimpleWave);
@@ -1073,7 +1223,7 @@ const MainLoop = ()=>
       gGL.enable(gGL.DEPTH_TEST);
       gGL.enable(gGL.CULL_FACE);
       let SelectColor = [1.0,1.0,1.0,1.0];
-      let DeselectColor = [.2,.2,.2,1.0];
+      let DeselectColor = [.2,.2,.5,1.0];
       let ObjIndex = 1; //start indexing at 1
       for(let obj of gRaycastColecMain)
       {
@@ -1082,7 +1232,6 @@ const MainLoop = ()=>
         ObjIndex++;
       }
       gRaycastText = gRaycastMap;
-      gMouseMoved = Math.abs(gDeltaMouse[0]) + Math.abs(gDeltaMouse[1]) >= .001 ? true : false;
       if (gMouseMoved) {CheckRaycast(SelectColor, DeselectColor); console.log("MouseMove");}
       gDeltaMouse = [0.0,0.0];
 
@@ -1128,6 +1277,7 @@ const MainLoop = ()=>
     gGL.depthMask(true);
     gGL.enable(gGL.DEPTH_TEST); 
     Draw(gProgramInfoDef, gOpt1, gCamera,gLight1);
+    Draw(gProgramInfoDef, gOpt2, gCamera,gLight1);
     gGL.enable(gGL.CULL_FACE);
     Draw(gProgramInfoFlat, gMoon, gCamera, gLight1);
     
@@ -1160,13 +1310,18 @@ const MainLoop = ()=>
     gGL.bindFramebuffer(gGL.FRAMEBUFFER, null); 
     gGL.disable(gGL.CULL_FACE);
     Draw(gProgramInfoScreenRender, gScreenSpaceQuad, gCamera, gLight1);
-    Draw(gProgramInfoScreenImage, gCrossHair, gCamera, gLight1);
+    if (document.pointerLockElement === gCanvas)
+    {
+      Draw(gProgramInfoScreenImage, gCrossHair, gCamera, gLight1);
+    }
    // Draw(gProgramInfoElenco, gElencoVis, gCamera, gLight1);
     
   
 
     gFrameCount++;
     gCycleNum++;
+    if (gActiveMainLoop != MainLoop) {gInitLoad = true;}
+    else {gInitLoad = false;}
     requestAnimationFrame(gActiveMainLoop);
 }
 
@@ -1183,7 +1338,7 @@ const TransformationLoop = ()=>
   
 
   Input();
-  MouseLook(gCamera, gDeltaMouse);
+  MouseLook(gCamera, gDeltaMouse, gDeltaTime);
   if (gFrameCount % 2 == 0)
   {
     WaveUpdateMesh(gSimpleWave);
@@ -1212,7 +1367,7 @@ const TransformationLoop = ()=>
   gGL.enable(gGL.DEPTH_TEST);
   gGL.enable(gGL.CULL_FACE);
   let SelectColor = [1.0,1.0,1.0,1.0];
-  let DeselectColor = [.2,.2,.2,1.0];
+  let DeselectColor = [.2,.3,.4,1.0];
   let ObjIndex = 1; //start indexing at 1
   for(let obj of gRaycastColecTransform)
   {
@@ -1222,7 +1377,7 @@ const TransformationLoop = ()=>
   }
   gRaycastText = gRaycastMap;
   gMouseMoved = Math.abs(gDeltaMouse[0]) + Math.abs(gDeltaMouse[1]) >= .001 ? true : false;
-  if (gMouseMoved) {CheckRaycast(SelectColor, DeselectColor); console.log("MouseMove");}
+  if (gInitLoad || gMouseMoved) {CheckRaycast(SelectColor, DeselectColor); console.log("MouseMove");}
   gDeltaMouse = [0.0,0.0];
 
   
@@ -1266,6 +1421,9 @@ const TransformationLoop = ()=>
   gGL.disable(gGL.CULL_FACE);
   Draw(gProgramInfoFlesh, gFleshGroundL, gCamera, gLight1, null, gMidiObj);//Speaker not used remove later
   Draw(gProgramInfoFlesh, gFleshGroundR, gCamera, gLight1, null, gMidiObj);
+  gGL.enable(gGL.CULL_FACE);
+
+  
 
   gGL.enable(gGL.CULL_FACE);
   gGL.cullFace(gGL.FRONT);
@@ -1335,23 +1493,41 @@ const TransformationLoop = ()=>
     ActiveAlmond.Position[1] = lerp(StartY, GoalY, t);
     if (t >= 1.0) {gAlmondColec.splice(i,1);} //t is above 1 when lifespan is filled
     Draw(gProgramInfoFlat, ActiveAlmond, gCamera, gLight1);
+    gInitLoad = false;
   }
+
+  
 
 
   for (let i = 0; i < gTreeColec.length; i++)
   {
     Draw(gProgramInfoTreeMorph, gTreeColec[i], gCamera, gLight1);
   }
-
+  
     StarLookAt(gFleshParticles, gCamera);
     Draw(gProgramInfoFleshPart, gFleshParticles, gCamera, gLight1);
+    
     gGL.disable(gGL.DEPTH_TEST);
+    
     gPostProcessingQuad.Texture = gRenderText;
+    
     gGL.bindFramebuffer(gGL.FRAMEBUFFER, null);  
+    gGL.viewport(0, 0, gCanvasWidth, gCanvasHeight);
     Draw(gProgramInfoPostProcessing, gPostProcessingQuad, gCamera, gLight1, null, gMidiObj);
+    gGL.enable(gGL.DEPTH_TEST);
+    Draw(gProgramInfoDef, gHomeButton, gCamera,gLight1);
+  Draw(gProgramInfoDef, gPauseButton, gCamera,gLight1);
+  Draw(gProgramInfoDef, gPlayButton, gCamera,gLight1);
+  Draw(gProgramInfoDef, gUIBacking, gCamera,gLight1);
+    if (document.pointerLockElement === gCanvas)
+    {
+      Draw(gProgramInfoScreenImage, gCrossHair, gCamera, gLight1);
+    }
 
   gFrameCount++;
   gCycleNum++;
+  if (gActiveMainLoop != TransformationLoop) {gInitLoad = true;}
+    else {gInitLoad = false;}
   requestAnimationFrame(gActiveMainLoop);
 }
 
@@ -1360,33 +1536,219 @@ const TransformationLoop = ()=>
 //===================================================================================
 //===================================================================================
 
+//===================================================================================
+//===================================================================================
+//===================================================================================
+//
+//===================================================================================
+//===================================================================================
+//===================================================================================
+const AboutMeLoop = ()=>
+{
+  gTime = new Date();
+    let newTime = gTime.getTime();
+    gDeltaTime = newTime - gPreviousTime;
+    gTimeSinceRun = newTime - gTimeStart;
+    gPreviousTime = newTime;
+
+    Input();
+    gMouseMoved = Math.abs(gDeltaMouse[0]) + Math.abs(gDeltaMouse[1]) >= .001 ? true : false;
+    MouseLook(gCamera, gDeltaMouse, gDeltaTime);
+    
+      //Animation
+
+      //======================RENDER RAYCAST============================
+      ClearFBO(null, gGL);
+      ClearFBO(gMainFBO, gGL);
+      ClearFBO(gRaycastFBO, gGL);
+      ClearFBO(gGlassFBO, gGL);
+
+      gGL.bindFramebuffer(gGL.FRAMEBUFFER, gRaycastFBO);
+      gGL.viewport(0, 0, gCanvasWidth, gCanvasHeight);
+      gGL.enable(gGL.DEPTH_TEST);
+      gGL.enable(gGL.CULL_FACE);
+      gGL.cullFace(gGL.FRONT);
+      let SelectColor = [1.0,1.0,1.0,1.0];
+      let DeselectColor = [.2,.2,.5,1.0];
+      let ObjIndex = 1; //start indexing at 1
+      // for(let obj of gRaycastColecMain) //set up for this loop soon. currently set for main loop
+      // {
+      //   gCamera.ObjectIndex = ObjIndex;
+      //   Draw(gProgramInfoRaycast,obj,gCamera,gLight1); 
+      //   ObjIndex++;
+      // }
+      gRaycastText = gRaycastMap;
+      if (gMouseMoved) {CheckRaycast(SelectColor, DeselectColor); console.log("MouseMove");}
+      gDeltaMouse = [0.0,0.0];
+
+      
+
+      //======================RENDER DEPTH============================
+      gGL.bindFramebuffer(gGL.FRAMEBUFFER, gDepthFBO);  
+      gGL.viewport(0, 0, gCanvasWidth, gCanvasHeight);
+      gGL.enable(gGL.DEPTH_TEST);    
+      gGL.clear(gGL.DEPTH_BUFFER_BIT); 
+      gGL.enable(gGL.CULL_FACE);
+
+
+      gGL.bindFramebuffer(gGL.FRAMEBUFFER, null);  
+      //Set depth maps
+  
+    //
+    DrawCallSetup();
+
+    //======================RENDER NORMALPASS============================
+
+    gCharMeDict.forEach((val, key) =>
+      {
+        Draw(gProgramInfoFlat, val, gCamera,gLight1);
+      });
+    
+    Draw(gProgramInfoDef, gPlayButton, gCamera,gLight1);
+
+    gFrameCount++;
+    gCycleNum++;
+    if (gActiveMainLoop != AboutMeLoop) {gInitLoad = true;}
+    else {gInitLoad = false;}
+    requestAnimationFrame(gActiveMainLoop);
+}
+async function LoadThreeScene(url, Scene)
+{
+  let ElencoText = await loadTexture(gGL, './Textures/Elenco.png', 4);
+  let ObjColec = [];
+  let DefaultCol = [1.0,1.0,1.0,1.0];
+  let ind = 0;
+  const ThreeStruct = makeStruct("Position, Rotation, Scale, vertexBuffer, indexBuffer, VertexCount, normalBuffer, Texture, textureBuffer, Color");
+  const loader = new GLTFLoader() //potentially load async
+  const ModelColec = new Promise((resolve, reject)=>
+  {
+
+  loader.load(
+      url, //'./models/TestChar.glb'
+    ( gltf ) => {
+      let results = new Map();
+      const model = gltf.scene;
+      Scene.add(model);
+      model.traverse((child) =>
+      {
+        if (child.isMesh)
+        { //Convert from three.js data type to my fuck ass data type
+          console.log("Child name is " + child.name);
+          ind++;
+          let Position = [child.position.x, child.position.y, child.position.z];
+          let Rotation = [child.rotation.x, child.rotation.y, child.rotation.z];
+          let Scale = [child.scale.x, child.scale.y, child.scale.z];
+          let Texture = null; //Setup manually when I've figured out the vertex shit
+          let Name = child.name;
+        
+          
+
+          let VertAr = child.geometry.getAttribute("position").array;
+
+          let IndAr = child.geometry.index.array;
+          let VertexCount = IndAr.length; //number of verts loaded 
+          let NormAr = child.geometry.getAttribute("normal").array;
+          let UVAR = /** @type {THREE.BufferAttribute} */ (child.geometry.getAttribute('uv'));
+          if (UVAR != undefined) {
+            console.log("Ind Ar Length " + VertAr.length + " UVAR length " + UVAR.array.length + " Ratio = " + 
+          (VertAr.length / UVAR.array.length));
+        UVAR = UVAR.array;} 
+    
+          let VertBuff = gGL.createBuffer();
+          let IndBuff = gGL.createBuffer();
+          let NormBuff = gGL.createBuffer();
+          let textBuff = gGL.createBuffer();
+
+          gGL.bindBuffer(gGL.ARRAY_BUFFER, VertBuff); // choose pos buffer as active buffer
+          gGL.bufferData(gGL.ARRAY_BUFFER, new Float32Array(VertAr), gGL.STATIC_DRAW); //apply data to active buffer
+          gGL.bindBuffer(gGL.ELEMENT_ARRAY_BUFFER, IndBuff); // choose pos buffer as active buffer
+          gGL.bufferData(gGL.ELEMENT_ARRAY_BUFFER, new Uint16Array(IndAr), gGL.STATIC_DRAW); //apply data to active buffer
+          gGL.bindBuffer(gGL.ARRAY_BUFFER, NormBuff); // choose pos buffer as active buffer
+          gGL.bufferData(gGL.ARRAY_BUFFER, new Float32Array(NormAr), gGL.STATIC_DRAW); //apply data to active buffer
+          gGL.bindBuffer(gGL.ARRAY_BUFFER, textBuff); // choose pos buffer as active buffer
+          gGL.bufferData(gGL.ARRAY_BUFFER, new Float32Array(UVAR), gGL.STATIC_DRAW); //apply data to active buffer
+
+          let ThreeObj = new ThreeStruct(Position, Rotation, Scale, VertBuff, IndBuff, VertexCount, 
+          NormBuff, Texture, textBuff, DefaultCol);
+          if (UVAR != undefined && VertAr != undefined && IndAr != undefined && NormBuff != undefined && textBuff != undefined) 
+          {
+            results.set(Name, ThreeObj);
+          }
+        }
+      });
+      console.log(ind + " Children are meshes and the length of ObjColec is " + results.length);
+      resolve(results);
+
+    },
+    ( xhr ) => {
+      // called while loading is progressing
+      console.log( `${( xhr.loaded / xhr.total * 100 )}% loaded` );
+    },
+    ( error ) => {
+      // called when loading has errors
+      console.error( 'An error happened', error );
+      reject(error);
+    },
+  );
+});
+return(ModelColec);
+
+}
+
 function ResizeCanvas(gl, canvas)
 {
-  const displayWidth = canvas.clientWidth;
-  const displayHeight = canvas.clientHeight;
+  const dpr = window.devicePixelRatio || 1;
+  const displayWidth  = Math.floor(canvas.clientWidth  * dpr);
+  const displayHeight = Math.floor(canvas.clientHeight * dpr);
 
-  // Check if the canvas is not the same size
   if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
-  console.log("Resizing");
-    canvas.width = displayWidth;
+    canvas.width  = displayWidth;
     canvas.height = displayHeight;
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = displayWidth * dpr;
-    canvas.height = displayHeight * dpr;
+    
 
-    gl.viewport(0, 0, canvas.width, canvas.height);
-    gCanvasWidth = canvas.width;
-    gCanvasHeight = canvas.height;
-    if (gCamera != null) //Fails during init cause gcamera not set yet
-    {
-      gCamera.Width = gCanvasWidth;
+    gl.viewport(0, 0, displayWidth, displayHeight);
+    gCanvasWidth  = displayWidth;
+    gCanvasHeight = displayHeight;
+
+    if (gCamera != null) {
+      gCamera.Width  = gCanvasWidth;
       gCamera.Height = gCanvasHeight;
     }
+
+    if (gRenderText != null) {
+      console.log("resize fbo");
+   
+      gRenderText    = genEmptyTex(gGL, gCanvasWidth, gCanvasHeight);
+      gMainDepthMap  = genDepthMap(gGL, gCanvasWidth, gCanvasHeight);
+      gMainFBO       = genFBO(gGL, gMainDepthMap, gRenderText);
+    
+      if (gActiveMainLoop == MainLoop)
+      {
+        gGlassRendText = genEmptyTex(gGL, gCanvasWidth, gCanvasHeight);
+        gGlassDepthMap = genDepthMap(gGL, gCanvasWidth, gCanvasHeight);
+        gGlassFBO      = genFBO(gGL, gGlassDepthMap, gGlassRendText);
+      }
+      gDepthMap = genDepthMap(gGL, gCanvasWidth, gCanvasHeight);
+      gDepthFBO = genFBO(gGL, gDepthMap);
+      gRaycastMap    = genEmptyTex(gGL, gCanvasWidth, gCanvasHeight);
+      gRaycastFBO    = genFBO(gGL, gDepthMap, gRaycastMap);
+    
+      gBloomRendText = genEmptyTex(gGL, gCanvasWidth, gCanvasHeight);
+      gBloomDepthMap = genDepthMap(gGL, gCanvasWidth, gCanvasHeight);
+      gBloomFBO      = genFBO(gGL, gBloomDepthMap, gBloomRendText);
+    }
+  
+    
+    
+    
   }
 }
 main();
 
 async function main() {
+  let LoadTxt = document.getElementById("LoadTxt");
+  LoadTxt.style.color = '#990000'; 
+  document.getElementById("Gif").style.opacity = 1.0;
   const canvas = document.querySelector("#gl-canvas");
   // Initialize the GL context
   gGL = canvas.getContext("webgl2",
@@ -1406,7 +1768,7 @@ async function main() {
   }
 
   // Set clear color to black, fully opaque
-  gGL.clearColor(0.0, 0.0, 0.0, 1.0);
+  gGL.clearColor(.8, .5, .65, 1.0); 
   // Clear the color buffer with specified clear color
   gGL.clear(gGL.COLOR_BUFFER_BIT);
 
@@ -1464,6 +1826,8 @@ async function main() {
   gShaderProgramBloodCloud = initShader(gGL, gVertSourceDef, gFragBloodCloud);
   gShaderProgramScreenBGTrans = initShader(gGL, gVertSkybox, gFragScreenBGTrans);
   gShaderProgramPostProcessing = initShader(gGL, gVertSkybox, gFragPostProcessing);
+  //Shaders done
+  LoadTxt.style.color = '#ff0000'; 
   
 
 
@@ -1496,6 +1860,8 @@ async function main() {
     TanPreComp(gTanView, WAVE_BUFFER_SIZE);
     ArcSinPreComp(gArcSinView, WAVE_BUFFER_SIZE);
     ArcCosPreComp(gArcCosView, WAVE_BUFFER_SIZE);
+    //Precomps set
+    LoadTxt.style.color = '#ff2f00'; 
 
  
     const Wave = makeStruct("ShaderProgram, vertexBuffer, indexBuffer, VertexCount, normalBuffer, \
@@ -1537,7 +1903,7 @@ async function main() {
     gCrossHair = new Quad(gShaderProgramSkybox, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
       [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null);
     let CrossHairOrigin = [0.0,0.0,0.0];
-    GenerateQuad(gCrossHair,.05,CrossHairOrigin);  
+    GenerateQuad(gCrossHair,.02,CrossHairOrigin);  
 
     gElencoVis = new Quad(gShaderProgramElenco, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
       [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null);
@@ -1549,7 +1915,7 @@ async function main() {
       [.1,.5,1.0,1.0], [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null);
     GenerateWave(gSimpleWave, gProgramInfoWave);
     const Camera = makeStruct("Eye, ViewDir, UpDir, Width, Height, ObjectIndex");
-    gCamera = new Camera([0.0,0.0,0.0],[0.0,0.0,1.0],[0.0,1.0,0.0], gCanvasWidth, gCanvasHeight, 0);
+    gCamera = new Camera([0.0,10.0,0.0],[1.0,0.0,1.0],[0.0,1.0,0.0], gCanvasWidth, gCanvasHeight, 0);
     const Light = makeStruct("Pos, Color, Intensity");
     gLight1 = new Light([0.0,1.0,-1.0],[1.0, 0.863, 0.537],1.5);
     gLight2 = new Light([0.0,1.0,-1.0],[1.0, 0.863, 0.537],1.0);
@@ -1559,12 +1925,12 @@ async function main() {
     gStars = new QuadStar(gShaderProgramFlat, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
       [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0],[],[],null,null,null);
     
-    let StarSphereOrigin = vec3.fromValues(0.0,20.0,40.0);
+    let StarSphereOrigin = vec3.fromValues(0.0,30.0,40.0);
     let StarSphereRadius = 100.0;
-    let NumStarSphere = 5000;
+    let NumStarSphere = 2000;
     let isHemiSphere = true;
     let RandRadAm = 2.0;
-    let StarSize = 1.0;
+    let StarSize = 1.5;
     SphereOfQuad(StarSphereOrigin,StarSphereRadius,StarSize,gStars,NumStarSphere, 
       gSinView, gCosView,gArcSinView,gArcCosView, WAVE_BUFFER_SIZE, isHemiSphere, RandRadAm,
       gCamera);
@@ -1581,17 +1947,22 @@ async function main() {
         SphereOfQuad(FleshSphereOrigin,FleshSphereRadius,FleshPartSize,gFleshParticles,NumPartSphere, 
           gSinView, gCosView,gArcSinView,gArcCosView, WAVE_BUFFER_SIZE, FleshisHemiSphere, FleshRandRadAm,
           gCamera);
+
+    //Model structs init
+    LoadTxt.style.color = '#ff5e00'; 
     //----------------------------------------------------------------
   
     gPreviousTime = gTime.getTime();
     gTimeStart = gPreviousTime;
     //Set up Input
     document.addEventListener("keydown", (e) => {
-      gKeysPressed[e.key] = true;
+      let lowerLet = e.key.toLowerCase(); //accept caps lock and lower case
+      gKeysPressed[lowerLet] = true;
     });
   
     document.addEventListener("keyup", (e) => {
-      gKeysPressed[e.key] = false;
+      let lowerLet = e.key.toLowerCase();
+      gKeysPressed[lowerLet] = false;
     });
     document.addEventListener("mousemove", CalcMouseDelta);
     document.addEventListener("click", (e) => ClickFunc(e));
@@ -1610,7 +1981,8 @@ async function main() {
     gBloomDepthMap = genDepthMap(gGL, gCanvasWidth, gCanvasHeight);
     gBloomRendText = genEmptyTex(gGL, gCanvasWidth, gCanvasHeight);
     gBloomFBO = genFBO(gGL, gBloomDepthMap, gBloomRendText);
-    
+    //FBO set
+    LoadTxt.style.color = '#ed7300'; 
 
     gTime = new Date();
     let newTime = gTime.getTime();
@@ -1618,11 +1990,19 @@ async function main() {
     gTimeSinceRun = newTime - gTimeStart;
     gPreviousTime = newTime;
     await SetUpScene();
-   
+    //Scene Setup
+    LoadTxt.style.color = '#0aff2f'; 
+    
 
     BoatWaveIndexFind();
     gActiveMainLoop = MainLoop;
+    gIsLoading = false;
+    // Sound2.currentTime = 0; // need input to play, add after adding start screen
+    // Sound2.play();
     gActiveMainLoop();
+    document.getElementById("Gif").style.opacity = 0.0;
+    document.getElementById("LoadTxt").style.opacity = 0.0;
+    document.getElementById("PlayMusic").style.opacity = 1.0;
     FrameCount();
     
    

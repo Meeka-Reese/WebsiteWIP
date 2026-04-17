@@ -70,11 +70,11 @@ export function GenerateWave(Object, programInfo) // Being used for wave generat
     const UVBuffer = gGL.createBuffer();
 
 
-    const RowNum = 43;
-    const ColNum = 43;
+    const RowNum = 10;
+    const ColNum = 10;
     Object.RowNum = RowNum;
     Object.ColNum = ColNum;
-    const Spacing = 2.5;
+    const Spacing = 12.0;
     // Now create an array of positions for the square.
     let positions = [];
     let indices = [];

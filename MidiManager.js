@@ -20,8 +20,8 @@ export class MidiObj
     }
     StartMidi()
     {
-        //this.Player.setTempo(182.62);
         this.Player.play(); 
+        
         console.log("Midi clip starting");
         for (let i = 0; i < this.ccVals.length; i++) //initialize
         {
@@ -30,7 +30,7 @@ export class MidiObj
     }
     async StopMidi()
     {
-        this.Player.stop();
+        this.Player.pause();
     }
     async MidiCallback(event)
     {

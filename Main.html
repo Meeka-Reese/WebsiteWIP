@@ -4,35 +4,34 @@
         <title>WebGL Demo</title>
         <link rel="stylesheet" href="style.css">
     </head>
-    <!-- <nav class="navigation-boxes">
-        <a href="#portfolio" id="b1" class="Box">
-            <span class="InnerBox" id="inb1"></span>
-            <span class="BoxText" id="bTxt1">Portfolio</span>
-        </a>
-        
-        <a href="#contact" id="b2" class="Box">
-            <span class="InnerBox" id="inb2"></span>
-            <span class="BoxText" id="bTxt2">Contact Me</span>
-        </a>
-        
-        <a href="#socials" id="b3" class="Box">
-            <span class="InnerBox" id="inb3"></span>
-            <span class="BoxText" id="bTxt3">Socials</span>
-        </a>
-        
-        <a href="#about" id="b4" class="Box">
-            <span class="InnerBox" id="inb4"></span>
-            <span class="BoxText" id="bTxt4">About</span>
-        </a>
-    </nav> -->
     
     <body id="Body">
-        <canvas id="gl-canvas"></canvas>
+         
+        <div id="canvas-container">
+            <canvas id="gl-canvas"></canvas>
+            <div id="PlayMusic">Type Y to play music/Type N to disregard</div>
+            <img id="Gif" src="./Gifs/cat.gif" alt="Cat Loading Screen">
+            <div id="LoadTxt">Loading</div>
+        </div>
+        <script type="importmap">
+            {
+              "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/examples/jsm/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+              }
+            }
+            </script>
+            
+    
         <script src="https://unpkg.com/midi-player-js@latest/browser/midiplayer.js"></script>
+        <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.js"></script> -->
+        
         <script type="module" src="webgl-demo.js"></script>
         <script type="module" src="./Externals/webgl-obj-loader.js"></script>
         <script type="module" src="GenerateMesh.js"></script> 
-        <!-- Trying to add to be able to access gGL across files but is not working -->
+        <!-- Audio Files -->
+        <audio id="TransformSong" preload="auto" src="./AudioFiles/Transform24BitMasterOld.wav"></audio>
+        <audio id="MainTheme" preload="auto" src="./AudioFiles/MainPageTheme.mp3"></audio>
         
         <script
             src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/14.8.1/math.js"
