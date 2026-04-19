@@ -18,7 +18,8 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
     ProgramInfoTreeMorph, ShaderProgramTreeMorph,
     ProgramInfoBloodCloud, ShaderProgramBloodCloud,
     ProgramInfoScreenBGTrans, ShaderProgramScreenBGTrans,
-    gProgramInfoPostProcessing, ShaderProgramPostProcessing,
+    ProgramInfoPostProcessing, ShaderProgramPostProcessing,
+    ProgramInfoGLTFDef, ShaderProgramGLTFDef,
     ) {
         //SOON TO DO - REORGANIZE TEXTURES SO THEY USE MULTIPLE TEXTURE SLOTS WITH GENERIC NAMES INSTEAD OF "TEXTUREBN"
     ProgramInfoDef.program = ShaderProgramDef;
@@ -387,13 +388,13 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         lightness: GL.getUniformLocation(ShaderProgramScreenBGTrans, "Lightness"),
     }
 
-    gProgramInfoPostProcessing.program = ShaderProgramPostProcessing;
-    gProgramInfoPostProcessing.attribLocations = {
+    ProgramInfoPostProcessing.program = ShaderProgramPostProcessing;
+    ProgramInfoPostProcessing.attribLocations = {
         vertexPosition: GL.getAttribLocation(ShaderProgramPostProcessing, "aVertPos"),
         normalPosition: GL.getAttribLocation(ShaderProgramPostProcessing, "aNorm"),
         UVPosition: GL.getAttribLocation(ShaderProgramPostProcessing, "aUVCord"),
     }
-    gProgramInfoPostProcessing.uniformLocations = {
+    ProgramInfoPostProcessing.uniformLocations = {
         projectionMatrix: GL.getUniformLocation(ShaderProgramPostProcessing, "uProjMatrix"),
         ViewMatrix: GL.getUniformLocation(ShaderProgramPostProcessing, "uViewMatrix"),
         modelMatrix: GL.getUniformLocation(ShaderProgramPostProcessing, "uModelMatrix"),
@@ -404,6 +405,25 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         ccVals: GL.getUniformLocation(ShaderProgramPostProcessing, "ccVals"),
         
     }
+
+    ProgramInfoGLTFDef.program = ShaderProgramGLTFDef;
+    ProgramInfoGLTFDef.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramGLTFDef, "aVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramGLTFDef, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramGLTFDef, "aUVCord"),
+        BoneWeights: GL.getAttribLocation(ShaderProgramGLTFDef, "BoneWeights"),
+        WeightInd: GL.getAttribLocation(ShaderProgramGLTFDef, "WeightInd"),
+    }
+    ProgramInfoGLTFDef.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramGLTFDef, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramGLTFDef, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramGLTFDef, "uModelMatrix"),
+        texture: GL.getUniformLocation(ShaderProgramGLTFDef, "uTexture"),
+        alpha: GL.getUniformLocation(ShaderProgramGLTFDef, "Alpha"),
+        boneParentIndex: GL.getUniformLocation(ShaderProgramGLTFDef, "BoneParentIndex"),
+        boneMatrices: GL.getUniformLocation(ShaderProgramGLTFDef, "BoneMatrices"),
+        //add rot scale parent
+    };
     
 
 }
@@ -411,7 +431,7 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
 // Initialize a texture and load an image.
 // When the image finished loading copy it into the texture.
 //
-export function loadTexture(gl, url, numChans = 4) {
+export function loadTexture(gl, url, numChans = 4, flip = true) {
     const texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
   
@@ -462,7 +482,7 @@ export function loadTexture(gl, url, numChans = 4) {
     const image = new Image();
     image.onload = () => {
       gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, flip);
       gl.texImage2D(
         gl.TEXTURE_2D,
         level,
@@ -675,6 +695,34 @@ export function loadTexture(gl, url, numChans = 4) {
             0
         );
         gl.enableVertexAttribArray(programInfo.attribLocations.WeightColec6);
+    }
+
+    if ("BoneWeights" in programInfo.attribLocations && "Skeleton" in Object)
+    {
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, Object.Skeleton.WeightBuff); 
+        gl.vertexAttribPointer(
+            programInfo.attribLocations.BoneWeights,
+            4,
+            gl.FLOAT,
+            false,
+            0,
+            0
+        );
+        gl.enableVertexAttribArray(programInfo.attribLocations.BoneWeights);
+    }
+    if ("WeightInd" in programInfo.attribLocations && "Skeleton" in Object)
+    {
+        gl.bindBuffer(gl.ARRAY_BUFFER, Object.Skeleton.WeightInd); 
+        gl.vertexAttribPointer(
+            programInfo.attribLocations.WeightInd,
+            4,
+            gl.INT,
+            false,
+            0,
+            0
+        );
+        gl.enableVertexAttribArray(programInfo.attribLocations.WeightInd);
     }
     
     
@@ -908,6 +956,22 @@ export function loadTexture(gl, url, numChans = 4) {
         }
         else if(("colecItemCount" in programInfo))
         {console.log("colecItemCount Uniform Could Not Be Found!")}
+
+        //Three JS BONE SHIT
+
+        if (programInfo.uniformLocations.boneMatrices != null && "Skeleton" in Object)
+        {
+            gl.uniformMatrix4fv(programInfo.uniformLocations.boneMatrices,Object.Skeleton.boneMatrices);
+        }
+        else if(("boneMatrices" in programInfo))
+        {console.log("boneMatrices Uniform Could Not Be Found!")}
+
+        if (programInfo.uniformLocations.boneParentIndex != null && "Skeleton" in Object)
+        {
+            gl.uniform1i(programInfo.uniformLocations.boneParentIndex,Object.Skeleton.BoneParentsInd);
+        }
+        else if(("boneParentIndex" in programInfo))
+        {console.log("boneParentIndex Uniform Could Not Be Found!")}
     
     }
 

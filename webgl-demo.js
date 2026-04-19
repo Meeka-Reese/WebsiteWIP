@@ -6,7 +6,7 @@ Create FBO for Raycast with Object ID. Have definition of all raycast
 objects and make the rendered texture value be the index of the object
 */
 //=======================SHADERS=============================
-let gVertSourceDef, gVertSkybox, gVertStar, gVertRaycast, gVertTrans, gVertFlesh, gVertMorph, gVertTreeMorph;
+let gVertSourceDef, gVertSkybox, gVertStar, gVertRaycast, gVertTrans, gVertFlesh, gVertMorph, gVertTreeMorph, gVertGLTFDef;
 
 let gFragSourceWave, gFragSourceFlat, gFragSourceCloud, gFragSkybox, gFragStar, gFragColor,
 gFragVolGlow, gFragDef, gFragRaycast, gFragGlass, gFragScreenFlat, gFragTransFlat, gFragFlesh, gFragElenco,
@@ -17,7 +17,7 @@ let gShaderProgramDef, gShaderProgramWave, gShaderProgramFlat, gShaderProgramClo
 gShaderProgramSkybox, gShaderProgramStar, gShaderProgramFleshPart, gShaderProgramColor, gShaderProgramVolGlow,
 gShaderProgramRaycast, gShaderProgramGlass, gShaderProgramScreenRender, gShaderProgramScreenImage,
 gShaderProgramTrans, gShaderProgramFlesh, gShaderProgramElenco, gShaderProgramMorph, gShaderProgramTreeMorph,
-gShaderProgramBloodCloud, gShaderProgramScreenBGTrans, gShaderProgramPostProcessing;
+gShaderProgramBloodCloud, gShaderProgramScreenBGTrans, gShaderProgramPostProcessing, gShaderProgramGLTFDef;
 
 let gProgramInfoDef = {};
 let gProgramInfoWave = {};
@@ -40,6 +40,7 @@ let gProgramInfoTreeMorph = {};
 let gProgramInfoBloodCloud = {};
 let gProgramInfoScreenBGTrans = {};
 let gProgramInfoPostProcessing = {};
+let gProgramInfoGLTFDef = {};
 
 //Depth
 let gDepthFBO;
@@ -91,6 +92,7 @@ import { PlayAudio, StopAudio, gAudioContext} from './AudioManager.js';
 import { MidiObj } from './MidiManager.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { LoadThreeScene, AddAnimation, UpdateModel } from './ChudThreeImplementation.js';
 
 
 
@@ -144,6 +146,8 @@ export let gGlobalTempo = 186.62;
 let gSceneAboutMe = new THREE.Scene();
 let gCharMeDict = new Map();
 let gCharTextColec;
+let gCharMeAniMixer;
+let gCharMeAniClips;
 
 
 
@@ -199,7 +203,7 @@ Track2.connect(gAudioContext.destination);
 
 //-----------------------GLOBALS-----------------------------
 
-function makeStruct(keys) {
+export function makeStruct(keys) {
     if (!keys) return null;
     const k = keys.split(', ');
     const count = k.length;
@@ -236,14 +240,14 @@ async function SetUpScene()
    let VeinTree1Text = await loadTexture(gGL, './Textures/VeinTreeThin.png',4);
    let VeinTree2Text = await loadTexture(gGL, './Textures/VeinTreeThin2.png',4);
    let ElencoText = await loadTexture(gGL, './Textures/Elenco.png', 4);
-   let EarRingText = await loadTexture(gGL, './Textures/CharMeTexts/EarRing.png', 4);
-   let BodyText = await loadTexture(gGL, './Textures/CharMeTexts/Body.png', 4);
-   let HairText = await loadTexture(gGL, './Textures/CharMeTexts/Hair.png', 4);
-   let ShirtText = await loadTexture(gGL, './Textures/CharMeTexts/Shirt.png', 4);
-   let ShoeText = await loadTexture(gGL, './Textures/CharMeTexts/Shoe.png', 4);
-   let SkirtText = await loadTexture(gGL, './Textures/CharMeTexts/Skirt.png', 4);
-   let SocksText = await loadTexture(gGL, './Textures/CharMeTexts/Socks.png', 4);
-   let ShoeLaceText = await loadTexture(gGL, './Textures/CharMeTexts/ShoeLace.png', 4);
+   let EarRingText = await loadTexture(gGL, './Textures/CharMeTexts/EarRing.png', 4, false);
+   let BodyText = await loadTexture(gGL, './Textures/CharMeTexts/Body.png', 4, false);
+   let HairText = await loadTexture(gGL, './Textures/CharMeTexts/Hair.png', 4, false);
+   let ShirtText = await loadTexture(gGL, './Textures/CharMeTexts/Shirt.png', 4, false);
+   let ShoeText = await loadTexture(gGL, './Textures/CharMeTexts/Shoe.png', 4, false);
+   let SkirtText = await loadTexture(gGL, './Textures/CharMeTexts/Skirt.png', 4, false);
+   let SocksText = await loadTexture(gGL, './Textures/CharMeTexts/Socks.png', 4, false);
+   let ShoeLaceText = await loadTexture(gGL, './Textures/CharMeTexts/ShoeLace.png', 4, false);
    LoadTxt.style.color = '#fbff00';
    //===================================OBJECTS========================================
   
@@ -360,7 +364,9 @@ async function SetUpScene()
 
 //-=-=-=-=-=-=-=-=-=-=-=-=-=======About Me Scene================-=-=-=-=-=-=-=-=-=-=-=-=-
 
-gCharMeDict = await LoadThreeScene('./models/TestChar.glb', gSceneAboutMe); //Skirt, Body, EarRing, Hair, Shirt, ShoeL, ShoeR, Socks, ShoeLaceL, ShoeLaceR
+({ ModelMap: gCharMeDict, AnimationMixer: gCharMeAniMixer, AnimationClips: gCharMeAniClips, AniScene: gSceneAboutMe} = await LoadThreeScene('./models/TestChar.glb'));
+//Skirt, Body, EarRing, Hair, Shirt, ShoeL, ShoeR, Socks, ShoeLaceL, ShoeLaceR
+
 gCharMeDict.get("Skirt").Texture =  SkirtText;
 gCharMeDict.get("Body").Texture =  BodyText;
 gCharMeDict.get("EarRing").Texture =  EarRingText;
@@ -371,6 +377,8 @@ gCharMeDict.get("ShoeR").Texture =  ShoeText;
 gCharMeDict.get("Socks").Texture =  SocksText;
 gCharMeDict.get("ShoeLaceL").Texture =  ShoeLaceText;
 gCharMeDict.get("ShoeLaceR").Texture =  ShoeLaceText;
+
+//-=-=-=-=-=-=-=-=-=-=-=-=-=======About Me Scene================-=-=-=-=-=-=-=-=-=-=-=-=-
 
    //==========================SET PARENTING======================================
    //== Main Scene ==
@@ -1091,6 +1099,7 @@ function RaycastClick(Obj)
       Sound1.pause();
       Sound1.currentTime = 0;
       document.getElementById("PlayMusic").style.opacity = 0.0;
+      //gCharMeAniMixer = AddAnimation(gSceneAboutMe, gCharMeAniMixer, gCharMeAniClips[0]);
       break;
     case gHomeButton:
       gCamera.Eye = [0.0,10.0,0.0];
@@ -1543,7 +1552,7 @@ const TransformationLoop = ()=>
 //===================================================================================
 //===================================================================================
 //===================================================================================
-const AboutMeLoop = ()=>
+const AboutMeLoop = async ()=>
 {
   gTime = new Date();
     let newTime = gTime.getTime();
@@ -1556,6 +1565,7 @@ const AboutMeLoop = ()=>
     MouseLook(gCamera, gDeltaMouse, gDeltaTime);
     
       //Animation
+      //({Dict: gCharMeDict} = await UpdateModel(gSceneAboutMe, gCharMeDict)); //sets skeleton as undefined
 
       //======================RENDER RAYCAST============================
       ClearFBO(null, gGL);
@@ -1598,101 +1608,21 @@ const AboutMeLoop = ()=>
     DrawCallSetup();
 
     //======================RENDER NORMALPASS============================
-
+    gGL.disable(gGL.DEPTH_TEST);
+    gGL.enable(gGL.DEPTH_TEST); 
+    gGL.disable(gGL.CULL_FACE);
+    
     gCharMeDict.forEach((val, key) =>
       {
-        Draw(gProgramInfoFlat, val, gCamera,gLight1);
-      });
+        Draw(gProgramInfoGLTFDef, val, gCamera,gLight1);
+      }); 
     
-    Draw(gProgramInfoDef, gPlayButton, gCamera,gLight1);
 
     gFrameCount++;
     gCycleNum++;
     if (gActiveMainLoop != AboutMeLoop) {gInitLoad = true;}
     else {gInitLoad = false;}
     requestAnimationFrame(gActiveMainLoop);
-}
-async function LoadThreeScene(url, Scene)
-{
-  let ElencoText = await loadTexture(gGL, './Textures/Elenco.png', 4);
-  let ObjColec = [];
-  let DefaultCol = [1.0,1.0,1.0,1.0];
-  let ind = 0;
-  const ThreeStruct = makeStruct("Position, Rotation, Scale, vertexBuffer, indexBuffer, VertexCount, normalBuffer, Texture, textureBuffer, Color");
-  const loader = new GLTFLoader() //potentially load async
-  const ModelColec = new Promise((resolve, reject)=>
-  {
-
-  loader.load(
-      url, //'./models/TestChar.glb'
-    ( gltf ) => {
-      let results = new Map();
-      const model = gltf.scene;
-      Scene.add(model);
-      model.traverse((child) =>
-      {
-        if (child.isMesh)
-        { //Convert from three.js data type to my fuck ass data type
-          console.log("Child name is " + child.name);
-          ind++;
-          let Position = [child.position.x, child.position.y, child.position.z];
-          let Rotation = [child.rotation.x, child.rotation.y, child.rotation.z];
-          let Scale = [child.scale.x, child.scale.y, child.scale.z];
-          let Texture = null; //Setup manually when I've figured out the vertex shit
-          let Name = child.name;
-        
-          
-
-          let VertAr = child.geometry.getAttribute("position").array;
-
-          let IndAr = child.geometry.index.array;
-          let VertexCount = IndAr.length; //number of verts loaded 
-          let NormAr = child.geometry.getAttribute("normal").array;
-          let UVAR = /** @type {THREE.BufferAttribute} */ (child.geometry.getAttribute('uv'));
-          if (UVAR != undefined) {
-            console.log("Ind Ar Length " + VertAr.length + " UVAR length " + UVAR.array.length + " Ratio = " + 
-          (VertAr.length / UVAR.array.length));
-        UVAR = UVAR.array;} 
-    
-          let VertBuff = gGL.createBuffer();
-          let IndBuff = gGL.createBuffer();
-          let NormBuff = gGL.createBuffer();
-          let textBuff = gGL.createBuffer();
-
-          gGL.bindBuffer(gGL.ARRAY_BUFFER, VertBuff); // choose pos buffer as active buffer
-          gGL.bufferData(gGL.ARRAY_BUFFER, new Float32Array(VertAr), gGL.STATIC_DRAW); //apply data to active buffer
-          gGL.bindBuffer(gGL.ELEMENT_ARRAY_BUFFER, IndBuff); // choose pos buffer as active buffer
-          gGL.bufferData(gGL.ELEMENT_ARRAY_BUFFER, new Uint16Array(IndAr), gGL.STATIC_DRAW); //apply data to active buffer
-          gGL.bindBuffer(gGL.ARRAY_BUFFER, NormBuff); // choose pos buffer as active buffer
-          gGL.bufferData(gGL.ARRAY_BUFFER, new Float32Array(NormAr), gGL.STATIC_DRAW); //apply data to active buffer
-          gGL.bindBuffer(gGL.ARRAY_BUFFER, textBuff); // choose pos buffer as active buffer
-          gGL.bufferData(gGL.ARRAY_BUFFER, new Float32Array(UVAR), gGL.STATIC_DRAW); //apply data to active buffer
-
-          let ThreeObj = new ThreeStruct(Position, Rotation, Scale, VertBuff, IndBuff, VertexCount, 
-          NormBuff, Texture, textBuff, DefaultCol);
-          if (UVAR != undefined && VertAr != undefined && IndAr != undefined && NormBuff != undefined && textBuff != undefined) 
-          {
-            results.set(Name, ThreeObj);
-          }
-        }
-      });
-      console.log(ind + " Children are meshes and the length of ObjColec is " + results.length);
-      resolve(results);
-
-    },
-    ( xhr ) => {
-      // called while loading is progressing
-      console.log( `${( xhr.loaded / xhr.total * 100 )}% loaded` );
-    },
-    ( error ) => {
-      // called when loading has errors
-      console.error( 'An error happened', error );
-      reject(error);
-    },
-  );
-});
-return(ModelColec);
-
 }
 
 function ResizeCanvas(gl, canvas)
@@ -1782,6 +1712,7 @@ async function main() {
   gVertFlesh = await loadShaderFiles(gVertFlesh, './Shaders/FleshVert.glsl');
   gVertMorph = await loadShaderFiles(gVertMorph, './Shaders/MorphVert.glsl');
   gVertTreeMorph = await loadShaderFiles(gVertTreeMorph, './Shaders/TreeMorphVert.glsl');
+  gVertGLTFDef = await loadShaderFiles(gVertGLTFDef, './Shaders/GLTFDefaultVert.glsl');
   //Frag
   gFragSourceWave = await loadShaderFiles(gFragSourceWave, './Shaders/WaveFrag.glsl');
   gFragSourceFlat = await loadShaderFiles(gFragSourceFlat, './Shaders/FlatFrag.glsl');
@@ -1826,6 +1757,7 @@ async function main() {
   gShaderProgramBloodCloud = initShader(gGL, gVertSourceDef, gFragBloodCloud);
   gShaderProgramScreenBGTrans = initShader(gGL, gVertSkybox, gFragScreenBGTrans);
   gShaderProgramPostProcessing = initShader(gGL, gVertSkybox, gFragPostProcessing);
+  gShaderProgramGLTFDef = initShader(gGL, gVertGLTFDef, gFragSourceFlat);
   //Shaders done
   LoadTxt.style.color = '#ff0000'; 
   
@@ -1853,6 +1785,7 @@ async function main() {
      gProgramInfoBloodCloud, gShaderProgramBloodCloud,
      gProgramInfoScreenBGTrans, gShaderProgramScreenBGTrans,
      gProgramInfoPostProcessing, gShaderProgramPostProcessing,
+     gProgramInfoGLTFDef, gShaderProgramGLTFDef,
      );
   
     SinPreComp(gSinView,WAVE_BUFFER_SIZE);
