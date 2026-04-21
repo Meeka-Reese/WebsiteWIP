@@ -20,6 +20,8 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
     ProgramInfoScreenBGTrans, ShaderProgramScreenBGTrans,
     ProgramInfoPostProcessing, ShaderProgramPostProcessing,
     ProgramInfoGLTFDef, ShaderProgramGLTFDef,
+    ProgramInfoPostProcessingAndrew, ShaderProgramPostProcessingAndrew,
+    ProgramInfoToon, ShaderProgramToon,
     ) {
         //SOON TO DO - REORGANIZE TEXTURES SO THEY USE MULTIPLE TEXTURE SLOTS WITH GENERIC NAMES INSTEAD OF "TEXTUREBN"
     ProgramInfoDef.program = ShaderProgramDef;
@@ -422,9 +424,43 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         alpha: GL.getUniformLocation(ShaderProgramGLTFDef, "Alpha"),
         boneParentIndex: GL.getUniformLocation(ShaderProgramGLTFDef, "BoneParentIndex"),
         boneMatrices: GL.getUniformLocation(ShaderProgramGLTFDef, "BoneMatrices"),
+        time: GL.getUniformLocation(ShaderProgramGLTFDef, "Time"),
         //add rot scale parent
     };
-    
+
+    ProgramInfoPostProcessingAndrew.program = ShaderProgramPostProcessingAndrew;
+    ProgramInfoPostProcessingAndrew.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramPostProcessingAndrew, "aVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramPostProcessingAndrew, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramPostProcessingAndrew, "aUVCord"),
+    }
+    ProgramInfoPostProcessingAndrew.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramPostProcessingAndrew, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramPostProcessingAndrew, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramPostProcessingAndrew, "uModelMatrix"),
+        texture: GL.getUniformLocation(ShaderProgramPostProcessingAndrew, "uTexture"),
+        resolution: GL.getUniformLocation(ShaderProgramPostProcessingAndrew, "uResolution"),
+        time: GL.getUniformLocation(ShaderProgramPostProcessingAndrew, "Time"),
+        textureBN: GL.getUniformLocation(ShaderProgramPostProcessingAndrew, "BloomText"),
+        
+    }
+    ProgramInfoToon.program = ShaderProgramToon;
+    ProgramInfoToon.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramToon, "aVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramToon, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramToon, "aUVCord"),
+    };
+    ProgramInfoToon.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramToon, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramToon, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramToon, "uModelMatrix"),
+        lightPosition: GL.getUniformLocation(ShaderProgramToon, "lightPos"),
+        viewPosition: GL.getUniformLocation(ShaderProgramToon, "viewPos"),
+        lightColor: GL.getUniformLocation(ShaderProgramToon, "lightColor"),
+        lightIntensity: GL.getUniformLocation(ShaderProgramToon, "lightIntensity"),
+        objCol: GL.getUniformLocation(ShaderProgramToon,"objCol"),
+        time: GL.getUniformLocation(ShaderProgramToon, "Time"),
+    };
 
 }
 //
@@ -515,10 +551,10 @@ export function loadTexture(gl, url, numChans = 4, flip = true) {
   function isPowerOf2(value) {
     return (value & (value - 1)) === 0;
   }
-  export function setPositionAttribute(Object, programInfo, Camera, Light, gl, Time, Armature = null, MidiManager)
+  export function setPositionAttribute(Model, programInfo, Camera, Light, gl, Time, Armature = null, MidiManager)
 {
     
-    gl.bindBuffer(gl.ARRAY_BUFFER, Object.vertexBuffer); //Verts
+    gl.bindBuffer(gl.ARRAY_BUFFER, Model.vertexBuffer); //Verts
     gl.vertexAttribPointer(
         programInfo.attribLocations.vertexPosition,
         3, //num componenets
@@ -528,9 +564,9 @@ export function loadTexture(gl, url, numChans = 4, flip = true) {
         0,
     );
     gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
-    if (Object.vertexBuffer2 != null && "targetVertexPosition" in programInfo.attribLocations && programInfo.attribLocations.targetVertexPosition >= 0)
+    if (Model.vertexBuffer2 != null && "targetVertexPosition" in programInfo.attribLocations && programInfo.attribLocations.targetVertexPosition >= 0)
     {
-        gl.bindBuffer(gl.ARRAY_BUFFER, Object.vertexBuffer2);
+        gl.bindBuffer(gl.ARRAY_BUFFER, Model.vertexBuffer2);
         gl.vertexAttribPointer(
             programInfo.attribLocations.targetVertexPosition,
             3, //num componenets
@@ -541,9 +577,9 @@ export function loadTexture(gl, url, numChans = 4, flip = true) {
         );
         gl.enableVertexAttribArray(programInfo.attribLocations.targetVertexPosition);
     }
-    if (Object.vertexBuffer3 != null && "targetVertexPosition2" in programInfo.attribLocations && programInfo.attribLocations.targetVertexPosition2 >= 0)
+    if (Model.vertexBuffer3 != null && "targetVertexPosition2" in programInfo.attribLocations && programInfo.attribLocations.targetVertexPosition2 >= 0)
     {
-        gl.bindBuffer(gl.ARRAY_BUFFER, Object.vertexBuffer3);
+        gl.bindBuffer(gl.ARRAY_BUFFER, Model.vertexBuffer3);
         gl.vertexAttribPointer(
             programInfo.attribLocations.targetVertexPosition2,
             3, //num componenets
@@ -554,9 +590,9 @@ export function loadTexture(gl, url, numChans = 4, flip = true) {
         );
         gl.enableVertexAttribArray(programInfo.attribLocations.targetVertexPosition2);
     }
-    if (Object.vertexBuffer4 != null && "targetVertexPosition3" in programInfo.attribLocations && programInfo.attribLocations.targetVertexPosition3 >= 0)
+    if (Model.vertexBuffer4 != null && "targetVertexPosition3" in programInfo.attribLocations && programInfo.attribLocations.targetVertexPosition3 >= 0)
     {
-        gl.bindBuffer(gl.ARRAY_BUFFER, Object.vertexBuffer4);
+        gl.bindBuffer(gl.ARRAY_BUFFER, Model.vertexBuffer4);
         gl.vertexAttribPointer(
             programInfo.attribLocations.targetVertexPosition3,
             3, //num componenets
@@ -568,9 +604,9 @@ export function loadTexture(gl, url, numChans = 4, flip = true) {
         gl.enableVertexAttribArray(programInfo.attribLocations.targetVertexPosition3);
     }
 
-    if (Object.vertexBuffer5 != null && "targetVertexPosition4" in programInfo.attribLocations && programInfo.attribLocations.targetVertexPosition4 >= 0)
+    if (Model.vertexBuffer5 != null && "targetVertexPosition4" in programInfo.attribLocations && programInfo.attribLocations.targetVertexPosition4 >= 0)
     {
-        gl.bindBuffer(gl.ARRAY_BUFFER, Object.vertexBuffer5);
+        gl.bindBuffer(gl.ARRAY_BUFFER, Model.vertexBuffer5);
         gl.vertexAttribPointer(
             programInfo.attribLocations.targetVertexPosition4,
             3, //num componenets
@@ -585,7 +621,7 @@ export function loadTexture(gl, url, numChans = 4, flip = true) {
     
     if ('normalPosition' in programInfo.attribLocations && programInfo.attribLocations.normalPosition >= 0)
     {
-        gl.bindBuffer(gl.ARRAY_BUFFER, Object.normalBuffer); //Normals
+        gl.bindBuffer(gl.ARRAY_BUFFER, Model.normalBuffer); //Normals
         gl.vertexAttribPointer(
             programInfo.attribLocations.normalPosition,
             3,
@@ -598,7 +634,7 @@ export function loadTexture(gl, url, numChans = 4, flip = true) {
     }
     if ('QuadPos' in programInfo.attribLocations && programInfo.attribLocations.QuadPos >= 0)
     {
-        gl.bindBuffer(gl.ARRAY_BUFFER, Object.QuadPosBuffer); //Normals
+        gl.bindBuffer(gl.ARRAY_BUFFER, Model.QuadPosBuffer); //Normals
         gl.vertexAttribPointer(
             programInfo.attribLocations.QuadPos,
             3,
@@ -611,7 +647,7 @@ export function loadTexture(gl, url, numChans = 4, flip = true) {
     }
     if ("UVPosition" in programInfo.attribLocations && programInfo.attribLocations.UVPosition >= 0)
     {
-      gl.bindBuffer(gl.ARRAY_BUFFER, Object.textureBuffer); //UV
+      gl.bindBuffer(gl.ARRAY_BUFFER, Model.textureBuffer); //UV
       gl.vertexAttribPointer(
         programInfo.attribLocations.UVPosition,
         2,
@@ -696,11 +732,11 @@ export function loadTexture(gl, url, numChans = 4, flip = true) {
         );
         gl.enableVertexAttribArray(programInfo.attribLocations.WeightColec6);
     }
-
-    if ("BoneWeights" in programInfo.attribLocations && "Skeleton" in Object)
+// /"UVPosition" in programInfo.attribLocations && programInfo.attribLocations.UVPosition >= 0
+    if ("BoneWeights" in programInfo.attribLocations && programInfo.attribLocations.BoneWeights >= 0 && "Skeleton" in Model)
     {
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, Object.Skeleton.WeightBuff); 
+        gl.bindBuffer(gl.ARRAY_BUFFER, Model.Skeleton.WeightBuff); 
         gl.vertexAttribPointer(
             programInfo.attribLocations.BoneWeights,
             4,
@@ -711,13 +747,13 @@ export function loadTexture(gl, url, numChans = 4, flip = true) {
         );
         gl.enableVertexAttribArray(programInfo.attribLocations.BoneWeights);
     }
-    if ("WeightInd" in programInfo.attribLocations && "Skeleton" in Object)
+    if ("WeightInd" in programInfo.attribLocations && programInfo.attribLocations.WeightInd >= 0  && "Skeleton" in Model)
     {
-        gl.bindBuffer(gl.ARRAY_BUFFER, Object.Skeleton.WeightInd); 
+        gl.bindBuffer(gl.ARRAY_BUFFER, Model.Skeleton.WeightInd); 
         gl.vertexAttribPointer(
             programInfo.attribLocations.WeightInd,
             4,
-            gl.INT,
+            gl.FLOAT,
             false,
             0,
             0
@@ -732,9 +768,9 @@ export function loadTexture(gl, url, numChans = 4, flip = true) {
     }
     else if (("lightPosition" in programInfo))
     {console.log("lightPosition Uniform Could Not Be Found!")};
-    if (("Color" in Object) && programInfo.uniformLocations.objCol != null)
+    if (("Color" in Model) && programInfo.uniformLocations.objCol != null)
     {
-        gl.uniform4fv(programInfo.uniformLocations.objCol, Object.Color);
+        gl.uniform4fv(programInfo.uniformLocations.objCol, Model.Color);
     }
     else if (("objCol" in programInfo))
     {console.log("objCol Uniform Could Not Be Found!")};
@@ -762,42 +798,42 @@ export function loadTexture(gl, url, numChans = 4, flip = true) {
     }
     else if (("lightIntensity" in programInfo))
     {console.log("lightIntensity Uniform Could Not Be Found!")};
-    if (programInfo.uniformLocations.texture != null && Object.Texture != null)
+    if (programInfo.uniformLocations.texture != null && Model.Texture != null)
     {
       gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, Object.Texture);
+      gl.bindTexture(gl.TEXTURE_2D, Model.Texture);
       gl.uniform1i(programInfo.uniformLocations.texture, 0); 
     }
     else if (("texture" in programInfo)){console.log("texture Uniform Could Not Be Found!");}
 
-    if (programInfo.uniformLocations.textureScene != null && Object.Texture != null)
+    if (programInfo.uniformLocations.textureScene != null && Model.Texture != null)
     {
       gl.activeTexture(gl.TEXTURE6);
-      gl.bindTexture(gl.TEXTURE_2D, Object.Texture);
+      gl.bindTexture(gl.TEXTURE_2D, Model.Texture);
       gl.uniform1i(programInfo.uniformLocations.textureScene, 6); 
     }
     else if (("textureScene" in programInfo))
     {console.log("textureScene Uniform Could Not Be Found!")};
-    if (programInfo.uniformLocations.depthTexture != null && Object.DepthTexture != null)
+    if (programInfo.uniformLocations.depthTexture != null && Model.DepthTexture != null)
     {
       gl.activeTexture(gl.TEXTURE1);
-      gl.bindTexture(gl.TEXTURE_2D, Object.DepthTexture);
+      gl.bindTexture(gl.TEXTURE_2D, Model.DepthTexture);
       gl.uniform1i(programInfo.uniformLocations.depthTexture, 1); 
     }
     else if (("depthTexture" in programInfo))
     {console.log("Depth Texture Uniform Could Not Be Found!")};
-    if (programInfo.uniformLocations.textureBN != null && Object.TextureBN != null)
+    if (programInfo.uniformLocations.textureBN != null && Model.TextureBN != null)
     {
         gl.activeTexture(gl.TEXTURE2);
-        gl.bindTexture(gl.TEXTURE_2D, Object.TextureBN);
+        gl.bindTexture(gl.TEXTURE_2D, Model.TextureBN);
         gl.uniform1i(programInfo.uniformLocations.textureBN,2);
     }
     else if(("texture3D" in programInfo))
     {console.log("texture3D Uniform Could Not Be Found!")}
-    if (programInfo.uniformLocations.texture3D != null && Object.Texture3D != null)
+    if (programInfo.uniformLocations.texture3D != null && Model.Texture3D != null)
     {
         gl.activeTexture(gl.TEXTURE3);
-        gl.bindTexture(gl.TEXTURE_3D, Object.Texture3D);
+        gl.bindTexture(gl.TEXTURE_3D, Model.Texture3D);
         gl.uniform1i(programInfo.uniformLocations.texture3D,3);
     }
     else if(("texture3D" in programInfo))
@@ -811,7 +847,7 @@ export function loadTexture(gl, url, numChans = 4, flip = true) {
     if (programInfo.uniformLocations.normal != null)
     {
         gl.activeTexture(gl.TEXTURE4);
-        gl.bindTexture(gl.TEXTURE_2D, Object.Normal);
+        gl.bindTexture(gl.TEXTURE_2D, Model.Normal);
         gl.uniform1i(programInfo.uniformLocations.normal, 4);
     }
     else if(("normal" in programInfo))
@@ -820,7 +856,7 @@ export function loadTexture(gl, url, numChans = 4, flip = true) {
     if (programInfo.uniformLocations.displacement != null)
     {
         gl.activeTexture(gl.TEXTURE5);
-        gl.bindTexture(gl.TEXTURE_2D, Object.Displacement);
+        gl.bindTexture(gl.TEXTURE_2D, Model.Displacement);
         gl.uniform1i(programInfo.uniformLocations.displacement, 5);
 
     }
@@ -836,13 +872,13 @@ export function loadTexture(gl, url, numChans = 4, flip = true) {
     {console.log("resolution Uniform Could Not Be Found!")}
     if (programInfo.uniformLocations.color != null)
     {
-        gl.uniform4fv(programInfo.uniformLocations.color,Object.Color);
+        gl.uniform4fv(programInfo.uniformLocations.color,Model.Color);
     }
     else if(("color" in programInfo))
     {console.log("color Uniform Could Not Be Found!")}
     if (programInfo.uniformLocations.marchOrigin != null)
     {
-        gl.uniform3fv(programInfo.uniformLocations.marchOrigin,Object.Position);
+        gl.uniform3fv(programInfo.uniformLocations.marchOrigin,Model.Position);
     }
     else if(("marchOrigin" in programInfo))
     {console.log("marchOrigin Uniform Could Not Be Found!")}
@@ -855,29 +891,29 @@ export function loadTexture(gl, url, numChans = 4, flip = true) {
 
     if (programInfo.uniformLocations.textureScale != null)
     {;
-        gl.uniform1f(programInfo.uniformLocations.textureScale,Object.TextureScale);
-        console.log(Object.TextureScale);
+        gl.uniform1f(programInfo.uniformLocations.textureScale,Model.TextureScale);
+        console.log(Model.TextureScale);
     }
     else if(("textureScale" in programInfo))
     {console.log("textureScale Uniform Could Not Be Found!")}
     
     if (programInfo.uniformLocations.isHover != null)
     {;
-        gl.uniform1f(programInfo.uniformLocations.isHover,Object.isHover);
+        gl.uniform1f(programInfo.uniformLocations.isHover,Model.isHover);
     }
     else if(("isHover" in programInfo))
     {console.log("isHover Uniform Could Not Be Found!")}
     
     if (programInfo.uniformLocations.origin != null)
     {;
-        gl.uniform3fv(programInfo.uniformLocations.origin,Object.Origin);
+        gl.uniform3fv(programInfo.uniformLocations.origin,Model.Origin);
     }
     else if(("origin" in programInfo))
     {console.log("Origin Uniform Could Not Be Found!")}
 
     if (programInfo.uniformLocations.alpha != null)
     {
-        let Alpha = "Alpha" in Object ? Object.Alpha : 1.0;
+        let Alpha = "Alpha" in Model ? Model.Alpha : 1.0;
         gl.uniform1f(programInfo.uniformLocations.alpha, Alpha);
     }
     else if(("alpha" in programInfo))
@@ -892,28 +928,28 @@ export function loadTexture(gl, url, numChans = 4, flip = true) {
 
     if (programInfo.uniformLocations.uvScale != null)
     {
-        gl.uniform2fv(programInfo.uniformLocations.uvScale, Object.uvScale);
+        gl.uniform2fv(programInfo.uniformLocations.uvScale, Model.uvScale);
     }
     else if(("uvScale" in programInfo))
     {console.log("UVScale Uniform Could Not Be Found!")} 
 
     if (programInfo.uniformLocations.lifeSpan != null)
     {
-        gl.uniform1f(programInfo.uniformLocations.lifeSpan, Object.lifeSpan);
+        gl.uniform1f(programInfo.uniformLocations.lifeSpan, Model.lifeSpan);
     }
     else if(("lifeSpan" in programInfo))
     {console.log("lifeSpan Uniform Could Not Be Found!")} 
 
     if (programInfo.uniformLocations.spawnTime != null)
     {
-        gl.uniform1f(programInfo.uniformLocations.spawnTime, Object.spawnTime);
+        gl.uniform1f(programInfo.uniformLocations.spawnTime, Model.spawnTime);
     }
     else if(("spawnTime" in programInfo))
     {console.log("spawnTime Uniform Could Not Be Found!")} 
 
     if (programInfo.uniformLocations.lightness != null)
     {
-        gl.uniform1f(programInfo.uniformLocations.lightness, Object.lightness);
+        gl.uniform1f(programInfo.uniformLocations.lightness, Model.lightness);
     }
     else if(("lightness" in programInfo))
     {console.log("lightness Uniform Could Not Be Found!")} 
@@ -956,24 +992,24 @@ export function loadTexture(gl, url, numChans = 4, flip = true) {
         }
         else if(("colecItemCount" in programInfo))
         {console.log("colecItemCount Uniform Could Not Be Found!")}
-
-        //Three JS BONE SHIT
-
-        if (programInfo.uniformLocations.boneMatrices != null && "Skeleton" in Object)
-        {
-            gl.uniformMatrix4fv(programInfo.uniformLocations.boneMatrices,Object.Skeleton.boneMatrices);
-        }
-        else if(("boneMatrices" in programInfo))
-        {console.log("boneMatrices Uniform Could Not Be Found!")}
-
-        if (programInfo.uniformLocations.boneParentIndex != null && "Skeleton" in Object)
-        {
-            gl.uniform1i(programInfo.uniformLocations.boneParentIndex,Object.Skeleton.BoneParentsInd);
-        }
-        else if(("boneParentIndex" in programInfo))
-        {console.log("boneParentIndex Uniform Could Not Be Found!")}
     
     }
+    
+    //Three JS BONE SHIT
+
+    if (programInfo.uniformLocations.boneMatrices != null && "Skeleton" in Model)
+    {
+        gl.uniformMatrix4fv(programInfo.uniformLocations.boneMatrices, false, Model.Skeleton.BoneMatrices);
+    }
+    else if(("boneMatrices" in programInfo))
+    {console.log("boneMatrices Uniform Could Not Be Found!")}
+
+    if (programInfo.uniformLocations.boneParentIndex != null && "Skeleton" in Model)
+    {
+        gl.uniform1i(programInfo.uniformLocations.boneParentIndex,Model.Skeleton.BoneParentsInd);
+    }
+    else if(("boneParentIndex" in programInfo))
+    {console.log("boneParentIndex Uniform Could Not Be Found!")}
 
     
 }

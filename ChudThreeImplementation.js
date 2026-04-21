@@ -48,7 +48,7 @@ export async function LoadThreeScene(url)
           let Texture = null; //Setup manually when I've figured out the vertex shit
           let Name = child.name;
         
-          
+      
 
           let VertAr = child.geometry.getAttribute("position").array;
 
@@ -81,17 +81,22 @@ export async function LoadThreeScene(url)
         }
         if (child.isSkinnedMesh)
         {
+          console.log(child);
             let Bones = child.skeleton.bones;
+
             let BoneNames = [];
             let BoneParentsInd = [];
             let WeightArr = child.geometry.getAttribute("skinWeight").array;
+            console.log(WeightArr);
             let WeightIndArr = child.geometry.getAttribute("skinIndex").array;
             let WeightBuff = gGL.createBuffer();
             let WeightIndBuff = gGL.createBuffer();
+            
+          
             gGL.bindBuffer(gGL.ARRAY_BUFFER, WeightBuff); // choose pos buffer as active buffer
             gGL.bufferData(gGL.ARRAY_BUFFER, new Float32Array(WeightArr), gGL.STATIC_DRAW); //apply data to active buffer
             gGL.bindBuffer(gGL.ARRAY_BUFFER, WeightIndBuff); // choose pos buffer as active buffer
-            gGL.bufferData(gGL.ARRAY_BUFFER, new Uint16Array(WeightIndArr), gGL.STATIC_DRAW); //apply data to active buffer
+            gGL.bufferData(gGL.ARRAY_BUFFER, new Float32Array(WeightIndArr), gGL.STATIC_DRAW); //apply data to active buffer
             for (let i = 0; i < Bones.length; i++)
             {
                 BoneNames.push(Bones[i].name); //easier way to do this?
@@ -107,20 +112,26 @@ export async function LoadThreeScene(url)
             let BoneMatrices = []; //create matrices for all bones  //use uniforms for now   
             let RotationMatrix = mat4.create();
             let q = quat.create();
-            let ModelMatrix = mat4.create();
             for (let i = 0; i < Bones.length; i++)
             {
-                let Bones = child.skeleton.bones;
-                RotationMatrix = mat4.create();
-                q = quat.fromValues(Bones[i].quaternion.x, Bones[i].quaternion.y, Bones[i].quaternion.z, Bones[i].quaternion.w);
-                mat4.fromQuat(RotationMatrix,q);
-                let Pos = vec3.fromValues(Bones[i].position.x,Bones[i].position.y,Bones[i].position.z);
-                let Scale = vec3.fromValues(Bones[i].scale.x,Bones[i].scale.y,Bones[i].scale.z);
-                ModelMatrix = mat4.fromRotationTranslationScale(ModelMatrix, q, Pos, Scale);
+                let MWorld = Bones[i].matrixWorld;
+                let MInv = child.skeleton.boneInverses[i];
+                let MResult = new THREE.Matrix4();
+                MResult.multiplyMatrices(MWorld, MInv);
+                let ModelMatrix = MResult;
                 BoneMatrices.push(ModelMatrix);
             }
+            let BoneMatArray = [];
+            BoneMatrices.forEach((Mat) =>
+            {
+              let matArr = Mat.toArray();
+              let prevArr = BoneMatArray;
+              BoneMatArray = prevArr.concat(matArr);
+            });
+            // console.log(BoneMatrices);
+            
 
-            let Skeleton = new GLTFSkeleton(Bones, BoneParentsInd, WeightBuff, WeightIndBuff, BoneMatrices);
+            let Skeleton = new GLTFSkeleton(Bones, BoneParentsInd, WeightBuff, WeightIndBuff, new Float32Array(BoneMatArray));
             ThreeObj.Skeleton = Skeleton;
             //console.log(ThreeObj);
         }   
@@ -149,6 +160,9 @@ return{ModelMap: ModelColec, AnimationMixer: AniMixer, AnimationClips: AniClips,
 export function AddAnimation(ModelColec, AniMixer, AniClip)
 {
     let action = AniMixer.clipAction(AniClip);
+    console.log(action);
+    action.setLoop(THREE.LoopRepeat);
+    action.timeScale = 3.5;
     action.play();
     return AniMixer;
 }
@@ -218,4 +232,49 @@ export async function UpdateModel(Scene, ModelDict)
     }
 });
       return {Dict: ModelColec};
+}
+
+
+export function UpdateBoneMatrix(Scene, ModelDict)
+{
+
+  let ObjColec = [];
+  let DefaultCol = [1.0,1.0,1.0,1.0];
+  let ind = 0;
+
+
+    Scene.traverse((child) =>
+      {
+        if (child.isSkinnedMesh)
+        {
+          //console.log(child);
+            let Bones = child.skeleton.bones;
+            //Generate Bone Matricies
+            let BoneMatrices = []; //create matrices for all bones  //use uniforms for now   
+            let RotationMatrix = mat4.create();
+            let q = quat.create();
+            for (let i = 0; i < Bones.length; i++)
+            {
+                let MWorld = Bones[i].matrixWorld;
+                let MInv = child.skeleton.boneInverses[i];
+                let MResult = new THREE.Matrix4();
+                MResult.multiplyMatrices(MWorld, MInv);
+                let ModelMatrix = MResult;
+                BoneMatrices.push(ModelMatrix);
+            }
+            let BoneMatArray = [];
+            BoneMatrices.forEach((Mat) =>
+            {
+              let matArr = Mat.toArray();
+              let prevArr = BoneMatArray;
+              BoneMatArray = prevArr.concat(matArr);
+            });
+            if (ModelDict.get(child.name) != undefined)
+            {
+              ModelDict.get(child.name).Skeleton.BoneMatrices = new Float32Array(BoneMatArray);
+            }
+            
+        }   
+
+    });
 }
