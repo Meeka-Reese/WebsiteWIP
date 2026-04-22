@@ -8,6 +8,9 @@
     uniform sampler2D BloomText;
     uniform float Time;
     uniform vec2 uResolution;
+    uniform float EdgeAmount;
+    uniform float BloomAmount;
+    uniform float ccVals[CC_CHANNEL_NUM];
     const float eps = 0.001;
 
     float rand(vec2 co){
@@ -226,7 +229,7 @@
         vec4 ScreenText = texture(uTexture, screenSpace + (Displacement.rg * DispAm));
         vec3 HSL = RGB2HSL(ScreenText.rgb);
         HSL.r = HSL.r + (sin(Frame) * 30.0);
-        HSL.g *= .5;
+        HSL.g *= ccVals[5] + .2;
         if (HSL.g > .8) {HSL.g *= 1.5;} //Magnify upper bounds
         vec3 NewRGB = HSL2RGB(HSL); 
         vec4 n[9];
@@ -240,8 +243,8 @@
         sobel.b *= .7;
         vec4 BlurVec = vec4(0.0);
         Blur(BlurVec, BloomText, halfScreenSpace);
-        vec3 Comp = NewRGB + (BlurVec.rgb) + (sobel.rgb); 
-        float FinCutoff = .5;
+        vec3 Comp = NewRGB + (BlurVec.rgb * ccVals[2]) + (sobel.rgb * ccVals[3]); 
+        float FinCutoff = ccVals[4];
         if (((Comp.r + Comp.g + Comp.b) / 3.0) < FinCutoff) {Comp = vec3(0.0);}
         
         fragColor = vec4(Comp, 1.0);

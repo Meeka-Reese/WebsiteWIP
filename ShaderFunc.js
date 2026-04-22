@@ -18,10 +18,11 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
     ProgramInfoTreeMorph, ShaderProgramTreeMorph,
     ProgramInfoBloodCloud, ShaderProgramBloodCloud,
     ProgramInfoScreenBGTrans, ShaderProgramScreenBGTrans,
-    ProgramInfoPostProcessing, ShaderProgramPostProcessing,
+    ProgramInfoPostProcessingFlesh, ShaderProgramPostProcessingFlesh,
     ProgramInfoGLTFDef, ShaderProgramGLTFDef,
     ProgramInfoPostProcessingAndrew, ShaderProgramPostProcessingAndrew,
     ProgramInfoToon, ShaderProgramToon,
+    ProgramInfoPostProcessing, ShaderProgramPostProcessing,
     ) {
         //SOON TO DO - REORGANIZE TEXTURES SO THEY USE MULTIPLE TEXTURE SLOTS WITH GENERIC NAMES INSTEAD OF "TEXTUREBN"
     ProgramInfoDef.program = ShaderProgramDef;
@@ -390,21 +391,21 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         lightness: GL.getUniformLocation(ShaderProgramScreenBGTrans, "Lightness"),
     }
 
-    ProgramInfoPostProcessing.program = ShaderProgramPostProcessing;
-    ProgramInfoPostProcessing.attribLocations = {
-        vertexPosition: GL.getAttribLocation(ShaderProgramPostProcessing, "aVertPos"),
-        normalPosition: GL.getAttribLocation(ShaderProgramPostProcessing, "aNorm"),
-        UVPosition: GL.getAttribLocation(ShaderProgramPostProcessing, "aUVCord"),
+    ProgramInfoPostProcessingFlesh.program = ShaderProgramPostProcessingFlesh;
+    ProgramInfoPostProcessingFlesh.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramPostProcessingFlesh, "aVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramPostProcessingFlesh, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramPostProcessingFlesh, "aUVCord"),
     }
-    ProgramInfoPostProcessing.uniformLocations = {
-        projectionMatrix: GL.getUniformLocation(ShaderProgramPostProcessing, "uProjMatrix"),
-        ViewMatrix: GL.getUniformLocation(ShaderProgramPostProcessing, "uViewMatrix"),
-        modelMatrix: GL.getUniformLocation(ShaderProgramPostProcessing, "uModelMatrix"),
-        texture: GL.getUniformLocation(ShaderProgramPostProcessing, "uTexture"),
-        resolution: GL.getUniformLocation(ShaderProgramPostProcessing, "uResolution"),
-        time: GL.getUniformLocation(ShaderProgramPostProcessing, "Time"),
-        textureBN: GL.getUniformLocation(ShaderProgramPostProcessing, "BloomText"),
-        ccVals: GL.getUniformLocation(ShaderProgramPostProcessing, "ccVals"),
+    ProgramInfoPostProcessingFlesh.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramPostProcessingFlesh, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramPostProcessingFlesh, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramPostProcessingFlesh, "uModelMatrix"),
+        texture: GL.getUniformLocation(ShaderProgramPostProcessingFlesh, "uTexture"),
+        resolution: GL.getUniformLocation(ShaderProgramPostProcessingFlesh, "uResolution"),
+        time: GL.getUniformLocation(ShaderProgramPostProcessingFlesh, "Time"),
+        textureBN: GL.getUniformLocation(ShaderProgramPostProcessingFlesh, "BloomText"),
+        ccVals: GL.getUniformLocation(ShaderProgramPostProcessingFlesh, "ccVals"),
         
     }
 
@@ -444,7 +445,7 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         textureBN: GL.getUniformLocation(ShaderProgramPostProcessingAndrew, "BloomText"),
         
     }
-    ProgramInfoToon.program = ShaderProgramToon;
+    ProgramInfoToon.program = ShaderProgramToon; //unused
     ProgramInfoToon.attribLocations = {
         vertexPosition: GL.getAttribLocation(ShaderProgramToon, "aVertPos"),
         normalPosition: GL.getAttribLocation(ShaderProgramToon, "aNorm"),
@@ -461,6 +462,22 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         objCol: GL.getUniformLocation(ShaderProgramToon,"objCol"),
         time: GL.getUniformLocation(ShaderProgramToon, "Time"),
     };
+
+    ProgramInfoPostProcessing.program = ShaderProgramPostProcessing;
+    ProgramInfoPostProcessing.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramPostProcessing, "aVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramPostProcessing, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramPostProcessing, "aUVCord"),
+    }
+    ProgramInfoPostProcessing.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramPostProcessing, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramPostProcessing, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramPostProcessing, "uModelMatrix"),
+        texture: GL.getUniformLocation(ShaderProgramPostProcessing, "uTexture"),
+        resolution: GL.getUniformLocation(ShaderProgramPostProcessing, "uResolution"),
+        time: GL.getUniformLocation(ShaderProgramPostProcessing, "Time"),
+        textureBN: GL.getUniformLocation(ShaderProgramPostProcessing, "BloomText"),
+    }
 
 }
 //

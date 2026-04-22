@@ -10,16 +10,16 @@ let gVertSourceDef, gVertSkybox, gVertStar, gVertRaycast, gVertTrans, gVertFlesh
 
 let gFragSourceWave, gFragSourceFlat, gFragSourceCloud, gFragSkybox, gFragStar, gFragColor,
 gFragVolGlow, gFragDef, gFragRaycast, gFragGlass, gFragScreenFlat, gFragTransFlat, gFragFlesh, gFragElenco,
-gFragFleshPart, gFragMorph, gFragTreeMorph, gFragBloodCloud, gFragScreenBGTrans, gFragPostProcessing, gFragPostProcessingAndrew, 
-gFragToon;
+gFragFleshPart, gFragMorph, gFragTreeMorph, gFragBloodCloud, gFragScreenBGTrans, gFragPostProcessingFlesh, gFragPostProcessingAndrew, 
+gFragToon, gFragPostProcessing;
 
 
 let gShaderProgramDef, gShaderProgramWave, gShaderProgramFlat, gShaderProgramCloud,
 gShaderProgramSkybox, gShaderProgramStar, gShaderProgramFleshPart, gShaderProgramColor, gShaderProgramVolGlow,
 gShaderProgramRaycast, gShaderProgramGlass, gShaderProgramScreenRender, gShaderProgramScreenImage,
 gShaderProgramTrans, gShaderProgramFlesh, gShaderProgramElenco, gShaderProgramMorph, gShaderProgramTreeMorph,
-gShaderProgramBloodCloud, gShaderProgramScreenBGTrans, gShaderProgramPostProcessing, gShaderProgramGLTFDef,
-gShaderProgramPostProcessingAndrew, gShaderProgramToon;
+gShaderProgramBloodCloud, gShaderProgramScreenBGTrans, gShaderProgramPostProcessingFlesh, gShaderProgramGLTFDef,
+gShaderProgramPostProcessingAndrew, gShaderProgramToon, gShaderProgramPostProcessing;
 
 let gProgramInfoDef = {};
 let gProgramInfoWave = {};
@@ -41,10 +41,11 @@ let gProgramInfoMorph = {};
 let gProgramInfoTreeMorph = {};
 let gProgramInfoBloodCloud = {};
 let gProgramInfoScreenBGTrans = {};
-let gProgramInfoPostProcessing = {};
+let gProgramInfoPostProcessingFlesh = {};
 let gProgramInfoGLTFDef = {};
 let gProgramInfoPostProcessingAndrew = {};
 let gProgramInfoToon = {};
+let gProgramInfoPostProcessing = {};
 
 //Depth
 let gDepthFBO;
@@ -375,28 +376,21 @@ async function SetUpScene()
 
 //-=-=-=-=-=-=-=-=-=-=-=-=-=======About Me Scene================-=-=-=-=-=-=-=-=-=-=-=-=-
 
-({ ModelMap: gCharMeDict, AnimationMixer: gCharMeAniMixer, AnimationClips: gCharMeAniClips, AniScene: gSceneAboutMe} = await LoadThreeScene('./models/CharForAndrew.glb'));
+({ ModelMap: gCharMeDict, AnimationMixer: gCharMeAniMixer, AnimationClips: gCharMeAniClips, AniScene: gSceneAboutMe} = await LoadThreeScene('./models/CharTest3.glb'));
 console.log(gCharMeDict);
 //Skirt, Body, EarRing, Hair, Shirt, ShoeL, ShoeR, Socks, ShoeLaceL, ShoeLaceR
 
-// gCharMeDict.get("Skirt").Texture =  SkirtText;
-// gCharMeDict.get("Body").Texture =  BodyText;
-// gCharMeDict.get("EarRing").Texture =  EarRingText;
-// gCharMeDict.get("Hair").Texture =  HairText;
-// gCharMeDict.get("Shirt").Texture =  ShirtText;
-// gCharMeDict.get("ShoeL").Texture =  ShoeText;
-// gCharMeDict.get("ShoeR").Texture =  ShoeText;
-// gCharMeDict.get("Socks").Texture =  SocksText;
-// gCharMeDict.get("ShoeLaceL").Texture =  ShoeLaceText;
-// gCharMeDict.get("ShoeLaceR").Texture =  ShoeLaceText;
+gCharMeDict.get("Skirt").Texture =  SkirtText;
+gCharMeDict.get("Body").Texture =  BodyText;
+gCharMeDict.get("EarRing").Texture =  EarRingText;
+gCharMeDict.get("Hair").Texture =  HairText;
+gCharMeDict.get("Shirt").Texture =  ShirtText;
+gCharMeDict.get("ShoeL").Texture =  ShoeText;
+gCharMeDict.get("ShoeR").Texture =  ShoeText;
+gCharMeDict.get("Socks").Texture =  SocksText;
+gCharMeDict.get("ShoeLaceL").Texture =  ShoeLaceText;
+gCharMeDict.get("ShoeLaceR").Texture =  ShoeLaceText;
 
-gCharMeDict.get("Body").Texture = AndrewBodyText;
-gCharMeDict.get("Hair").Texture = AndrewHairText;
-gCharMeDict.get("Shirt").Texture = AndrewShirtText;
-gCharMeDict.get("Teeth").Texture = AndrewTeethText;
-gCharMeDict.get("ShoeL").Texture = AndrewShoeLText;
-gCharMeDict.get("ShoeR").Texture = AndrewShoeRText;
-gCharMeDict.get("Shorts").Texture = AndrewShortsText;
 
 
 
@@ -1121,7 +1115,8 @@ function RaycastClick(Obj)
       Sound1.pause();
       Sound1.currentTime = 0;
       document.getElementById("PlayMusic").style.opacity = 0.0;
-      gCharMeAniMixer = AddAnimation(gSceneAboutMe, gCharMeAniMixer, gCharMeAniClips[0]);
+      let Speed = .7;
+      gCharMeAniMixer = AddAnimation(gSceneAboutMe, gCharMeAniMixer, gCharMeAniClips[0], Speed);
       break;
     case gHomeButton:
       gCamera.Eye = [0.0,10.0,0.0];
@@ -1538,7 +1533,7 @@ const TransformationLoop = ()=>
     
     gGL.bindFramebuffer(gGL.FRAMEBUFFER, null);  
     gGL.viewport(0, 0, gCanvasWidth, gCanvasHeight);
-    Draw(gProgramInfoPostProcessing, gPostProcessingQuad, gCamera, gLight1, null, gMidiObj);
+    Draw(gProgramInfoPostProcessingFlesh, gPostProcessingQuad, gCamera, gLight1, null, gMidiObj);
     gGL.enable(gGL.DEPTH_TEST);
     Draw(gProgramInfoDef, gHomeButton, gCamera,gLight1);
   Draw(gProgramInfoDef, gPauseButton, gCamera,gLight1);
@@ -1640,19 +1635,12 @@ const AboutMeLoop = async ()=>
     gGL.enable(gGL.DEPTH_TEST);    
     gGL.clear(gGL.DEPTH_BUFFER_BIT); 
     gGL.enable(gGL.CULL_FACE); 
-    StarLookAt(gStars, gCamera);
-    
-    gCharMeDict.forEach((val, key) =>
-      {
-        Draw(gProgramInfoGLTFDef, val, gCamera,gLight1);
-        console.log(gGL.getError());
-      }); 
+
 
     
     gGL.bindFramebuffer(gGL.FRAMEBUFFER, gMainFBO);  
     gGL.disable(gGL.DEPTH_TEST);
     gPostProcessingQuad.TextureBN = gBloomRendText;
-    Draw(gProgramInfoStar, gStars, gCamera, gLight1);
     gGL.viewport(0, 0, gCanvasWidth, gCanvasHeight);
 
     //
@@ -1662,9 +1650,7 @@ const AboutMeLoop = async ()=>
     gGL.disable(gGL.DEPTH_TEST);
     gGL.enable(gGL.DEPTH_TEST); 
     gGL.disable(gGL.CULL_FACE);
-    gSimpleWave.Scale = [10.0, 5.0, 5.0];
-    gSimpleWave.Position = [-500.0, -100.0, -200.0];
-    Draw(gProgramInfoWave, gSimpleWave, gCamera, gLight1);
+
     gCharMeDict.forEach((val, key) =>
       {
         Draw(gProgramInfoGLTFDef, val, gCamera,gLight1);
@@ -1673,7 +1659,7 @@ const AboutMeLoop = async ()=>
     
     gPostProcessingQuad.Texture = gRenderText;
     gGL.bindFramebuffer(gGL.FRAMEBUFFER, null);  
-    Draw(gProgramInfoPostProcessingAndrew, gPostProcessingQuad, gCamera, gLight1, null, null);
+    Draw(gProgramInfoPostProcessing, gPostProcessingQuad, gCamera, gLight1, null, null);
     gFrameCount++;
     gCycleNum++;
     if (gActiveMainLoop != AboutMeLoop) {gInitLoad = true;}
@@ -1787,11 +1773,13 @@ async function main() {
   gFragElenco = await loadShaderFiles(gFragElenco, './Shaders/ElencoScreenFrag.glsl');
   gFragMorph = await loadShaderFiles(gFragMorph, './Shaders/MorphFrag.glsl');
   gFragTreeMorph = await loadShaderFiles(gFragTreeMorph, './Shaders/TreeMorphFrag.glsl');
-  gFragBloodCloud = await loadShaderFiles(gFragTreeMorph, './Shaders/BloodCloudFrag.glsl');
-  gFragScreenBGTrans = await loadShaderFiles(gFragTreeMorph, './Shaders/ScreenBGFrag.glsl');
-  gFragPostProcessing = await loadShaderFiles(gFragTreeMorph, './Shaders/PostProcessingFrag.glsl');
+  gFragBloodCloud = await loadShaderFiles(gFragBloodCloud, './Shaders/BloodCloudFrag.glsl');
+  gFragScreenBGTrans = await loadShaderFiles(gFragScreenBGTrans, './Shaders/ScreenBGFrag.glsl');
+  gFragPostProcessingFlesh = await loadShaderFiles(gFragPostProcessingFlesh, './Shaders/PostProcessingFleshFrag.glsl');
   gFragPostProcessingAndrew = await loadShaderFiles(gFragPostProcessingAndrew, './Shaders/PostProcessingAndrewFrag.glsl');
-  gFragToon = await loadShaderFiles(gFragToon, './Shaders/ToonFrag.glsl');
+  gFragToon = await loadShaderFiles(gFragToon, './Shaders/ToonFrag.glsl');//unused
+  gFragPostProcessing = await loadShaderFiles(gFragPostProcessing, './Shaders/PostProcessingFrag.glsl');
+
 
 
   gShaderProgramWave = initShader(gGL, gVertSourceDef,gFragSourceWave);
@@ -1814,10 +1802,11 @@ async function main() {
   gShaderProgramTreeMorph = initShader(gGL, gVertTreeMorph, gFragTreeMorph);
   gShaderProgramBloodCloud = initShader(gGL, gVertSourceDef, gFragBloodCloud);
   gShaderProgramScreenBGTrans = initShader(gGL, gVertSkybox, gFragScreenBGTrans);
-  gShaderProgramPostProcessing = initShader(gGL, gVertSkybox, gFragPostProcessing);
+  gShaderProgramPostProcessingFlesh = initShader(gGL, gVertSkybox, gFragPostProcessingFlesh);
   gShaderProgramGLTFDef = initShader(gGL, gVertGLTFDef, gFragSourceFlat);
   gShaderProgramPostProcessingAndrew = initShader(gGL, gVertSkybox, gFragPostProcessingAndrew);
   gShaderProgramToon = initShader(gGL, gVertSourceDef, gFragToon);
+  gShaderProgramPostProcessing = initShader(gGL, gVertSkybox, gFragPostProcessing);
   //Shaders done
   LoadTxt.style.color = '#ff0000'; 
   
@@ -1844,10 +1833,11 @@ async function main() {
      gProgramInfoTreeMorph, gShaderProgramTreeMorph,
      gProgramInfoBloodCloud, gShaderProgramBloodCloud,
      gProgramInfoScreenBGTrans, gShaderProgramScreenBGTrans,
-     gProgramInfoPostProcessing, gShaderProgramPostProcessing,
+     gProgramInfoPostProcessingFlesh, gShaderProgramPostProcessingFlesh,
      gProgramInfoGLTFDef, gShaderProgramGLTFDef,
      gProgramInfoPostProcessingAndrew, gShaderProgramPostProcessingAndrew,
      gProgramInfoToon, gShaderProgramToon,
+     gProgramInfoPostProcessing, gShaderProgramPostProcessing,
      );
   
     SinPreComp(gSinView,WAVE_BUFFER_SIZE);

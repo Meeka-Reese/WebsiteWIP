@@ -157,12 +157,12 @@ console.log(typeof ModelColec);
 return{ModelMap: ModelColec, AnimationMixer: AniMixer, AnimationClips: AniClips, AniScene: Scene,};
 }
 
-export function AddAnimation(ModelColec, AniMixer, AniClip)
+export function AddAnimation(ModelColec, AniMixer, AniClip, Speed)
 {
     let action = AniMixer.clipAction(AniClip);
     console.log(action);
     action.setLoop(THREE.LoopRepeat);
-    action.timeScale = 3.5;
+    action.timeScale = Speed;
     action.play();
     return AniMixer;
 }
