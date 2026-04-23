@@ -32,3 +32,25 @@ export function Vec3ArrLerp(a, b, alpha)
   return OutVec;
 }
 
+export class Transform
+{
+  constructor(Position, Rotation, Scale)
+  {
+    this.Position = Position;
+    this.Rotation = Rotation;
+    this.Scale = Scale;
+  }
+  getPos()
+  {
+    return this.Position.slice();
+  }
+  getRot()
+  {
+    return this.Rotation.slice();
+  }
+  getScale()
+  {
+    return this.Scale.slice();
+  }
+}
+

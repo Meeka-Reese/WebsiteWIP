@@ -8,6 +8,34 @@ let gSpeed = .11;
 let gRotationSpeed = .7;
 let gTotalYaw;
 let gTotalPitch = 0.0;
+
+export class Camera
+{
+    
+    constructor(Eye, ViewDir, UpDir, Width, Height, ObjectIndex)
+    {
+        this.Eye = Eye;
+        this.ViewDir = ViewDir;
+        this.UpDir = UpDir;
+        this.Width = Width;
+        this.Height = Height;
+        this.ObjectIndex = ObjectIndex;
+
+        this.OutlineCol = [0.0, 0.0, 0.0];
+        this.OutlineCutoff = 0.0;
+        this.BlurAmount = 0.0;
+        this.BGCol = [0.0, 0.0, 0.0];
+    }
+
+    setPostProcessing(outCol, outCut, blurAmount, bgCol)
+    {
+        this.OutlineCol = outCol;
+        this.OutlineCutoff = outCut;
+        this.BlurAmount = blurAmount;
+        this.BGCol = bgCol;
+    }
+
+}
 export function CameraMove(Camera, Direction, DeltaMs)
 {
     //Forward = 0

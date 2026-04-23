@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import {makeStruct, gGL} from './webgl-demo.js';
 import {quat, vec3, vec4, mat4} from './Externals/esm/index.js';
 
-const ThreeStruct = makeStruct("Position, Rotation, Scale, vertexBuffer, indexBuffer, VertexCount, normalBuffer, Texture, textureBuffer, Color, Skeleton");
+const ThreeStruct = makeStruct("Position, Rotation, Scale, vertexBuffer, indexBuffer, VertexCount, normalBuffer, Texture, textureBuffer, Color, Skeleton, ParentTrans, ParentScale");
 export class GLTFSkeleton
 {
     constructor(Bones, BoneParents, WeightBuff, WeightInd, BoneMatrices)
@@ -73,7 +73,7 @@ export async function LoadThreeScene(url)
           gGL.bufferData(gGL.ARRAY_BUFFER, new Float32Array(UVAR), gGL.STATIC_DRAW); //apply data to active buffer
 
           ThreeObj = new ThreeStruct(Position, Rotation, Scale, VertBuff, IndBuff, VertexCount, 
-          NormBuff, Texture, textBuff, DefaultCol, null, null); //null skeleton and matricies
+          NormBuff, Texture, textBuff, DefaultCol, null, null, null, null); //null skeleton and matricies null transpar null transscale
           if (UVAR != undefined && VertAr != undefined && IndAr != undefined && NormBuff != undefined && textBuff != undefined) 
           {
             results.set(Name, ThreeObj);

@@ -8,6 +8,10 @@
     uniform sampler2D BloomText;
     uniform float Time;
     uniform vec2 uResolution;
+    uniform float BlurAmount;
+    uniform vec3 OutlineCol;
+    uniform float OutlineCutoff;
+    uniform vec3 BGCol;
     const float eps = 0.001;
 
     float rand(vec2 co){
@@ -150,8 +154,8 @@
     void make_kernel(inout vec4 n[9], sampler2D tex, vec2 coord)
     {
         float Frame = Time * .001;
-        float w =5.0*abs(sin((1.0 + Frame)*1.0)) / uResolution.x;
-        float h = 5.0*abs(sin((1.0 + Frame)*1.0)) / uResolution.y;
+        float w = 5.0 / uResolution.x;
+        float h = 5.0 / uResolution.y;
 
         n[0] = texture(tex, coord + vec2( -w, -h));
         n[1] = texture(tex, coord + vec2(0.0, -h));
@@ -223,11 +227,8 @@
         if (Displacement.b < bCutoff) {Displacement.b = 0.0;}
         Displacement.r += Displacement.b;
         float DispAm = 0.0;
-        vec4 ScreenText = texture(uTexture, screenSpace + (Displacement.rg * DispAm));
+        vec4 ScreenText = texture(uTexture, screenSpace);
         vec3 HSL = RGB2HSL(ScreenText.rgb);
-        HSL.r = HSL.r + (sin(Frame) * 30.0);
-        HSL.g *= .5;
-        if (HSL.g > .8) {HSL.g *= 1.5;} //Magnify upper bounds
         vec3 NewRGB = HSL2RGB(HSL); 
         vec4 n[9];
         make_kernel(n, uTexture, screenSpace);
@@ -238,10 +239,24 @@
         sobel.r = MaxSobelCol; // Make sure we're focusing on red colors
         sobel.g *= .5;
         sobel.b *= .7;
+        vec3 Background = vec3(0.0,0.0,0.0);
+        if (sobel.r > OutlineCutoff) 
+        {
+            sobel.rgb = OutlineCol;
+        }
+        else
+        {
+            sobel.rgb = vec3(0.0,0.0,0.0);
+            if (ScreenText.a < eps)
+            {
+                Background = BGCol;
+            }
+        }
         vec4 BlurVec = vec4(0.0);
         Blur(BlurVec, BloomText, halfScreenSpace);
-        vec3 Comp = NewRGB + (BlurVec.rgb) + (sobel.rgb); 
-        float FinCutoff = .5;
+        BlurVec *= BlurAmount;
+        vec3 Comp = NewRGB + (BlurVec.rgb) + (sobel.rgb) + Background; 
+        float FinCutoff = 0.0; // Kill colors
         if (((Comp.r + Comp.g + Comp.b) / 3.0) < FinCutoff) {Comp = vec3(0.0);}
         
         fragColor = vec4(Comp, 1.0);

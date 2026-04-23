@@ -477,6 +477,10 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         resolution: GL.getUniformLocation(ShaderProgramPostProcessing, "uResolution"),
         time: GL.getUniformLocation(ShaderProgramPostProcessing, "Time"),
         textureBN: GL.getUniformLocation(ShaderProgramPostProcessing, "BloomText"),
+        outlineCol: GL.getUniformLocation(ShaderProgramPostProcessing, "OutlineCol"),
+        outlineCutoff: GL.getUniformLocation(ShaderProgramPostProcessing, "OutlineCutoff"),
+        blurAmount: GL.getUniformLocation(ShaderProgramPostProcessing, "BlurAmount"),
+        bgCol: GL.getUniformLocation(ShaderProgramPostProcessing, "BGCol"),
     }
 
 }
@@ -971,6 +975,34 @@ export function loadTexture(gl, url, numChans = 4, flip = true) {
     else if(("lightness" in programInfo))
     {console.log("lightness Uniform Could Not Be Found!")} 
 
+    //Post Processing
+    if (programInfo.uniformLocations.outlineCol != null)
+    {
+        gl.uniform3fv(programInfo.uniformLocations.outlineCol, Camera.OutlineCol);
+    }
+    else if(("OutlineCol" in programInfo))
+    {console.log("OutlineCol Uniform Could Not Be Found!")} 
+
+    if (programInfo.uniformLocations.bgCol != null)
+    {
+        gl.uniform3fv(programInfo.uniformLocations.bgCol, Camera.BGCol);
+    }
+    else if(("OutlineCol" in programInfo))
+    {console.log("OutlineCol Uniform Could Not Be Found!")} 
+
+    if (programInfo.uniformLocations.outlineCutoff != null)
+    {
+        gl.uniform1f(programInfo.uniformLocations.outlineCutoff, Camera.OutlineCutoff);
+    }
+    else if(("outlineCutoff" in programInfo))
+    {console.log("outlineCutoff Uniform Could Not Be Found!")} 
+
+    if (programInfo.uniformLocations.blurAmount != null)
+    {
+        gl.uniform1f(programInfo.uniformLocations.blurAmount, Camera.BlurAmount);
+    }
+    else if(("blurAmount" in programInfo))
+    {console.log("blurAmount Uniform Could Not Be Found!")} 
 
     //==== Bone Uniforms ====
     if (Armature != null)

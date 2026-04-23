@@ -80,8 +80,8 @@ let gBloomFBO;
 
 //Imported functions
 import { Move,Rotate,Scale } from './translations.js';
-import { Normalize,ToRadian,lerp,sleep } from './Utils.js';
-import { CameraMove, MouseLook, GetViewMatrix } from './Camera.js';
+import { Normalize,ToRadian,lerp,sleep, Transform } from './Utils.js';
+import { CameraMove, MouseLook, GetViewMatrix, Camera } from './Camera.js';
 import { SinPreComp,CosPreComp,TanPreComp,ArcSinPreComp,ArcCosPreComp } from './PreCompWave.js';
 import { createNoise3D } from './Externals/simplex-noise.js';
 import { SetProgramInfo,loadTexture,setPositionAttribute,createTexture2DFromBuffer,
@@ -153,7 +153,8 @@ let gCharMeDict = new Map();
 let gCharTextColec;
 let gCharMeAniMixer;
 let gCharMeAniClips;
-
+let gStar2;
+let gStarTransforms = [];
 
 
 //
@@ -391,11 +392,23 @@ gCharMeDict.get("Socks").Texture =  SocksText;
 gCharMeDict.get("ShoeLaceL").Texture =  ShoeLaceText;
 gCharMeDict.get("ShoeLaceR").Texture =  ShoeLaceText;
 
+gStar2 = await LoadOBJ(gGL, './models/Star.obj');
+
+
+
 
 
 
 //-=-=-=-=-=-=-=-=-=-=-=-=-=======About Me Scene================-=-=-=-=-=-=-=-=-=-=-=-=-
-
+gCharMeDict.forEach((val, key) =>
+{
+  if (key != "Body")
+  {
+    val.ParentTrans = gCharMeDict.get("Body");
+    val.ParentScale = gCharMeDict.get("Body");
+  }
+})
+gCharMeDict.get("Body").Rotation[1] = 180.0;
    //==========================SET PARENTING======================================
    //== Main Scene ==
   gCharHead.ParentTrans = gGlassSphere;
@@ -616,6 +629,27 @@ gCharMeDict.get("ShoeLaceR").Texture =  ShoeLaceText;
   for (let i = 0; i < LocTreeColec.length; i++)
   {
     gTreeColec.push(LocTreeColec[i]);
+  }
+
+  //===============ABOUT ME LOOP==================
+  let StarScale = 10.0;
+  gStar2.Position = [-200.0,0.0,200.0];
+  gStar2.Rotation = [0.0,0.0,0.0];
+  gStar2.Scale = [StarScale, StarScale, StarScale];
+  gStar2.Color = [1.0, 1.0, 1.0, 1.0];
+  let StarNum = 100;
+  let RandMagPos = 600.0;
+  let RandMagRot = 180.0;
+  let RandScale = 2.0;
+
+
+  for (let i = 0; i< StarNum; i++)
+  {
+    let Pos = [gStar2.Position[0] + (Math.random() * RandMagPos), gStar2.Position[1] + (Math.random() * RandMagPos), gStar2.Position[2] + (Math.random() * RandMagPos)];
+    let Rot = [0.0, gStar2.Rotation[1] + (Math.random() * RandMagRot), 0.0];
+    let Scale = [gStar2.Scale[0] * (.5 + (Math.random() * RandScale)), gStar2.Scale[1] * (.5 + (Math.random() * RandScale)), gStar2.Scale[2] * (.5 + (Math.random() * RandScale))];
+    let StarTrans = new Transform(Pos, Rot, Scale);
+    gStarTransforms.push(StarTrans);
   }
 
 
@@ -1586,10 +1620,6 @@ const AboutMeLoop = async ()=>
       gCharMeAniMixer.update(gDeltaTime * .001);
       gSceneAboutMe.updateMatrix();         
       gSceneAboutMe.updateMatrixWorld(); 
-      gCharMeDict.forEach((val, key) =>
-      {
-        console.log(val);
-      })
 
       UpdateBoneMatrix(gSceneAboutMe, gCharMeDict);
       //======================RENDER RAYCAST============================
@@ -1650,6 +1680,21 @@ const AboutMeLoop = async ()=>
     gGL.disable(gGL.DEPTH_TEST);
     gGL.enable(gGL.DEPTH_TEST); 
     gGL.disable(gGL.CULL_FACE);
+
+    //===Star Float===
+    let FloatMag = 100.0;
+    let FloatSpeed = .1;
+    for (let i = 0; i < gStarTransforms.length; i++)
+    {
+      gStar2.Position = gStarTransforms[i].getPos();
+      let FloatAmount = gSinView[Math.floor(gStar2.Position[0] * WAVE_BUFFER_SIZE) % WAVE_BUFFER_SIZE] + gCosView[Math.floor(gStar2.Position[2] * WAVE_BUFFER_SIZE) % WAVE_BUFFER_SIZE];
+      FloatAmount *= FloatMag;
+      gStar2.Position[1] = gStarTransforms[i].getPos()[1] + (FloatAmount * gSinView[Math.floor(gTimeSinceRun * FloatSpeed) % WAVE_BUFFER_SIZE]);
+      gStar2.Rotation = gStarTransforms[i].getRot();
+      gStar2.Scale = gStarTransforms[i].getScale();
+      Draw(gProgramInfoDef, gStar2, gCamera, gLight1);
+    }
+    //============
 
     gCharMeDict.forEach((val, key) =>
       {
@@ -1899,8 +1944,8 @@ async function main() {
     gSimpleWave = new Wave(gShaderProgramWave, 0,0,0,[], [],[0.0,0.0,0.0],0,0,[], [], 
       [.1,.5,1.0,1.0], [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null);
     GenerateWave(gSimpleWave, gProgramInfoWave);
-    const Camera = makeStruct("Eye, ViewDir, UpDir, Width, Height, ObjectIndex");
     gCamera = new Camera([0.0,10.0,0.0],[1.0,0.0,1.0],[0.0,1.0,0.0], gCanvasWidth, gCanvasHeight, 0);
+    gCamera.setPostProcessing([0.0,0.0,0.0], 0.9, 0.0, [0.7, 0.2, 0.4]);
     const Light = makeStruct("Pos, Color, Intensity");
     gLight1 = new Light([0.0,1.0,-1.0],[1.0, 0.863, 0.537],1.5);
     gLight2 = new Light([0.0,1.0,-1.0],[1.0, 0.863, 0.537],1.0);
