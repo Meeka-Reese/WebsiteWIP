@@ -633,20 +633,21 @@ gCharMeDict.get("Body").Rotation[1] = 180.0;
 
   //===============ABOUT ME LOOP==================
   let StarScale = 10.0;
-  gStar2.Position = [-200.0,0.0,200.0];
-  gStar2.Rotation = [0.0,0.0,0.0];
+  gStar2.Position = [0.0,0.0,0.0];
+  gStar2.Rotation = [90.0,0.0,0.0];
   gStar2.Scale = [StarScale, StarScale, StarScale];
   gStar2.Color = [1.0, 1.0, 1.0, 1.0];
   let StarNum = 100;
-  let RandMagPos = 600.0;
+  let RandMagPos = 500.0;
   let RandMagRot = 180.0;
-  let RandScale = 2.0;
+  let RandScale = .1;
 
 
   for (let i = 0; i< StarNum; i++)
   {
-    let Pos = [gStar2.Position[0] + (Math.random() * RandMagPos), gStar2.Position[1] + (Math.random() * RandMagPos), gStar2.Position[2] + (Math.random() * RandMagPos)];
-    let Rot = [0.0, gStar2.Rotation[1] + (Math.random() * RandMagRot), 0.0];
+    let Pole = [Math.random() < .5 ? -1.0 : 1.0, Math.random() < .5 ? -1.0 : 1.0, Math.random() < .5 ? -1.0 : 1.0];
+    let Pos = [gStar2.Position[0] + (Math.random() * RandMagPos * Pole[0]), gStar2.Position[1] + (Math.random() * RandMagPos * Pole[1]), gStar2.Position[2] + (Math.random() * RandMagPos * Pole[2])];
+    let Rot = [gStar2.Rotation[0], gStar2.Rotation[1] + (Math.random() * RandMagRot),gStar2.Rotation[2]];
     let Scale = [gStar2.Scale[0] * (.5 + (Math.random() * RandScale)), gStar2.Scale[1] * (.5 + (Math.random() * RandScale)), gStar2.Scale[2] * (.5 + (Math.random() * RandScale))];
     let StarTrans = new Transform(Pos, Rot, Scale);
     gStarTransforms.push(StarTrans);
@@ -1678,7 +1679,6 @@ const AboutMeLoop = async ()=>
 
     //======================RENDER NORMALPASS============================
     gGL.disable(gGL.DEPTH_TEST);
-    gGL.enable(gGL.DEPTH_TEST); 
     gGL.disable(gGL.CULL_FACE);
 
     //===Star Float===
@@ -1694,6 +1694,7 @@ const AboutMeLoop = async ()=>
       gStar2.Scale = gStarTransforms[i].getScale();
       Draw(gProgramInfoDef, gStar2, gCamera, gLight1);
     }
+    gGL.enable(gGL.DEPTH_TEST); 
     //============
 
     gCharMeDict.forEach((val, key) =>
