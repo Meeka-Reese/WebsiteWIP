@@ -632,15 +632,15 @@ gCharMeDict.get("Body").Rotation[1] = 180.0;
   }
 
   //===============ABOUT ME LOOP==================
-  let StarScale = 10.0;
-  gStar2.Position = [0.0,0.0,0.0];
+  let StarScale = 2.0;
+  gStar2.Position = [-20.0,0.0,0.0];
   gStar2.Rotation = [90.0,0.0,0.0];
   gStar2.Scale = [StarScale, StarScale, StarScale];
   gStar2.Color = [1.0, 1.0, 1.0, 1.0];
-  let StarNum = 100;
-  let RandMagPos = 500.0;
+  let StarNum = 20;
+  let RandMagPos = 200.0;
   let RandMagRot = 180.0;
-  let RandScale = .1;
+  let RandScale = 1.0;
 
 
   for (let i = 0; i< StarNum; i++)
@@ -1142,9 +1142,10 @@ function RaycastClick(Obj)
       document.getElementById("PlayMusic").style.opacity = 0.0;
       break;
     case gOpt2:
+      gCamera.Mode = 1;
       gActiveMainLoop = AboutMeLoop;
-      gCamera.Eye[2] = -150.0;
-      gCamera.Eye[1] = 25.0;
+      gCamera.Eye[2] = -500.0;
+      gCamera.Eye[1] = 50.0;
       Sound2.currentTime = 0;
       Sound2.pause();
       Sound1.pause();
@@ -1687,7 +1688,7 @@ const AboutMeLoop = async ()=>
     for (let i = 0; i < gStarTransforms.length; i++)
     {
       gStar2.Position = gStarTransforms[i].getPos();
-      let FloatAmount = gSinView[Math.floor(gStar2.Position[0] * WAVE_BUFFER_SIZE) % WAVE_BUFFER_SIZE] + gCosView[Math.floor(gStar2.Position[2] * WAVE_BUFFER_SIZE) % WAVE_BUFFER_SIZE];
+      let FloatAmount = gSinView[Math.floor(Math.abs(gStar2.Position[0]) * WAVE_BUFFER_SIZE) % WAVE_BUFFER_SIZE] + gCosView[Math.floor(Math.abs(gStar2.Position[2]) * WAVE_BUFFER_SIZE) % WAVE_BUFFER_SIZE];
       FloatAmount *= FloatMag;
       gStar2.Position[1] = gStarTransforms[i].getPos()[1] + (FloatAmount * gSinView[Math.floor(gTimeSinceRun * FloatSpeed) % WAVE_BUFFER_SIZE]);
       gStar2.Rotation = gStarTransforms[i].getRot();
@@ -1945,7 +1946,7 @@ async function main() {
     gSimpleWave = new Wave(gShaderProgramWave, 0,0,0,[], [],[0.0,0.0,0.0],0,0,[], [], 
       [.1,.5,1.0,1.0], [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null);
     GenerateWave(gSimpleWave, gProgramInfoWave);
-    gCamera = new Camera([0.0,10.0,0.0],[1.0,0.0,1.0],[0.0,1.0,0.0], gCanvasWidth, gCanvasHeight, 0);
+    gCamera = new Camera([0.0,10.0,0.0],[1.0,0.0,1.0],[0.0,1.0,0.0], gCanvasWidth, gCanvasHeight, 0, 0, [0.0, 0.0, 0.0]);
     gCamera.setPostProcessing([0.0,0.0,0.0], 0.9, 0.0, [0.7, 0.2, 0.4]);
     const Light = makeStruct("Pos, Color, Intensity");
     gLight1 = new Light([0.0,1.0,-1.0],[1.0, 0.863, 0.537],1.5);
@@ -2046,4 +2047,3 @@ async function main() {
 Fix armature,
 make sampler2d's only bind once at start of frame
 */
-
