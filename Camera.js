@@ -85,17 +85,34 @@ export function CameraMove(Camera, Direction, DeltaMs)
         break;
 
         case(1): //rotary
-        console.log("runCamMove");
-            if (Direction == 0 || Direction == 1) {break;} //only accept left or right
-            let RotMat = mat4.create();
-            let yAxis = vec3.fromValues(0.0,1.0,0.0);
-            let Dir = Direction == 2 ? 1.0 : -1.0;
-            let Radian = gOrbitalRotSpeed * DeltaMs * .05* Dir;
-            mat4.fromRotation(RotMat, Radian, yAxis);
-            let CameraEye = vec4.fromValues(Camera.Eye[0], Camera.Eye[1], Camera.Eye[2], 1.0);
-            vec4.transformMat4(CameraEye, CameraEye, RotMat);
-            Camera.Eye = [CameraEye[0], CameraEye[1], CameraEye[2]];
-            Camera.ViewDir = [Camera.OrbitalOrg[0]-Camera.Eye[0],Camera.OrbitalOrg[1]-Camera.Eye[1],Camera.OrbitalOrg[2]-Camera.Eye[2]];
+            switch(Direction)
+            {
+                    case(0): //Forward
+                    console.log(DeltaMs);
+                    Camera.Eye[0] += Camera.ViewDir[0] * gSpeed * DeltaMs * 2.0;
+                    Camera.Eye[1] += Camera.ViewDir[1] * gSpeed * DeltaMs * 2.0;
+                    Camera.Eye[2] += Camera.ViewDir[2] * gSpeed * DeltaMs * 2.0;
+                break;
+
+                case(1): //Backward
+                    Camera.Eye[0] -= Camera.ViewDir[0] * gSpeed * DeltaMs * 2.0;
+                    Camera.Eye[1] -= Camera.ViewDir[1] * gSpeed * DeltaMs * 2.0;
+                    Camera.Eye[2] -= Camera.ViewDir[2] * gSpeed * DeltaMs * 2.0;
+                break;
+                case(2):
+                case(3):
+                let RotMat = mat4.create();
+                let yAxis = vec3.fromValues(0.0,1.0,0.0);
+                let Dir = Direction == 2 ? 1.0 : -1.0;
+                let Radian = gOrbitalRotSpeed * DeltaMs * .05* Dir;
+                mat4.fromRotation(RotMat, Radian, yAxis);
+                let CameraEye = vec4.fromValues(Camera.Eye[0], Camera.Eye[1], Camera.Eye[2], 1.0);
+                vec4.transformMat4(CameraEye, CameraEye, RotMat);
+                Camera.Eye = [CameraEye[0], CameraEye[1], CameraEye[2]];
+                Camera.ViewDir = Normalize([Camera.OrbitalOrg[0]-Camera.Eye[0],Camera.OrbitalOrg[1]-Camera.Eye[1],Camera.OrbitalOrg[2]-Camera.Eye[2]]);
+                break;
+            }
+
         break;
     }
 }

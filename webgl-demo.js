@@ -155,6 +155,7 @@ let gCharMeAniMixer;
 let gCharMeAniClips;
 let gStar2;
 let gStarTransforms = [];
+let gCommissionsText, gGameAudioText, gSoundDesignText, gVisualsText, gContactText;
 
 
 //
@@ -409,6 +410,12 @@ gCharMeDict.forEach((val, key) =>
   }
 })
 gCharMeDict.get("Body").Rotation[1] = 180.0;
+
+gCommissionsText = await LoadOBJ(gGL, './models/CommissionsText.obj');
+gGameAudioText = await LoadOBJ(gGL, './models/GameAudioText.obj');
+gSoundDesignText = await LoadOBJ(gGL, './models/SoundDesignText.obj');
+gVisualsText = await LoadOBJ(gGL, './models/VisualsText.obj');
+gContactText = await LoadOBJ(gGL, './models/ContactText.obj');
    //==========================SET PARENTING======================================
    //== Main Scene ==
   gCharHead.ParentTrans = gGlassSphere;
@@ -637,12 +644,36 @@ gCharMeDict.get("Body").Rotation[1] = 180.0;
   gStar2.Rotation = [90.0,0.0,0.0];
   gStar2.Scale = [StarScale, StarScale, StarScale];
   gStar2.Color = [1.0, 1.0, 1.0, 1.0];
-  let StarNum = 20;
-  let RandMagPos = 200.0;
+
+  let TextSize = 34.0;
+  let TextColor = [.6,.2,.8,1.0];
+  gCommissionsText.Position = [350.0, 100.0,0.0];
+  gCommissionsText.Rotation = [0.0,180.0,0.0];
+  gCommissionsText.Scale = [TextSize, TextSize, TextSize];
+  gCommissionsText.Color = TextColor;
+  gGameAudioText.Position = [330, 40.0,0.0];
+  gGameAudioText.Rotation = [0.0,180.0,0.0];
+  gGameAudioText.Scale = [TextSize, TextSize, TextSize];
+  gGameAudioText.Color = [.4, .2, .5, 1.0];
+  gSoundDesignText.Position = [320, -80.0,0.0];
+  gSoundDesignText.Rotation = [0.0,180.0,0.0];
+  gSoundDesignText.Scale = [TextSize, TextSize, TextSize];
+  gSoundDesignText.Color = [0.0, .65, .4, 1.0];
+  gVisualsText.Position = [340, -170.0,0.0];
+  gVisualsText.Rotation = [0.0,180.0,0.0];
+  gVisualsText.Scale = [TextSize, TextSize, TextSize];
+  gVisualsText.Color = [.2, .4, .5, 1.0];
+  gContactText.Position = [-60, 50.0,0.0];
+  gContactText.Rotation = [0.0,180.0,0.0];
+  gContactText.Scale = [TextSize, TextSize, TextSize];
+  gContactText.Color = TextColor;
+
+
+
+  let StarNum = 70;
+  let RandMagPos = 400.0;
   let RandMagRot = 180.0;
   let RandScale = 1.0;
-
-
   for (let i = 0; i< StarNum; i++)
   {
     let Pole = [Math.random() < .5 ? -1.0 : 1.0, Math.random() < .5 ? -1.0 : 1.0, Math.random() < .5 ? -1.0 : 1.0];
@@ -1144,8 +1175,9 @@ function RaycastClick(Obj)
     case gOpt2:
       gCamera.Mode = 1;
       gActiveMainLoop = AboutMeLoop;
-      gCamera.Eye[2] = -500.0;
-      gCamera.Eye[1] = 50.0;
+      gCamera.Eye[2] = -550.0;
+      gCamera.Eye[1] = 0.0;
+      gCamera.UpDir = [0.0,1.0,0.0];
       Sound2.currentTime = 0;
       Sound2.pause();
       Sound1.pause();
@@ -1618,6 +1650,14 @@ const AboutMeLoop = async ()=>
     MouseLook(gCamera, gDeltaMouse, gDeltaTime);
     
       //Animation
+      let initPos = gGameAudioText.Position[0];
+      gGameAudioText.Position[0] = initPos + .5 * gSinView[Math.floor((gTimeSinceRun * 4.0)%WAVE_BUFFER_SIZE)];
+      let initSPos = gSoundDesignText.Position[0];
+      gSoundDesignText.Position[0] = initSPos + .6 * gCosView[Math.floor((gTimeSinceRun * 40.0)%WAVE_BUFFER_SIZE)];
+      let initRot = gVisualsText.Rotation[0];
+      let initSize =  gVisualsText.Scale[0];
+        gVisualsText.Rotation[0] = initRot + .2 * gSinView[Math.floor((gTimeSinceRun * 1.0)%WAVE_BUFFER_SIZE)];
+      gVisualsText.Scale[1] = 30.0 + initSize + 40.0 * gSinView[Math.floor((gTimeSinceRun)%WAVE_BUFFER_SIZE)];
       //({Dict: gCharMeDict} = await UpdateModel(gSceneAboutMe, gCharMeDict)); //sets skeleton as undefined
       gCharMeAniMixer.update(gDeltaTime * .001);
       gSceneAboutMe.updateMatrix();         
@@ -1629,6 +1669,7 @@ const AboutMeLoop = async ()=>
       ClearFBO(gMainFBO, gGL);
       ClearFBO(gRaycastFBO, gGL);
       ClearFBO(gGlassFBO, gGL);
+      ClearFBO(gBloomFBO, gGL);
 
       gGL.bindFramebuffer(gGL.FRAMEBUFFER, gRaycastFBO);
       gGL.viewport(0, 0, gCanvasWidth, gCanvasHeight);
@@ -1667,6 +1708,28 @@ const AboutMeLoop = async ()=>
     gGL.enable(gGL.DEPTH_TEST);    
     gGL.clear(gGL.DEPTH_BUFFER_BIT); 
     gGL.enable(gGL.CULL_FACE); 
+    let FloatMag = 100.0;
+    let FloatSpeed = .1;
+    gCharMeDict.forEach((val, key) =>
+      {
+        Draw(gProgramInfoGLTFDef, val, gCamera,gLight1);
+        console.log(gGL.getError());
+      }); 
+    for (let i = 0; i < gStarTransforms.length; i++)
+    {
+      gStar2.Position = gStarTransforms[i].getPos();
+      let FloatAmount = gSinView[Math.floor(Math.abs(gStar2.Position[0]) * WAVE_BUFFER_SIZE) % WAVE_BUFFER_SIZE] + gCosView[Math.floor(Math.abs(gStar2.Position[2]) * WAVE_BUFFER_SIZE) % WAVE_BUFFER_SIZE];
+      FloatAmount *= FloatMag;
+      gStar2.Position[1] = gStarTransforms[i].getPos()[1] + (FloatAmount * gSinView[Math.floor(gTimeSinceRun * FloatSpeed) % WAVE_BUFFER_SIZE]);
+      gStar2.Rotation = gStarTransforms[i].getRot();
+      gStar2.Scale = gStarTransforms[i].getScale();
+      Draw(gProgramInfoDef, gStar2, gCamera, gLight1);
+    }
+    Draw(gProgramInfoDef, gCommissionsText, gCamera, gLight1);
+    Draw(gProgramInfoDef, gGameAudioText, gCamera, gLight1);
+    Draw(gProgramInfoDef, gSoundDesignText, gCamera, gLight1);
+    Draw(gProgramInfoDef, gVisualsText, gCamera, gLight1);
+    Draw(gProgramInfoDef, gContactText, gCamera, gLight1);
 
 
     
@@ -1682,9 +1745,7 @@ const AboutMeLoop = async ()=>
     gGL.disable(gGL.DEPTH_TEST);
     gGL.disable(gGL.CULL_FACE);
 
-    //===Star Float===
-    let FloatMag = 100.0;
-    let FloatSpeed = .1;
+    //===Star Float===  
     for (let i = 0; i < gStarTransforms.length; i++)
     {
       gStar2.Position = gStarTransforms[i].getPos();
@@ -1696,6 +1757,15 @@ const AboutMeLoop = async ()=>
       Draw(gProgramInfoDef, gStar2, gCamera, gLight1);
     }
     gGL.enable(gGL.DEPTH_TEST); 
+    gGL.enable(gGL.CULL_FACE);
+    gGL.cullFace(gGL.BACK);
+    Draw(gProgramInfoDef, gCommissionsText, gCamera, gLight1);
+    Draw(gProgramInfoDef, gGameAudioText, gCamera, gLight1);
+    Draw(gProgramInfoDef, gSoundDesignText, gCamera, gLight1);
+    Draw(gProgramInfoDef, gVisualsText, gCamera, gLight1);
+    Draw(gProgramInfoDef, gContactText, gCamera, gLight1);
+    gGL.disable(gGL.CULL_FACE);
+
     //============
 
     gCharMeDict.forEach((val, key) =>
@@ -1947,7 +2017,7 @@ async function main() {
       [.1,.5,1.0,1.0], [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null);
     GenerateWave(gSimpleWave, gProgramInfoWave);
     gCamera = new Camera([0.0,10.0,0.0],[1.0,0.0,1.0],[0.0,1.0,0.0], gCanvasWidth, gCanvasHeight, 0, 0, [0.0, 0.0, 0.0]);
-    gCamera.setPostProcessing([0.0,0.0,0.0], 0.9, 0.0, [0.7, 0.2, 0.4]);
+    gCamera.setPostProcessing([0.0,0.0,0.0], 0.9, 0.15, [0.6, 0.2, 0.4]);
     const Light = makeStruct("Pos, Color, Intensity");
     gLight1 = new Light([0.0,1.0,-1.0],[1.0, 0.863, 0.537],1.5);
     gLight2 = new Light([0.0,1.0,-1.0],[1.0, 0.863, 0.537],1.0);
