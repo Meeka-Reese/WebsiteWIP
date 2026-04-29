@@ -81,13 +81,13 @@ export async function LoadThreeScene(url)
         }
         if (child.isSkinnedMesh)
         {
-          console.log(child);
+          //console.log(child);
             let Bones = child.skeleton.bones;
 
             let BoneNames = [];
             let BoneParentsInd = [];
             let WeightArr = child.geometry.getAttribute("skinWeight").array;
-            console.log(WeightArr);
+            //console.log(WeightArr);
             let WeightIndArr = child.geometry.getAttribute("skinIndex").array;
             let WeightBuff = gGL.createBuffer();
             let WeightIndBuff = gGL.createBuffer();

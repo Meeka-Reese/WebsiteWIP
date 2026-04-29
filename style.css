@@ -40,35 +40,47 @@
 }
 #Gif {
   display: block;
-  position: absolute;
-  cursor: pointer;
-  width: 700px;
-  height: 700px;
-  padding-left: 27%;
-  padding-block-end: 50%;
-  margin-left: auto;
+  position: fixed;
+  top: 30vh !important;
+  left: 30vw !important;
+  width:50vw;
+  height:50vh / 50vw; 
   image-rendering: pixelated;
   transform: translateY(-100px);
   z-index: 6;
 }
 #LoadTxt{
   display: block;
-  position: absolute;
-  font-size: 200px;  
+  position: fixed;
+  top: 50vh !important;
+    left: 20vw !important;
+  font-size: 20vw;  
   color: white;
-  padding-left:28%;
-  padding-top: 26%;
   z-index: 6;
 }
 #PlayMusic{
-  display: inline;
-  position: relative;
-  font-size: 80px;  
-  margin-left: 5%;
-  color: white;
-  opacity: 0;
-  background-color: #00000055;
-  z-index: 6;
+  position: fixed;
+    top: 0px !important;
+    left: 0px !important;
+    font-size: max(4vw, 4vh);
+    width: min(50vw, 40%);
+    height: 15vw;
+    color: white;
+    opacity: 0;
+    background-color: #00000055;
+    z-index: 6;
+}
+#GoHome{
+  position: fixed;
+    top: 0px !important;
+    left: 0px !important;
+    font-size: max(4vw, 4vh);
+    width: min(50vw, 40%);
+    height: 10vw;
+    color: white;
+    opacity: 0;
+    background-color: #00000055;
+    z-index: 6;
 }
 
 

@@ -121,6 +121,7 @@ let gSpellCircleOutline;
 let gCircleMask;
 let gRockWall;
 let gGlassSphere;
+let gGlassSphere2;
 let gCharHead, gCharHair;
 let gScreenSpaceQuad;
 let gCrossHair;
@@ -130,7 +131,7 @@ let gIsLoading = true;
 
 
 //Transformation Scene
-let gCharTrans, gCharHairTrans, gFleshGroundL, gSpeakerL, gFleshHair, gFleshGroundR, gSpeakerR, gFlower, gBloodCloud
+let gCharTrans, gCharHairTrans, gFleshGroundL, gFleshGroundR, gFlower, gBloodCloud
 ,gScreenSpaceQuadTrans, gPostProcessingQuad, gHomeButton, gPlayButton, gPauseButton, gUIBacking; //Not using hair rn
 let gCharBoneColec = [];
 let gCharArmature;
@@ -224,6 +225,8 @@ export function makeStruct(keys) {
 
 async function SetUpScene()
 {
+  gTime = new Date();
+  let initTime = gTime.getTime() * .001;
   //== Main Scene ==
   let LoadTxt = document.getElementById("LoadTxt");
    //Gen Noise
@@ -233,103 +236,158 @@ async function SetUpScene()
    //===================================TEXTURES========================================
    let Noise3DText = await createTexture3DFromBuffer(gGL, ImgBufNoise, ImgSize, ImgSize, ImgSize);
    LoadTxt.style.color = '#ffb700';
-   let BlueNoiseText = await loadTexture(gGL, './Textures/BlueNoise.png',4);
-   let CloudDetailNoiseText = await loadTexture(gGL, './Textures/CloudDetailNoise.png',4);
-   let SailBoatText = await loadTexture(gGL, './Textures/SailBoat.png',4);
-   let MoonText = await loadTexture(gGL, './Textures/Moon.png',4);
-   let GirlText = await loadTexture(gGL, './Textures/Girl.png',4);
-   let GirlFullText = await loadTexture(gGL, './Textures/GirlTextureFull.png',4);
-   let CrosshairText = await loadTexture(gGL,'./Textures/crosshair.png',4);
-   let GlassNoiseNormText = await loadTexture(gGL, './Textures/GlassNoiseNorm.png',4);
-   let GlassDisplacementText = await loadTexture(gGL, './Textures/GlassDisplacement.png',4);
-   let VeinsText = await loadTexture(gGL, './Textures/Veins.png',4);
-   let FlowerBloomText = await loadTexture(gGL, './Textures/FlowerBloom.png',4);
-   let VeinTree1Text = await loadTexture(gGL, './Textures/VeinTreeThin.png',4);
-   let VeinTree2Text = await loadTexture(gGL, './Textures/VeinTreeThin2.png',4);
-   let ElencoText = await loadTexture(gGL, './Textures/Elenco.png', 4);
-   let EarRingText = await loadTexture(gGL, './Textures/CharMeTexts/EarRing.png', 4, false);
-   let BodyText = await loadTexture(gGL, './Textures/CharMeTexts/Body.png', 4, false);
-   let HairText = await loadTexture(gGL, './Textures/CharMeTexts/Hair.png', 4, false);
-   let ShirtText = await loadTexture(gGL, './Textures/CharMeTexts/Shirt.png', 4, false);
-   let ShoeText = await loadTexture(gGL, './Textures/CharMeTexts/Shoe.png', 4, false);
-   let SkirtText = await loadTexture(gGL, './Textures/CharMeTexts/Skirt.png', 4, false);
-   let SocksText = await loadTexture(gGL, './Textures/CharMeTexts/Socks.png', 4, false);
-   let ShoeLaceText = await loadTexture(gGL, './Textures/CharMeTexts/ShoeLace.png', 4, false);
-   let AndrewHairText = await loadTexture(gGL, './Textures/CharAndrewTexts/AndrewCharHairText.png', 4, false);
-   let AndrewBodyText = await loadTexture(gGL, './Textures/CharAndrewTexts/AndrewCharBodyText.png', 4, false);
-   let AndrewShirtText = await loadTexture(gGL, './Textures/CharAndrewTexts/AndrewCharShirtText.png', 4, false);
-   let AndrewShoeRText = await loadTexture(gGL, './Textures/CharAndrewTexts/AndrewShoeRText.png', 4, false);
-   let AndrewShoeLText = await loadTexture(gGL, './Textures/CharAndrewTexts/AndrewShoeLText.png', 4, false);
-   let AndrewShortsText = await loadTexture(gGL, './Textures/CharAndrewTexts/AndrewCharShortsText.png', 4, false);
-   let AndrewTeethText = await loadTexture(gGL, './Textures/CharAndrewTexts/AndrewCharTeethText.png', 4, false);
+   const [
+    BlueNoiseText,
+    CloudDetailNoiseText,
+    SailBoatText,
+    MoonText,
+    GirlText,
+    GirlFullText,
+    CrosshairText,
+    GlassNoiseNormText,
+    GlassDisplacementText,
+    VeinsText,
+    FlowerBloomText,
+    VeinTree1Text,
+    VeinTree2Text,
+    ElencoText,
+    EarRingText,
+    BodyText,
+    HairText,
+    ShirtText,
+    ShoeText,
+    SkirtText,
+    SocksText,
+    ShoeLaceText,
+] = await Promise.all([
+    loadTexture(gGL, './Textures/BlueNoise.png', 4),
+    loadTexture(gGL, './Textures/CloudDetailNoise.png', 4),
+    loadTexture(gGL, './Textures/SailBoat.png', 4),
+    loadTexture(gGL, './Textures/Moon.png', 4),
+    loadTexture(gGL, './Textures/Girl.png', 4),
+    loadTexture(gGL, './Textures/GirlTextureFull.png', 4),
+    loadTexture(gGL, './Textures/crosshair.png', 4),
+    loadTexture(gGL, './Textures/GlassNoiseNorm.png', 4),
+    loadTexture(gGL, './Textures/GlassDisplacement.png', 4),
+    loadTexture(gGL, './Textures/Veins.png', 4),
+    loadTexture(gGL, './Textures/FlowerBloom.png', 4),
+    loadTexture(gGL, './Textures/VeinTreeThin.png', 4),
+    loadTexture(gGL, './Textures/VeinTreeThin2.png', 4),
+    loadTexture(gGL, './Textures/Elenco.png', 4),
+    loadTexture(gGL, './Textures/CharMeTexts/EarRing.png', 4, false),
+    loadTexture(gGL, './Textures/CharMeTexts/Body.png', 4, false),
+    loadTexture(gGL, './Textures/CharMeTexts/Hair.png', 4, false),
+    loadTexture(gGL, './Textures/CharMeTexts/Shirt.png', 4, false),
+    loadTexture(gGL, './Textures/CharMeTexts/Shoe.png', 4, false),
+    loadTexture(gGL, './Textures/CharMeTexts/Skirt.png', 4, false),
+    loadTexture(gGL, './Textures/CharMeTexts/Socks.png', 4, false),
+    loadTexture(gGL, './Textures/CharMeTexts/ShoeLace.png', 4, false),
+]);
+   const assets = [
+    {key: 'cube1', path: './models/Cube.obj'},
+    {key: 'cube2', path: './models/Cube.obj'},
+    {key: 'cube3', path: './models/Cube.obj'},
+    {key: 'sailBoatLP', path: './models/SailBoatLP.obj'},
+    {key: 'sphereLP', path: './models/SphereLP.obj'},
+    {key: 'spellCircle1LP', path: './models/SpellCircleLP.obj'},
+    {key: 'spellCircle2LP', path: './models/SpellCircleLP.obj'},
+    {key: 'spellCircleVolumeLP', path: './models/SpellCircleVolumeLP.obj'},
+    {key: 'maskCircleLP', path: './models/MaskCircleLP.obj'},
+    {key: 'arrow1LP', path: './models/ArrowLP.obj'},
+    {key: 'arrow2LP', path: './models/ArrowLP.obj'},
+    {key: 'charHead', path: './models/CharHead.obj'},
+    {key: 'charHairLP', path: './models/CharHairLP.obj'},//end main scene (little overlap ofc)
+    {key: 'charFullBodyUp', path: './models/CharFullBodyUp.obj'},
+    {key: 'charHairTrans', path: './models/CharHairTrans.obj'},
+    {key: 'fleshCube', path: './models/FleshCube.obj'},
+    {key: 'flowerBloom', path: './models/FlowerBloom.obj'},
+
+   ];
+   const results = await Promise.all(
+    assets.map(a => LoadOBJ(gGL, a.path))
+);
+  const [cube1, cube2, cube3, sailBoatLP, sphereLP, spellCircle1LP, spellCircle2LP, spellCircleVolumeLP,
+        maskCircleLP, arrow1LP, arrow2LP, charHead, charHairLP, charFullBodyUp, charHairTrans, fleshCube, flowerBloom] = results;
    LoadTxt.style.color = '#fbff00';
+   gTime = new Date();
+   let NewTime = gTime.getTime() * .001;
+   let DeltaTime = NewTime - initTime;
+   initTime = NewTime;
+   console.log("Time to load Textures : " + DeltaTime);
    //===================================OBJECTS========================================
   
-   gNoiseCube = await LoadOBJ(gGL, './models/Cube.obj');
+   
+   gNoiseCube = cube1;
    gNoiseCube.Texture3D = Noise3DText;
    gNoiseCube.Texture = CloudDetailNoiseText;
    gNoiseCube.TextureBN = BlueNoiseText;
 
-  gBoatMesh = await LoadOBJ(gGL, './models/SailBoat.obj');
+  gBoatMesh = sailBoatLP;
   gBoatMesh.Texture = SailBoatText;
 
-  gMoon = await LoadOBJ(gGL, './models/Sphere.obj');
+  gMoon = sphereLP;
   gMoon.Texture = MoonText;
 
-  gSpellCircle = await LoadOBJ(gGL, './models/SpellCircle.obj');
+  gSpellCircle = spellCircle1LP;
   gSpellCircle.Color = [0.5,.8,1.0,.3];
 
-  gSpellCircleVolume = await LoadOBJ(gGL, './models/SpellCircleVolume.obj');
+  gSpellCircleVolume = spellCircleVolumeLP;
   gSpellCircleVolume.Texture = CloudDetailNoiseText;
 
-  gSpellCircleOutline = await LoadOBJ(gGL, './models/SpellCircle.obj');
+  gSpellCircleOutline = spellCircle2LP;
 
-  gCircleMask = await LoadOBJ(gGL, './models/MaskCircle.obj');
+  gCircleMask = maskCircleLP;
   gCircleMask.Color = [1.0,1.0,1.0,0.0];
 
-  gOpt1 = await LoadOBJ(gGL, './models/Arrow.obj');
+  gOpt1 = arrow1LP;
 
-  gOpt2 = await LoadOBJ(gGL, './models/Arrow.obj');
+  gOpt2 = arrow2LP;
 
-  gCharHead = await LoadOBJ(gGL, './models/CharHead.obj');
+  gCharHead = charHead;
   gCharHead.Texture = GirlText;
 
- gCharHair = await LoadOBJ(gGL, './models/CharHair.obj');
+ gCharHair = charHairLP;
  gCharHair.Texture = GirlText;
 
 
-  gGlassSphere = await LoadOBJ(gGL, './models/Cube.obj'); // used for volume of raymarch sphere
+  gGlassSphere = cube2; // used for volume of raymarch sphere
   gGlassSphere.Normal = GlassNoiseNormText;
   gGlassSphere.Displacement = GlassDisplacementText;
+
+  gGlassSphere2 = cube3;
+  gGlassSphere2.Normal = GlassNoiseNormText;
+  gGlassSphere2.Displacement = GlassDisplacementText;
 
   gCrossHair.Texture = CrosshairText;
 
   gElencoVis.Texture = ElencoText;
   
   LoadTxt.style.color = '#aaff00';
+  gTime = new Date();
+  NewTime = gTime.getTime() * .001;
+  DeltaTime = NewTime - initTime;
+  initTime = NewTime;
+  console.log("Time to load MainScene : " + DeltaTime);
   //== Transform Scene ==
   
-  gCharTrans = await LoadOBJ(gGL, './models/CharFullBodyUp.obj', true);
+  gCharTrans = charFullBodyUp;
   gCharTrans.Texture = GirlFullText;
   gCharTrans.Texture3D = Noise3DText;
 
-  gCharHairTrans = await LoadOBJ(gGL, './models/CharHairTrans.obj');
+  gCharHairTrans = charHairTrans;
   gCharHairTrans.Texture = GirlText;
   gCharHairTrans.Texture3D = Noise3DText;
-  gFleshGroundL = await LoadOBJ(gGL, './models/FleshCube.obj');
+  gFleshGroundL = fleshCube;
   gFleshGroundL.Texture3D = Noise3DText;
   gFleshGroundL.TextureBN = GlassNoiseNormText;
   gFleshGroundL.Texture = VeinsText;
-  gSpeakerL = await LoadOBJ(gGL, "./models/Speaker.obj");
-  gFleshHair = await LoadOBJ(gGL, "./models/FleshHair.obj");
   gFleshGroundR = await LoadOBJ(gGL, './models/FleshCube.obj');
   gFleshGroundR.Texture3D = Noise3DText;
   gFleshGroundR.TextureBN = GlassNoiseNormText;
   gFleshGroundR.Texture = VeinsText;
-  gSpeakerR = await LoadOBJ(gGL, "./models/Speaker.obj");
   gFleshParticles.DepthTexture = VeinsText;
 
-  gFlower = await LoadOBJ(gGL, './models/FlowerBloom.obj');
+  gFlower = flowerBloom;
   let Target = await LoadOBJ(gGL, './models/FlowerStem.obj');
   let Target2 = await LoadOBJ(gGL, './models/FlowerBud.obj');
   let gTarget3 = await LoadOBJ(gGL, './models/FlowerWilting.obj');
@@ -375,11 +433,15 @@ async function SetUpScene()
   gScreenSpaceQuadTrans.Texture = GlassDisplacementText;
   gScreenSpaceQuadTrans.TextureBN = GirlFullText;
 
-
+  gTime = new Date();
+  NewTime = gTime.getTime() * .001;
+  DeltaTime = NewTime - initTime;
+  initTime = NewTime;
+  console.log("Time to load Trans Scene : " + DeltaTime);
 //-=-=-=-=-=-=-=-=-=-=-=-=-=======About Me Scene================-=-=-=-=-=-=-=-=-=-=-=-=-
 
 ({ ModelMap: gCharMeDict, AnimationMixer: gCharMeAniMixer, AnimationClips: gCharMeAniClips, AniScene: gSceneAboutMe} = await LoadThreeScene('./models/CharTest3.glb'));
-console.log(gCharMeDict);
+//console.log(gCharMeDict);
 //Skirt, Body, EarRing, Hair, Shirt, ShoeL, ShoeR, Socks, ShoeLaceL, ShoeLaceR
 
 gCharMeDict.get("Skirt").Texture =  SkirtText;
@@ -416,6 +478,11 @@ gGameAudioText = await LoadOBJ(gGL, './models/GameAudioText.obj');
 gSoundDesignText = await LoadOBJ(gGL, './models/SoundDesignText.obj');
 gVisualsText = await LoadOBJ(gGL, './models/VisualsText.obj');
 gContactText = await LoadOBJ(gGL, './models/ContactText.obj');
+gTime = new Date();
+NewTime = gTime.getTime() * .001;
+  DeltaTime = NewTime - initTime;
+  initTime = NewTime;
+  console.log("Time to load AboutMeScene : " + DeltaTime);
    //==========================SET PARENTING======================================
    //== Main Scene ==
   gCharHead.ParentTrans = gGlassSphere;
@@ -423,12 +490,6 @@ gContactText = await LoadOBJ(gGL, './models/ContactText.obj');
   //== Transform Scene ==
   gCharHairTrans.ParentTrans = gCharTrans;
   gCharHairTrans.ParentScale = gCharTrans;
-  gSpeakerL.ParentTrans = gFleshGroundL;
-  gSpeakerL.ParentScale = gFleshGroundL;
-  gSpeakerR.ParentTrans = gFleshGroundR;
-  gSpeakerR.ParentScale = gFleshGroundR;
-  gFleshHair.ParentTrans = gFleshGroundL;
-  gFleshHair.ParentScale = gFleshGroundL;
   gHomeButton.ParentTrans = gUIBacking;
   gHomeButton.ParentScale = gUIBacking;
   gPauseButton.ParentTrans = gUIBacking;
@@ -497,6 +558,13 @@ gContactText = await LoadOBJ(gGL, './models/ContactText.obj');
   gGlassSphere.Scale = [GSphereSize,GSphereSize,GSphereSize];
   gGlassSphere.Rotation = [0.0,0.0,0.0];
 
+
+  gGlassSphere2.Position = [-5.0,26.0,95.0];
+  gGlassSphere2.Scale = [GSphereSize,GSphereSize,GSphereSize];
+  gGlassSphere2.Rotation = [0.0,0.0,0.0];
+
+  
+
   //======================= Transform Scene =======================
   let CharTransScale = 14.0;
   gCharTrans.Position = [0.0,10.0,0.0];
@@ -511,23 +579,11 @@ gContactText = await LoadOBJ(gGL, './models/ContactText.obj');
   gFleshGroundL.Scale = [FleshGroundScale*1.1,FleshGroundScale * .4,FleshGroundScale];
   gFleshGroundL.Color = [.8,0.0,.4, 1.0];
   gFleshGroundL.uvScale = [5.0, 5.0];
-  gSpeakerL.Position = [0.0,-.2,-0.1];
-  gSpeakerL.Rotation = [0.0,0.0,0.0];
-  gSpeakerL.Scale = [1.0,1.0,1.0];
-  gSpeakerL.Color = [.4,0.4,.4,1.0];
   gFleshGroundR.Position = [0.0,-150.0,-120.0];
   gFleshGroundR.Rotation = [0.0, -60.0,0.0];
   gFleshGroundR.Scale = [FleshGroundScale * 1.1,FleshGroundScale * .4,FleshGroundScale];
   gFleshGroundR.Color = [.8,0.0,.25, 1.0];
   gFleshGroundR.uvScale = [5.0, 5.0];
-  gSpeakerR.Position = [0.0,-.2,-0.1];
-  gSpeakerR.Rotation = [0.0,0.0,0.0];
-  gSpeakerR.Scale = [1.0,1.0,1.0];
-  gSpeakerR.Color = [.4,0.4,.4,1.0];
-  gFleshHair.Position = [0.0,0.0,0.0];
-  gFleshHair.Rotation = [0.0,0.0,0.0];
-  gFleshHair.Scale = [.9,.9,.9];
-  gFleshHair.Color = [.2,.1,.05,1.0];
   let FleshPartScale = 1.0;
   gFleshParticles.Position = [0.0,90.0,0.0];
   gFleshParticles.Rotation = [0.0,0.0,0.0];
@@ -737,6 +793,7 @@ gContactText = await LoadOBJ(gGL, './models/ContactText.obj');
     //== Main Scene ==
     gRaycastColecMain.push(gOpt1, gOpt2);
     gRCDict.set(gOpt1, gGlassSphere);
+    gRCDict.set(gOpt2, gGlassSphere2);
     //== Transform Scene ==
     gRaycastColecTransform.push(gHomeButton, gPauseButton, gPlayButton);
 
@@ -1098,6 +1155,7 @@ function Input()
     if (gKeysPressed['y']) { document.getElementById("PlayMusic").style.opacity = 0.0; Sound2.play();}
     if (gKeysPressed['n']) { document.getElementById("PlayMusic").style.opacity = 0.0;}
     if (gKeysPressed['Tab'] && document.pointerLockElement === gCanvas){document.exitPointerLock();gKeysPressed['Tab'] = false;} // so I don't leave zoom callws :(
+    if (gKeysPressed['h'] && gActiveMainLoop == AboutMeLoop) {document.getElementById("GoHome").style.opacity = 0.0; GoHome();}
 }
 function CheckRaycast(SelectColor, DeselectColor)
 {
@@ -1183,20 +1241,12 @@ function RaycastClick(Obj)
       Sound1.pause();
       Sound1.currentTime = 0;
       document.getElementById("PlayMusic").style.opacity = 0.0;
+      document.getElementById("GoHome").style.opacity = 1.0;
       let Speed = .7;
       gCharMeAniMixer = AddAnimation(gSceneAboutMe, gCharMeAniMixer, gCharMeAniClips[0], Speed);
       break;
     case gHomeButton:
-      gCamera.Eye = [0.0,10.0,0.0];
-      gCamera.ViewDir = [0.0,0.0,1.0];
-      gActiveMainLoop = MainLoop;
-      console.log("ENTERING MAIN LOOP");
-      Sound1.pause();
-      Sound1.currentTime = 0;
-      gMidiObj.StopMidi();
-      Sound2.pause();
-      Sound2.currentTime = 0;
-      Sound2.play();
+        GoHome();
       break
     case gPauseButton:
       console.log("Pausing");
@@ -1211,6 +1261,20 @@ function RaycastClick(Obj)
     default:
       break;
   }
+}
+function GoHome()
+{
+      gCamera.Mode = 0;
+      gCamera.Eye = [0.0,10.0,0.0];
+      gCamera.ViewDir = [0.0,0.0,1.0];
+      gActiveMainLoop = MainLoop;
+      console.log("ENTERING MAIN LOOP");
+      Sound1.pause();
+      Sound1.currentTime = 0;
+      gMidiObj.StopMidi();
+      Sound2.pause();
+      Sound2.currentTime = 0;
+      Sound2.play();
 }
 async function PlayTransformSong()
 {
@@ -1326,7 +1390,7 @@ const MainLoop = ()=>
         ObjIndex++;
       }
       gRaycastText = gRaycastMap;
-      if (gMouseMoved) {CheckRaycast(SelectColor, DeselectColor); console.log("MouseMove");}
+      if (gMouseMoved) {CheckRaycast(SelectColor, DeselectColor);}
       gDeltaMouse = [0.0,0.0];
 
       
@@ -1360,9 +1424,10 @@ const MainLoop = ()=>
     gGL.depthMask(true);
     Draw(gProgramInfoDef, gCircleMask, gCamera, gLight1);  
     Draw(gProgramInfoWave, gSimpleWave, gCamera, gLight1);
-    gGL.enable(gGL.CULL_FACE);
+    gGL.disable(gGL.CULL_FACE);
     
     Draw(gProgramInfoFlat, gBoatMesh, gCamera, gLight1);
+    gGL.enable(gGL.CULL_FACE);
     gGL.depthMask(false);
     gGL.disable(gGL.DEPTH_TEST); 
     Draw(gProgramInfoWave,gSpellCircle, gCamera, gLight1);
@@ -1387,6 +1452,7 @@ const MainLoop = ()=>
 
     gScreenSpaceQuad.Texture = gRenderText;
     gGlassSphere.Texture = gRenderText;
+    gGlassSphere2.Texture = gRenderText;
     gGL.bindFramebuffer(gGL.FRAMEBUFFER, gGlassFBO);   
     gGL.viewport(0, 0, gCanvasWidth, gCanvasHeight);
     gGL.disable(gGL.CULL_FACE);
@@ -1394,6 +1460,7 @@ const MainLoop = ()=>
     Draw(gProgramInfoScreenRender, gScreenSpaceQuad, gCamera, gLight1);
     gGL.enable(gGL.CULL_FACE);
     Draw(gProgramInfoGlass, gGlassSphere, gCamera, gLight3);
+    Draw(gProgramInfoGlass, gGlassSphere2, gCamera, gLight3);
     gGL.cullFace(gGL.BACK);
     gGL.enable(gGL.DEPTH_TEST);
     Draw(gProgramInfoFlat, gCharHead, gCamera, gLight1);
@@ -1465,7 +1532,7 @@ const TransformationLoop = ()=>
   }
   gRaycastText = gRaycastMap;
   gMouseMoved = Math.abs(gDeltaMouse[0]) + Math.abs(gDeltaMouse[1]) >= .001 ? true : false;
-  if (gInitLoad || gMouseMoved) {CheckRaycast(SelectColor, DeselectColor); console.log("MouseMove");}
+  if (gInitLoad || gMouseMoved) {CheckRaycast(SelectColor, DeselectColor);}
   gDeltaMouse = [0.0,0.0];
 
   
@@ -1507,7 +1574,7 @@ const TransformationLoop = ()=>
   Draw(gProgramInfoTrans, gCharTrans, gCamera, gLight1, gCharArmature, gMidiObj);
   Draw(gProgramInfoTrans, gCharHairTrans, gCamera, gLight1, null, gMidiObj);
   gGL.disable(gGL.CULL_FACE);
-  Draw(gProgramInfoFlesh, gFleshGroundL, gCamera, gLight1, null, gMidiObj);//Speaker not used remove later
+  Draw(gProgramInfoFlesh, gFleshGroundL, gCamera, gLight1, null, gMidiObj);
   Draw(gProgramInfoFlesh, gFleshGroundR, gCamera, gLight1, null, gMidiObj);
   gGL.enable(gGL.CULL_FACE);
 
@@ -1686,7 +1753,7 @@ const AboutMeLoop = async ()=>
       //   ObjIndex++;
       // }
       gRaycastText = gRaycastMap;
-      if (gMouseMoved) {CheckRaycast(SelectColor, DeselectColor); console.log("MouseMove");}
+      if (gMouseMoved) {CheckRaycast(SelectColor, DeselectColor);}
       gDeltaMouse = [0.0,0.0];
 
       
@@ -1713,7 +1780,6 @@ const AboutMeLoop = async ()=>
     gCharMeDict.forEach((val, key) =>
       {
         Draw(gProgramInfoGLTFDef, val, gCamera,gLight1);
-        console.log(gGL.getError());
       }); 
     for (let i = 0; i < gStarTransforms.length; i++)
     {
@@ -1771,7 +1837,7 @@ const AboutMeLoop = async ()=>
     gCharMeDict.forEach((val, key) =>
       {
         Draw(gProgramInfoGLTFDef, val, gCamera,gLight1);
-        console.log(gGL.getError());
+       // console.log(gGL.getError());
       }); 
     
     gPostProcessingQuad.Texture = gRenderText;
@@ -2103,6 +2169,7 @@ async function main() {
     // Sound2.play();
     gActiveMainLoop();
     document.getElementById("Gif").style.opacity = 0.0;
+    document.getElementById("GoHome").style.opacity = 0.0;
     document.getElementById("LoadTxt").style.opacity = 0.0;
     document.getElementById("PlayMusic").style.opacity = 1.0;
     FrameCount();
