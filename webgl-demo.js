@@ -132,7 +132,7 @@ let gIsLoading = true;
 
 //Transformation Scene
 let gCharTrans, gCharHairTrans, gFleshGroundL, gFleshGroundR, gFlower, gBloodCloud
-,gScreenSpaceQuadTrans, gPostProcessingQuad, gHomeButton, gPlayButton, gPauseButton, gUIBacking; //Not using hair rn
+,gScreenSpaceQuadTrans, gPostProcessingQuad, gHomeButton, gPlayButton, gPauseButton, gUIBacking, gAtSign; 
 let gCharBoneColec = [];
 let gCharArmature;
 let gRCDict = new Map();
@@ -296,6 +296,7 @@ async function SetUpScene()
     {key: 'arrow1LP', path: './models/ArrowLP.obj'},
     {key: 'arrow2LP', path: './models/ArrowLP.obj'},
     {key: 'charHead', path: './models/CharHead.obj'},
+    {key: 'atSign', path: './models/AtSign.obj'},
     {key: 'charHairLP', path: './models/CharHairLP.obj'},//end main scene (little overlap ofc)
     {key: 'charFullBodyUp', path: './models/CharFullBodyUp.obj'},
     {key: 'charHairTrans', path: './models/CharHairTrans.obj'},
@@ -307,7 +308,7 @@ async function SetUpScene()
     assets.map(a => LoadOBJ(gGL, a.path))
 );
   const [cube1, cube2, cube3, sailBoatLP, sphereLP, spellCircle1LP, spellCircle2LP, spellCircleVolumeLP,
-        maskCircleLP, arrow1LP, arrow2LP, charHead, charHairLP, charFullBodyUp, charHairTrans, fleshCube, flowerBloom] = results;
+        maskCircleLP, arrow1LP, arrow2LP, charHead, atSign, charHairLP, charFullBodyUp, charHairTrans, fleshCube, flowerBloom] = results;
    LoadTxt.style.color = '#fbff00';
    gTime = new Date();
    let NewTime = gTime.getTime() * .001;
@@ -348,6 +349,8 @@ async function SetUpScene()
 
  gCharHair = charHairLP;
  gCharHair.Texture = GirlText;
+
+ gAtSign = atSign;
 
 
   gGlassSphere = cube2; // used for volume of raymarch sphere
@@ -487,6 +490,7 @@ NewTime = gTime.getTime() * .001;
    //== Main Scene ==
   gCharHead.ParentTrans = gGlassSphere;
     gCharHair.ParentTrans = gCharHead;
+    gAtSign.ParentTrans = gGlassSphere2;
   //== Transform Scene ==
   gCharHairTrans.ParentTrans = gCharTrans;
   gCharHairTrans.ParentScale = gCharTrans;
@@ -496,6 +500,7 @@ NewTime = gTime.getTime() * .001;
   gPauseButton.ParentScale = gUIBacking;
   gPlayButton.ParentTrans = gUIBacking;
   gPlayButton.ParentScale = gUIBacking;
+  
   
 
   LoadTxt.style.color = '#08c979';
@@ -552,14 +557,19 @@ NewTime = gTime.getTime() * .001;
   gCharHair.Rotation = [0.0,0.0,0.0];
   gCharHair.Scale = [gCharSize,gCharSize,gCharSize];
   
+  let atScale = 20.0;
+  gAtSign.Position = [0.0,0.0,0.0];
+  gAtSign.Rotation = [0.0,0.0,0.0];
+  gAtSign.Scale = [atScale, atScale, atScale];
+  gAtSign.Color = [1.0,1.0,1.0,1.0];
   
   let GSphereSize = 20.0;
   gGlassSphere.Position = [45.0,26.0,110.0];
   gGlassSphere.Scale = [GSphereSize,GSphereSize,GSphereSize];
   gGlassSphere.Rotation = [0.0,0.0,0.0];
+ 
 
-
-  gGlassSphere2.Position = [-5.0,26.0,95.0];
+  gGlassSphere2.Position = [-8.0,26.0,95.0];
   gGlassSphere2.Scale = [GSphereSize,GSphereSize,GSphereSize];
   gGlassSphere2.Rotation = [0.0,0.0,0.0];
 
@@ -1367,6 +1377,7 @@ const MainLoop = ()=>
       gSpellCircle.Rotation[1] += gDeltaTime * .002; //Spell Volume Rotate
       gSpellCircleVolume.Rotation[1] = gSpellCircle.Rotation[1];
       gSpellCircleVolume.Scale[2] = 1.0 + (4.0 * Math.sin(gTime/800.0));//Spell Volume pulse
+      gAtSign.Rotation[1] += gDeltaTime * .25;
 
 
 
@@ -1465,6 +1476,7 @@ const MainLoop = ()=>
     gGL.enable(gGL.DEPTH_TEST);
     Draw(gProgramInfoFlat, gCharHead, gCamera, gLight1);
     Draw(gProgramInfoFlat, gCharHair, gCamera, gLight1);
+    Draw(gProgramInfoDef, gAtSign, gCamera, gLight1);
     gGL.disable(gGL.DEPTH_TEST);
     
     gScreenSpaceQuad.Texture = gGlassRendText;

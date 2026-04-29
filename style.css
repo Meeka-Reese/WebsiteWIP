@@ -41,8 +41,8 @@
 #Gif {
   display: block;
   position: fixed;
-  top: 30vh !important;
-  left: 30vw !important;
+  top: 20vh !important;
+  left: 25vw !important;
   width:50vw;
   height:50vh / 50vw; 
   image-rendering: pixelated;
@@ -53,7 +53,7 @@
   display: block;
   position: fixed;
   top: 50vh !important;
-    left: 20vw !important;
+  left: 18vw !important;
   font-size: 20vw;  
   color: white;
   z-index: 6;
