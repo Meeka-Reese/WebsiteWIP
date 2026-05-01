@@ -287,6 +287,7 @@ async function SetUpScene()
     {key: 'cube1', path: './models/Cube.obj'},
     {key: 'cube2', path: './models/Cube.obj'},
     {key: 'cube3', path: './models/Cube.obj'},
+    {key: 'cube4', path: './models/Cube.obj'},
     {key: 'sailBoatLP', path: './models/SailBoatLP.obj'},
     {key: 'sphereLP', path: './models/SphereLP.obj'},
     {key: 'spellCircle1LP', path: './models/SpellCircleLP.obj'},
@@ -298,17 +299,37 @@ async function SetUpScene()
     {key: 'charHead', path: './models/CharHead.obj'},
     {key: 'atSign', path: './models/AtSign.obj'},
     {key: 'charHairLP', path: './models/CharHairLP.obj'},//end main scene (little overlap ofc)
-    {key: 'charFullBodyUp', path: './models/CharFullBodyUp.obj'},
+    {key: 'charFullBodyUp', path: './models/CharFullBodyLP.obj'},
     {key: 'charHairTrans', path: './models/CharHairTrans.obj'},
     {key: 'fleshCube', path: './models/FleshCube.obj'},
     {key: 'flowerBloom', path: './models/FlowerBloom.obj'},
-
+    {key: 'flowerStem', path: './models/FlowerStem.obj'},
+    {key: 'flowerBud', path: './models/FlowerBud.obj'},
+    {key: 'flowerWilting', path: './models/FlowerWilting.obj'},
+    {key: 'home', path: './models/Home.obj'},
+    {key: 'play', path: './models/Play.obj'},
+    {key: 'pause', path: './models/Pause.obj'},
+    {key: 'uiBacking', path: './models/UIBacking.obj'},
+    {key: 'veinThick1', path: './models/VeinsThick.obj'},
+    {key: 'veinThick2', path: './models/VeinsThick2.obj'},
+    {key: 'veinThin1', path: './models/VeinsThin.obj'},
+    {key: 'veinThin2', path: './models/VeinsThin2.obj'},
+    {key: 'commissionsText', path: './models/CommissionsText.obj'},
+    {key: 'gameAudioText', path: './models/GameAudioText.obj'},
+    {key: 'soundDesignText', path: './models/SoundDesignText.obj'},
+    {key: 'visualsText', path: './models/VisualsText.obj'},
+    {key: 'contactText', path: './models/ContactText.obj'},
+    {key: 'star', path: './models/Star.obj'},
    ];
+
+
    const results = await Promise.all(
     assets.map(a => LoadOBJ(gGL, a.path))
 );
-  const [cube1, cube2, cube3, sailBoatLP, sphereLP, spellCircle1LP, spellCircle2LP, spellCircleVolumeLP,
-        maskCircleLP, arrow1LP, arrow2LP, charHead, atSign, charHairLP, charFullBodyUp, charHairTrans, fleshCube, flowerBloom] = results;
+  const [cube1, cube2, cube3, cube4, sailBoatLP, sphereLP, spellCircle1LP, spellCircle2LP, spellCircleVolumeLP,
+        maskCircleLP, arrow1LP, arrow2LP, charHead, atSign, charHairLP, charFullBodyUp, charHairTrans, fleshCube, 
+        flowerBloom, flowerStem, flowerBud, flowerWilting, home, play, pause, uiBacking, veinThick1, veinThick2,
+      veinThin1, veinThin2, commissionsText, gameAudioText, soundDesignText, visualsText, contactText, star] = results;
    LoadTxt.style.color = '#fbff00';
    gTime = new Date();
    let NewTime = gTime.getTime() * .001;
@@ -384,29 +405,29 @@ async function SetUpScene()
   gFleshGroundL.Texture3D = Noise3DText;
   gFleshGroundL.TextureBN = GlassNoiseNormText;
   gFleshGroundL.Texture = VeinsText;
-  gFleshGroundR = await LoadOBJ(gGL, './models/FleshCube.obj');
+  gFleshGroundR = fleshCube;
   gFleshGroundR.Texture3D = Noise3DText;
   gFleshGroundR.TextureBN = GlassNoiseNormText;
   gFleshGroundR.Texture = VeinsText;
   gFleshParticles.DepthTexture = VeinsText;
 
   gFlower = flowerBloom;
-  let Target = await LoadOBJ(gGL, './models/FlowerStem.obj');
-  let Target2 = await LoadOBJ(gGL, './models/FlowerBud.obj');
-  let gTarget3 = await LoadOBJ(gGL, './models/FlowerWilting.obj');
+  let Target = flowerStem;
+  let Target2 = flowerBud;
+  let gTarget3 = flowerWilting;
   gFlower.vertexBuffer2 = Target.vertexBuffer;
   gFlower.vertexBuffer3 = Target2.vertexBuffer;
   gFlower.vertexBuffer4 = gTarget3.vertexBuffer;
   gFlower.Texture = FlowerBloomText;
   gFlower.TextureBN = FlowerBloomText;
 
-  gHomeButton = await LoadOBJ(gGL, './models/Home.obj');
-  gPlayButton = await LoadOBJ(gGL, './models/Play.obj');
-  gPauseButton = await LoadOBJ(gGL, './models/Pause.obj');
-  gUIBacking = await LoadOBJ(gGL, './models/UIBacking.obj');
+  gHomeButton = home;
+  gPlayButton = play;
+  gPauseButton = pause;
+  gUIBacking = uiBacking;
 
-  let VeinThick1 = await LoadOBJ(gGL, './models/VeinsThick.obj');
-  let VeinThick2 = await LoadOBJ(gGL, './models/VeinsThick2.obj');
+  let VeinThick1 = veinThick1;
+  let VeinThick2 = veinThick2;
   let LocTreeColec = new Array(11);
 
   for(let i = 0; i < LocTreeColec.length; i++)
@@ -414,21 +435,21 @@ async function SetUpScene()
     let r = Math.random();
     if (r >= .5)
     {
-      LocTreeColec[i] = await LoadOBJ(gGL, './models/VeinsThin.obj'); //Vein opt 1
+      LocTreeColec[i] = veinThin1; //Vein opt 1
       LocTreeColec[i].TextureBN = VeinTree1Text; //need to set morph
       LocTreeColec[i].Texture = VeinTree1Text;
       LocTreeColec[i].vertexBuffer2 = VeinThick1.vertexBuffer;
     }
     else
     {
-      LocTreeColec[i] = await LoadOBJ(gGL, './models/VeinsThin2.obj'); // Vein opt 2
+      LocTreeColec[i] = veinThin2; // Vein opt 2
       LocTreeColec[i].TextureBN = VeinTree2Text; //need to set morph
       LocTreeColec[i].Texture = VeinTree2Text;
       LocTreeColec[i].vertexBuffer2 = VeinThick2.vertexBuffer;
     }
   }
 
-  gBloodCloud = await LoadOBJ(gGL, './models/Cube.obj');
+  gBloodCloud = cube4;
   gBloodCloud.Texture3D = Noise3DText;
   gBloodCloud.Texture = CloudDetailNoiseText;
   gBloodCloud.TextureBN = BlueNoiseText;
@@ -458,7 +479,7 @@ gCharMeDict.get("Socks").Texture =  SocksText;
 gCharMeDict.get("ShoeLaceL").Texture =  ShoeLaceText;
 gCharMeDict.get("ShoeLaceR").Texture =  ShoeLaceText;
 
-gStar2 = await LoadOBJ(gGL, './models/Star.obj');
+gStar2 = star;
 
 
 
@@ -476,11 +497,11 @@ gCharMeDict.forEach((val, key) =>
 })
 gCharMeDict.get("Body").Rotation[1] = 180.0;
 
-gCommissionsText = await LoadOBJ(gGL, './models/CommissionsText.obj');
-gGameAudioText = await LoadOBJ(gGL, './models/GameAudioText.obj');
-gSoundDesignText = await LoadOBJ(gGL, './models/SoundDesignText.obj');
-gVisualsText = await LoadOBJ(gGL, './models/VisualsText.obj');
-gContactText = await LoadOBJ(gGL, './models/ContactText.obj');
+gCommissionsText = commissionsText;
+gGameAudioText = gameAudioText;
+gSoundDesignText = soundDesignText;
+gVisualsText = visualsText;
+gContactText = contactText;
 gTime = new Date();
 NewTime = gTime.getTime() * .001;
   DeltaTime = NewTime - initTime;
