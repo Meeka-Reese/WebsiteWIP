@@ -7,6 +7,12 @@ export function Normalize(inVec)
     let normalizedVector = [x/Magnitude, y/Magnitude, z/Magnitude];
     return normalizedVector;
 }
+export function Clamp(Val, Min, Max)
+{
+  let ClampedVal = Math.min(Math.max(Val, Min),Max);
+  return ClampedVal;
+  
+}
 
 export function ToRadian(degrees)
 {

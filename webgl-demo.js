@@ -80,7 +80,7 @@ let gBloomFBO;
 
 //Imported functions
 import { Move,Rotate,Scale } from './translations.js';
-import { Normalize,ToRadian,lerp,sleep, Transform } from './Utils.js';
+import { Normalize,ToRadian,lerp,sleep, Transform, Clamp } from './Utils.js';
 import { CameraMove, MouseLook, GetViewMatrix, Camera } from './Camera.js';
 import { SinPreComp,CosPreComp,TanPreComp,ArcSinPreComp,ArcCosPreComp } from './PreCompWave.js';
 import { createNoise3D } from './Externals/simplex-noise.js';
@@ -98,7 +98,7 @@ import { MidiObj } from './MidiManager.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { LoadThreeScene, AddAnimation, UpdateModel,UpdateBoneMatrix } from './ChudThreeImplementation.js';
-
+import {SoundObject} from './SoundObject.js';
 
 
 
@@ -128,6 +128,10 @@ let gCrossHair;
 let gOpt1, gOpt2, gOpt3; //set up raytracing Options
 let gElencoVis;
 let gIsLoading = true;
+let gConditions = 
+{
+  AudioInit : false,
+}
 
 
 //Transformation Scene
@@ -200,13 +204,45 @@ let gCanvasWidth;
 let gCanvasHeight;
 
 
-//=========GLOBAL AUDIO============
+//=========GLOBAL AUDIO===========
 const Sound1 = document.getElementById("TransformSong");
 let Track1 = gAudioContext.createMediaElementSource(Sound1);
 Track1.connect(gAudioContext.destination);
 const Sound2 = document.getElementById("MainTheme");
 let Track2 = gAudioContext.createMediaElementSource(Sound2);
-Track2.connect(gAudioContext.destination);
+let T2PanNode = new PannerNode(gAudioContext);
+T2PanNode.refDistance = 10.0;
+T2PanNode.panningModel = "HRTF";
+T2PanNode.distanceModel = "linear";
+T2PanNode.refDistance = 1;
+T2PanNode.maxDistance = 1000;
+T2PanNode.rolloffFactor = 1.0;
+T2PanNode.coneInnerAngle = 360;
+T2PanNode.coneOuterAngle = 0;
+T2PanNode.coneOuterGain = 0;
+Track2.connect(T2PanNode);
+T2PanNode.connect(gAudioContext.destination);
+let SoundObjPos = vec3.create();
+let MainThemeObj = new SoundObject(SoundObjPos, 0, 1, Sound2, T2PanNode);
+
+let AcceptSound = document.getElementById("AcceptClick");
+
+let Track3 = gAudioContext.createMediaElementSource(AcceptSound);
+let T3Gain = new GainNode(gAudioContext);
+T3Gain.gain.value = .5;
+Track3.connect(T3Gain);
+T3Gain.connect(gAudioContext.destination);
+let AcceptObj = new SoundObject(vec3.create(), 0, 1, AcceptSound, null, 50);
+
+
+let MouseClickSound = document.getElementById("MouseClick");
+let Track4 = gAudioContext.createMediaElementSource(MouseClickSound);
+let T4Gain = new GainNode(gAudioContext);
+T4Gain.gain.value = .5;
+Track4.connect(T4Gain);
+T4Gain.connect(gAudioContext.destination);
+let MouseClickObj =  new SoundObject(vec3.create(), 0, 1, MouseClickSound, null, 50);
+
 
 
 //-----------------------GLOBALS-----------------------------
@@ -312,8 +348,26 @@ async function SetUpScene()
     {key: 'uiBacking', path: './models/UIBacking.obj'},
     {key: 'veinThick1', path: './models/VeinsThick.obj'},
     {key: 'veinThick2', path: './models/VeinsThick2.obj'},
+    {key: 'veinThick3', path: './models/VeinsThick.obj'},
+    {key: 'veinThick4', path: './models/VeinsThick2.obj'},
+    {key: 'veinThick5', path: './models/VeinsThick.obj'},
+    {key: 'veinThick6', path: './models/VeinsThick2.obj'},
+    {key: 'veinThick7', path: './models/VeinsThick.obj'},
+    {key: 'veinThick8', path: './models/VeinsThick2.obj'},
+    {key: 'veinThick9', path: './models/VeinsThick.obj'},
+    {key: 'veinThick10', path: './models/VeinsThick2.obj'},
+    {key: 'veinThick11', path: './models/VeinsThick.obj'},
     {key: 'veinThin1', path: './models/VeinsThin.obj'},
     {key: 'veinThin2', path: './models/VeinsThin2.obj'},
+    {key: 'veinThin3', path: './models/VeinsThin.obj'},
+    {key: 'veinThin4', path: './models/VeinsThin2.obj'},
+    {key: 'veinThin5', path: './models/VeinsThin.obj'},
+    {key: 'veinThin6', path: './models/VeinsThin2.obj'},
+    {key: 'veinThin7', path: './models/VeinsThin.obj'},
+    {key: 'veinThin8', path: './models/VeinsThin2.obj'},
+    {key: 'veinThin9', path: './models/VeinsThin.obj'},
+    {key: 'veinThin10', path: './models/VeinsThin2.obj'},
+    {key: 'veinThin11', path: './models/VeinsThin.obj'},
     {key: 'commissionsText', path: './models/CommissionsText.obj'},
     {key: 'gameAudioText', path: './models/GameAudioText.obj'},
     {key: 'soundDesignText', path: './models/SoundDesignText.obj'},
@@ -329,7 +383,9 @@ async function SetUpScene()
   const [cube1, cube2, cube3, cube4, sailBoatLP, sphereLP, spellCircle1LP, spellCircle2LP, spellCircleVolumeLP,
         maskCircleLP, arrow1LP, arrow2LP, charHead, atSign, charHairLP, charFullBodyUp, charHairTrans, fleshCube, 
         flowerBloom, flowerStem, flowerBud, flowerWilting, home, play, pause, uiBacking, veinThick1, veinThick2,
-      veinThin1, veinThin2, commissionsText, gameAudioText, soundDesignText, visualsText, contactText, star] = results;
+        veinThick3, veinThick4, veinThick5, veinThick6, veinThick7, veinThick8, veinThick9, veinThick10, veinThick11, 
+      veinThin1, veinThin2, veinThin3,veinThin4,veinThin5,veinThin6,veinThin7,veinThin8,veinThin9,veinThin10,veinThin11,
+      commissionsText, gameAudioText, soundDesignText, visualsText, contactText, star] = results;
    LoadTxt.style.color = '#fbff00';
    gTime = new Date();
    let NewTime = gTime.getTime() * .001;
@@ -426,28 +482,54 @@ async function SetUpScene()
   gPauseButton = pause;
   gUIBacking = uiBacking;
 
-  let VeinThick1 = veinThick1;
-  let VeinThick2 = veinThick2;
+
   let LocTreeColec = new Array(11);
 
-  for(let i = 0; i < LocTreeColec.length; i++)
-  {
-    let r = Math.random();
-    if (r >= .5)
-    {
-      LocTreeColec[i] = veinThin1; //Vein opt 1
-      LocTreeColec[i].TextureBN = VeinTree1Text; //need to set morph
-      LocTreeColec[i].Texture = VeinTree1Text;
-      LocTreeColec[i].vertexBuffer2 = VeinThick1.vertexBuffer;
-    }
-    else
-    {
-      LocTreeColec[i] = veinThin2; // Vein opt 2
-      LocTreeColec[i].TextureBN = VeinTree2Text; //need to set morph
-      LocTreeColec[i].Texture = VeinTree2Text;
-      LocTreeColec[i].vertexBuffer2 = VeinThick2.vertexBuffer;
-    }
-  }
+      LocTreeColec[0] = veinThin1; //Vein opt 1
+      LocTreeColec[0].TextureBN = VeinTree1Text; //need to set morph
+      LocTreeColec[0].Texture = VeinTree1Text;
+      LocTreeColec[0].vertexBuffer2 = veinThick1.vertexBuffer;
+      LocTreeColec[1] = veinThin2; // Vein opt 2
+      LocTreeColec[1].TextureBN = VeinTree2Text; //need to set morph
+      LocTreeColec[1].Texture = VeinTree2Text;
+      LocTreeColec[1].vertexBuffer2 = veinThick2.vertexBuffer;
+      LocTreeColec[2] = veinThin3; // Vein opt 2
+      LocTreeColec[2].TextureBN = VeinTree2Text; //need to set morph
+      LocTreeColec[2].Texture = VeinTree1Text;
+      LocTreeColec[2].vertexBuffer2 = veinThick3.vertexBuffer;
+      LocTreeColec[3] = veinThin4; // Vein opt 2
+      LocTreeColec[3].TextureBN = VeinTree2Text; //need to set morph
+      LocTreeColec[3].Texture = VeinTree2Text;
+      LocTreeColec[3].vertexBuffer2 = veinThick4.vertexBuffer;
+      LocTreeColec[4] = veinThin5; // Vein opt 2
+      LocTreeColec[4].TextureBN = VeinTree2Text; //need to set morph
+      LocTreeColec[4].Texture = VeinTree1Text;
+      LocTreeColec[4].vertexBuffer2 = veinThick5.vertexBuffer;
+      LocTreeColec[5] = veinThin6; // Vein opt 2
+      LocTreeColec[5].TextureBN = VeinTree2Text; //need to set morph
+      LocTreeColec[5].Texture = VeinTree2Text;
+      LocTreeColec[5].vertexBuffer2 = veinThick6.vertexBuffer;
+      LocTreeColec[6] = veinThin7; // Vein opt 2
+      LocTreeColec[6].TextureBN = VeinTree2Text; //need to set morph
+      LocTreeColec[6].Texture = VeinTree1Text;
+      LocTreeColec[6].vertexBuffer2 = veinThick7.vertexBuffer;
+      LocTreeColec[7] = veinThin8; // Vein opt 2
+      LocTreeColec[7].TextureBN = VeinTree2Text; //need to set morph
+      LocTreeColec[7].Texture = VeinTree2Text;
+      LocTreeColec[7].vertexBuffer2 = veinThick8.vertexBuffer;
+      LocTreeColec[8] = veinThin9; // Vein opt 2
+      LocTreeColec[8].TextureBN = VeinTree2Text; //need to set morph
+      LocTreeColec[8].Texture = VeinTree1Text;
+      LocTreeColec[8].vertexBuffer2 = veinThick9.vertexBuffer;
+      LocTreeColec[9] = veinThin10; // Vein opt 2
+      LocTreeColec[9].TextureBN = VeinTree2Text; //need to set morph
+      LocTreeColec[9].Texture = VeinTree2Text;
+      LocTreeColec[9].vertexBuffer2 = veinThick10.vertexBuffer;
+      LocTreeColec[10] = veinThin11; // Vein opt 2
+      LocTreeColec[10].TextureBN = VeinTree2Text; //need to set morph
+      LocTreeColec[10].Texture = VeinTree1Text;
+      LocTreeColec[10].vertexBuffer2 = veinThick11.vertexBuffer;
+
 
   gBloodCloud = cube4;
   gBloodCloud.Texture3D = Noise3DText;
@@ -1183,7 +1265,7 @@ function Input()
     if (gKeysPressed['a']){Direction = 2; CameraMove(gCamera, Direction, gDeltaTime);}
     if (gKeysPressed['d']){Direction = 3; CameraMove(gCamera, Direction, gDeltaTime);}
     if (gKeysPressed['p'] && gActiveMainLoop == TransformationLoop){PlayTransformSong();}
-    if (gKeysPressed['y']) { document.getElementById("PlayMusic").style.opacity = 0.0; Sound2.play();}
+    if (gKeysPressed['y'] && !gConditions.AudioInit) { document.getElementById("PlayMusic").style.opacity = 0.0; if (gAudioContext.state == "suspended" ){gAudioContext.resume();} AcceptObj.Play(0); MainThemeObj.Play(1); gConditions.AudioInit = true;}
     if (gKeysPressed['n']) { document.getElementById("PlayMusic").style.opacity = 0.0;}
     if (gKeysPressed['Tab'] && document.pointerLockElement === gCanvas){document.exitPointerLock();gKeysPressed['Tab'] = false;} // so I don't leave zoom callws :(
     if (gKeysPressed['h'] && gActiveMainLoop == AboutMeLoop) {document.getElementById("GoHome").style.opacity = 0.0; GoHome();}
@@ -1317,6 +1399,9 @@ async function PlayTransformSong()
 }
 function ClickFunc(event)
 {
+  MouseClickObj.Pause();
+  MouseClickObj.Play(0); //Mouse click sound
+  if (gAudioContext.state == "suspended" ){gAudioContext.resume();}
   console.log("Raycast Index is : " + gRaycastIndex);
   //== Request Pointer Lock ==
   console.log("Click detected, requesting pointer lock...");
@@ -1399,6 +1484,9 @@ const MainLoop = ()=>
       gSpellCircleVolume.Rotation[1] = gSpellCircle.Rotation[1];
       gSpellCircleVolume.Scale[2] = 1.0 + (4.0 * Math.sin(gTime/800.0));//Spell Volume pulse
       gAtSign.Rotation[1] += gDeltaTime * .25;
+      let ViewMat = GetViewMatrix(gCamera);
+      
+      MainThemeObj.SetPan(ViewMat, gAudioContext.currentTime);
 
 
 
@@ -2167,6 +2255,7 @@ async function main() {
     });
     document.addEventListener("mousemove", CalcMouseDelta);
     document.addEventListener("click", (e) => ClickFunc(e));
+    document.addEventListener("click", (e) => gAudioContext.resume());
 
 
     gDepthMap = genDepthMap(gGL, gCanvasWidth, gCanvasHeight);
@@ -2198,8 +2287,6 @@ async function main() {
     BoatWaveIndexFind();
     gActiveMainLoop = MainLoop;
     gIsLoading = false;
-    // Sound2.currentTime = 0; // need input to play, add after adding start screen
-    // Sound2.play();
     gActiveMainLoop();
     document.getElementById("Gif").style.opacity = 0.0;
     document.getElementById("GoHome").style.opacity = 0.0;
