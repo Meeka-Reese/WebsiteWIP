@@ -223,7 +223,7 @@ T2PanNode.coneOuterGain = 0;
 Track2.connect(T2PanNode);
 T2PanNode.connect(gAudioContext.destination);
 let SoundObjPos = vec3.create();
-let MainThemeObj = new SoundObject(SoundObjPos, 0, 1, Sound2, T2PanNode);
+let MainThemeObj = new SoundObject(SoundObjPos, 0, 1, Sound2, null, T2PanNode, 0);
 
 let AcceptSound = document.getElementById("AcceptClick");
 
@@ -232,7 +232,7 @@ let T3Gain = new GainNode(gAudioContext);
 T3Gain.gain.value = .5;
 Track3.connect(T3Gain);
 T3Gain.connect(gAudioContext.destination);
-let AcceptObj = new SoundObject(vec3.create(), 0, 1, AcceptSound, null, 50);
+let AcceptObj = new SoundObject(vec3.create(), 0, 1, AcceptSound, null, null, 0);
 
 
 let MouseClickSound = document.getElementById("MouseClick");
@@ -241,10 +241,157 @@ let T4Gain = new GainNode(gAudioContext);
 T4Gain.gain.value = .5;
 Track4.connect(T4Gain);
 T4Gain.connect(gAudioContext.destination);
-let MouseClickObj =  new SoundObject(vec3.create(), 0, 1, MouseClickSound, null, 50);
+let MouseClickObj =  new SoundObject(vec3.create(), 0, 1, MouseClickSound, null, null, 0);
 
 
+//=========ABOUT ME SOUND SETUP===================
+let gAboutMeSoundObjColec = [];
+let AboutMeGain = .5;
+let AboutMeEmptySound = document.getElementById("AboutMeEmpty");
+let Track5 = gAudioContext.createMediaElementSource(AboutMeEmptySound);
+Track5.connect(gAudioContext.destination);
 
+
+let AboutMeBassSound = document.getElementById("AboutMeBass");
+let Track6 = gAudioContext.createMediaElementSource(AboutMeBassSound);
+let T6PanNode = new PannerNode(gAudioContext);
+let T6Gain = new GainNode(gAudioContext);
+T6Gain.gain.value = AboutMeGain;
+Track6.connect(T6PanNode);
+T6PanNode.connect(T6Gain);
+T6Gain.connect(gAudioContext.destination);
+let AboutMeBassObj =  new SoundObject(vec3.create(), 0, 1, AboutMeBassSound, AboutMeEmptySound, T6PanNode, 1);
+
+let AboutMeBirdTextureSound = document.getElementById("AboutMeBirdTexture");
+let Track7 = gAudioContext.createMediaElementSource(AboutMeBirdTextureSound);
+let T7PanNode = new PannerNode(gAudioContext);
+let T7Gain = new GainNode(gAudioContext);
+T7Gain.gain.value = AboutMeGain;
+Track7.connect(T7PanNode);
+T7PanNode.connect(T7Gain);
+T7Gain.connect(gAudioContext.destination);
+let AboutMeBirdTextureObj =  new SoundObject(vec3.create(), 0, 1, AboutMeBirdTextureSound, AboutMeEmptySound, T7PanNode, 1);
+
+let AboutMeHatSound = document.getElementById("AboutMeHat");
+let Track8 = gAudioContext.createMediaElementSource(AboutMeHatSound);
+let T8PanNode = new PannerNode(gAudioContext);
+let T8Gain = new GainNode(gAudioContext);
+T8Gain.gain.value = AboutMeGain;
+Track8.connect(T8PanNode);
+T8PanNode.connect(T8Gain);
+T8Gain.connect(gAudioContext.destination);
+let AboutMeHatObj =  new SoundObject(vec3.create(), 0, 1, AboutMeHatSound, AboutMeEmptySound, T8PanNode, 1);
+
+let AboutMeKickSound = document.getElementById("AboutMeKick");
+let Track9 = gAudioContext.createMediaElementSource(AboutMeKickSound);
+let T9PanNode = new PannerNode(gAudioContext);
+let T9Gain = new GainNode(gAudioContext);
+T9Gain.gain.value = AboutMeGain;
+Track9.connect(T9PanNode);
+T9PanNode.connect(T9Gain);
+T9Gain.connect(gAudioContext.destination);
+let AboutMeKickObj =  new SoundObject(vec3.create(), 0, 1, AboutMeKickSound, AboutMeEmptySound, T9PanNode, 1);
+
+let AboutMeLeadSound = document.getElementById("AboutMeLead");
+let Track10 = gAudioContext.createMediaElementSource(AboutMeLeadSound);
+let T10PanNode = new PannerNode(gAudioContext);
+let T10Gain = new GainNode(gAudioContext);
+T10Gain.gain.value = AboutMeGain;
+Track10.connect(T10PanNode);
+T10PanNode.connect(T10Gain);
+T10Gain.connect(gAudioContext.destination);
+let AboutMeLeadObj =  new SoundObject(vec3.create(), 0, 1, AboutMeLeadSound, AboutMeEmptySound, T10PanNode, 1);
+
+let AboutMePadSound = document.getElementById("AboutMePad");
+let Track11 = gAudioContext.createMediaElementSource(AboutMePadSound);
+let T11PanNode = new PannerNode(gAudioContext);
+let T11Gain = new GainNode(gAudioContext);
+T11Gain.gain.value = AboutMeGain;
+Track11.connect(T11PanNode);
+T11PanNode.connect(T11Gain);
+T11Gain.connect(gAudioContext.destination);
+let AboutMePadObj =  new SoundObject(vec3.create(), 0, 1, AboutMePadSound, AboutMeEmptySound, T11PanNode, 1);
+
+let AboutMePiano1Sound = document.getElementById("AboutMePiano1");
+let Track12 = gAudioContext.createMediaElementSource(AboutMePiano1Sound);
+let T12PanNode = new PannerNode(gAudioContext);
+let T12Gain = new GainNode(gAudioContext);
+T12Gain.gain.value = AboutMeGain;
+Track12.connect(T12PanNode);
+T12PanNode.connect(T12Gain);
+T12Gain.connect(gAudioContext.destination);
+let AboutMePiano1Obj =  new SoundObject(vec3.create(), 0, 1, AboutMePiano1Sound, AboutMeEmptySound, T12PanNode, 1);
+
+let AboutMePiano2Sound = document.getElementById("AboutMePiano2");
+let Track13 = gAudioContext.createMediaElementSource(AboutMePiano2Sound);
+let T13PanNode = new PannerNode(gAudioContext);
+let T13Gain = new GainNode(gAudioContext);
+T13Gain.gain.value = AboutMeGain;
+Track13.connect(T13PanNode);
+T13PanNode.connect(T13Gain);
+T13Gain.connect(gAudioContext.destination);
+let AboutMePiano2Obj =  new SoundObject(vec3.create(), 0, 1, AboutMePiano2Sound, AboutMeEmptySound, T13PanNode, 1);
+
+let AboutMeStringsSound = document.getElementById("AboutMeStrings");
+let Track14 = gAudioContext.createMediaElementSource(AboutMeStringsSound);
+let T14PanNode = new PannerNode(gAudioContext);
+let T14Gain = new GainNode(gAudioContext);
+T14Gain.gain.value = AboutMeGain;
+Track14.connect(T14PanNode);
+T14PanNode.connect(T14Gain);
+T14Gain.connect(gAudioContext.destination);
+let AboutMeStringsObj =  new SoundObject(vec3.create(), 0, 1, AboutMeStringsSound, AboutMeEmptySound, T14PanNode, 1);
+
+let AboutMeVocalChopSound = document.getElementById("AboutMeVocalChop");
+let Track15 = gAudioContext.createMediaElementSource(AboutMeVocalChopSound);
+let T15PanNode = new PannerNode(gAudioContext);
+let T15Gain = new GainNode(gAudioContext);
+T15Gain.gain.value = AboutMeGain;
+Track15.connect(T15PanNode);
+T15PanNode.connect(T15Gain);
+T15Gain.connect(gAudioContext.destination);
+let AboutMeVocalChopObj =  new SoundObject(vec3.create(), 0, 1, AboutMeVocalChopSound, AboutMeEmptySound, T15PanNode, 1);
+
+let AboutMeTomSound = document.getElementById("AboutMeTom");
+let Track16 = gAudioContext.createMediaElementSource(AboutMeTomSound);
+let T16PanNode = new PannerNode(gAudioContext);
+let T16Gain = new GainNode(gAudioContext);
+T16Gain.gain.value = AboutMeGain;
+Track16.connect(T16PanNode);
+T16PanNode.connect(T16Gain);
+T16Gain.connect(gAudioContext.destination);
+let AboutMeTomObj =  new SoundObject(vec3.create(), 0, 1, AboutMeTomSound, AboutMeEmptySound, T16PanNode, 1);
+
+let AboutMePiano3Sound = document.getElementById("AboutMePiano3");
+let Track17 = gAudioContext.createMediaElementSource(AboutMePiano3Sound);
+let T17PanNode = new PannerNode(gAudioContext);
+let T17Gain = new GainNode(gAudioContext);
+T17Gain.gain.value = AboutMeGain;
+Track17.connect(T17PanNode);
+T17PanNode.connect(T17Gain);
+T17Gain.connect(gAudioContext.destination);
+let AboutMePiano3Obj =  new SoundObject(vec3.create(), 0, 1, AboutMePiano3Sound, AboutMeEmptySound, T17PanNode, 1);
+
+gAboutMeSoundObjColec.push(AboutMeBassObj, AboutMeBirdTextureObj, AboutMeHatObj, AboutMeKickObj, AboutMeLeadObj, AboutMePadObj,
+  AboutMePiano1Obj, AboutMePiano2Obj, AboutMeStringsObj, AboutMeVocalChopObj, AboutMeTomObj, AboutMePiano3Obj);
+
+  function TriggerAboutMeSong()
+  {
+    let RandPosMag = 1000.0;
+    for(let i  = 0; i < gAboutMeSoundObjColec.length; i++)
+    {
+      let RandVec = vec3.fromValues(Math.random() * RandPosMag,Math.random() * RandPosMag,Math.random() * RandPosMag);
+      gAboutMeSoundObjColec.Position = RandVec;
+      gAboutMeSoundObjColec[i].Play(0);
+    }
+  }
+  function StopAboutMeSong()
+  {
+    for(let i  = 0; i < gAboutMeSoundObjColec.length; i++)
+    {
+      gAboutMeSoundObjColec[i].Pause();
+    }
+  }
 //-----------------------GLOBALS-----------------------------
 
 export function makeStruct(keys) {
@@ -261,6 +408,20 @@ export function makeStruct(keys) {
 
 async function SetUpScene()
 {
+
+  //AboutMeAudioSetUp
+  for (let i = 0; i < gAboutMeSoundObjColec.length; i++)
+  {
+    gAboutMeSoundObjColec[i].PanNode.refDistance = 10.0;
+    gAboutMeSoundObjColec[i].PanNode.panningModel = "equalpower";
+    gAboutMeSoundObjColec[i].PanNode.distanceModel = "linear";
+    gAboutMeSoundObjColec[i].PanNode.refDistance = 1;
+    gAboutMeSoundObjColec[i].PanNode.maxDistance = 1000;
+    gAboutMeSoundObjColec[i].PanNode.rolloffFactor = 1.0;
+    gAboutMeSoundObjColec[i].PanNode.coneInnerAngle = 360;
+    gAboutMeSoundObjColec[i].PanNode.coneOuterAngle = 0;
+    gAboutMeSoundObjColec[i].PanNode.coneOuterGain = 0;
+  }
   gTime = new Date();
   let initTime = gTime.getTime() * .001;
   //== Main Scene ==
@@ -1357,6 +1518,7 @@ function RaycastClick(Obj)
       document.getElementById("GoHome").style.opacity = 1.0;
       let Speed = .7;
       gCharMeAniMixer = AddAnimation(gSceneAboutMe, gCharMeAniMixer, gCharMeAniClips[0], Speed);
+      TriggerAboutMeSong();
       break;
     case gHomeButton:
         GoHome();
@@ -1380,6 +1542,7 @@ function GoHome()
       gCamera.Mode = 0;
       gCamera.Eye = [0.0,10.0,0.0];
       gCamera.ViewDir = [0.0,0.0,1.0];
+      if (gActiveMainLoop == AboutMeLoop) {StopAboutMeSong();}
       gActiveMainLoop = MainLoop;
       console.log("ENTERING MAIN LOOP");
       Sound1.pause();
@@ -1850,6 +2013,13 @@ const AboutMeLoop = async ()=>
       gCharMeAniMixer.update(gDeltaTime * .001);
       gSceneAboutMe.updateMatrix();         
       gSceneAboutMe.updateMatrixWorld(); 
+      //Update Music pan pos
+      let ViewMat = GetViewMatrix(gCamera);
+
+      for(let i  = 0; i < gAboutMeSoundObjColec.length; i++)
+      {
+        gAboutMeSoundObjColec[i].SetPan(ViewMat, gAudioContext.currentTime);
+      }
 
       UpdateBoneMatrix(gSceneAboutMe, gCharMeDict);
       //======================RENDER RAYCAST============================
