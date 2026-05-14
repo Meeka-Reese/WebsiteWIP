@@ -85,19 +85,20 @@ export function CameraMove(Camera, Direction, DeltaMs)
         break;
 
         case(1): //rotary
+            let FBSpeed = 4.0;
             switch(Direction)
             {
                     case(0): //Forward
                     console.log(DeltaMs);
-                    Camera.Eye[0] += Camera.ViewDir[0] * gSpeed * DeltaMs * 2.0;
-                    Camera.Eye[1] += Camera.ViewDir[1] * gSpeed * DeltaMs * 2.0;
-                    Camera.Eye[2] += Camera.ViewDir[2] * gSpeed * DeltaMs * 2.0;
+                    Camera.Eye[0] += Camera.ViewDir[0] * gSpeed * DeltaMs * FBSpeed;
+                    Camera.Eye[1] += Camera.ViewDir[1] * gSpeed * DeltaMs * FBSpeed;
+                    Camera.Eye[2] += Camera.ViewDir[2] * gSpeed * DeltaMs * FBSpeed;
                 break;
 
                 case(1): //Backward
-                    Camera.Eye[0] -= Camera.ViewDir[0] * gSpeed * DeltaMs * 2.0;
-                    Camera.Eye[1] -= Camera.ViewDir[1] * gSpeed * DeltaMs * 2.0;
-                    Camera.Eye[2] -= Camera.ViewDir[2] * gSpeed * DeltaMs * 2.0;
+                    Camera.Eye[0] -= Camera.ViewDir[0] * gSpeed * DeltaMs * FBSpeed;
+                    Camera.Eye[1] -= Camera.ViewDir[1] * gSpeed * DeltaMs * FBSpeed;
+                    Camera.Eye[2] -= Camera.ViewDir[2] * gSpeed * DeltaMs * FBSpeed;
                 break;
                 case(2):
                 case(3):

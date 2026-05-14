@@ -25,7 +25,19 @@ export class SoundObject
     }
     Play(Mode)
     {
-
+        //Mode 0 = oneshot, 1 = looped
+        switch(Mode)
+        {
+            case(0):
+            this.ActiveSound.currentTime = 0;
+            this.ActiveSound.play();
+            break;
+            case(1):
+            this.ActiveSound.currentTime = 0;
+            this.ActiveSound.loop = true;
+            this.ActiveSound.play();
+            break;
+        }
         switch (this.EndFuncInd)
         {
             case(0):
@@ -43,19 +55,6 @@ export class SoundObject
             break;
             default:
                 this.ActiveSound.addEventListener("ended", () => this.OnEndDef());
-            break;
-        }
-        //Mode 0 = oneshot, 1 = looped
-        switch(Mode)
-        {
-            case(0):
-            this.ActiveSound.currentTime = 0;
-            this.ActiveSound.play();
-            break;
-            case(1):
-            this.ActiveSound.currentTime = 0;
-            this.ActiveSound.loop = true;
-            this.ActiveSound.play();
             break;
         }
     }
