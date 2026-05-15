@@ -118,7 +118,7 @@ export function CameraMove(Camera, Direction, DeltaMs)
 
 export function MouseLook(Camera, DeltaMouse, DeltaMs)
 {
-    let RotationSpeed = gRotationSpeed * gSpeed * DeltaMs * .05;
+    let RotationSpeed = gRotationSpeed * gSpeed * DeltaMs * .03;
     let WorldUp = [0.0, 1.0, 0.0];
     switch(Camera.Mode)
     {
