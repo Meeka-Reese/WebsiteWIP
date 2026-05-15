@@ -1639,7 +1639,7 @@ async function FrameCount()
 }
 const MainLoop = ()=>
 {
-  console.log("type:", typeof gAudioContext);
+  console.log("Test");
     gTime = new Date();
     let newTime = gTime.getTime();
     gDeltaTime = newTime - gPreviousTime;
