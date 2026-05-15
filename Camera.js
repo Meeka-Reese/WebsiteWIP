@@ -1,9 +1,5 @@
-import { Normalize } from './Utils.js';
-import { ToRadian } from './Utils.js';
-import { mat4 } from './Externals/esm/index.js';
-import { vec3 } from './Externals/esm/index.js';
-import { vec4 } from './Externals/esm/index.js';
-import { quat } from './Externals/esm/index.js';
+import { Normalize, ToRadian, Vec3ArrLerp } from './Utils.js';
+import { mat4, vec3, vec4, quat } from './Externals/esm/index.js';
 let gSpeed = .11;
 let gRotationSpeed = .7;
 let gTotalYaw;
@@ -15,9 +11,9 @@ export class Camera
     
     constructor(Eye, ViewDir, UpDir, Width, Height, ObjectIndex, Mode, OrbitalOrg)
     {
-        this.Eye = Eye;
-        this.ViewDir = ViewDir;
-        this.UpDir = UpDir;
+        this.Eye = Eye; //size 3 arr
+        this.ViewDir = ViewDir; // size 3 arr
+        this.UpDir = UpDir; // size 3 arr
         this.Width = Width;
         this.Height = Height;
         this.ObjectIndex = ObjectIndex;
@@ -28,6 +24,8 @@ export class Camera
         this.BGCol = [0.0, 0.0, 0.0];
         this.Mode = Mode; //default 0, 0 is free roaming, 1 is orbital
         this.OrbitalOrg = OrbitalOrg; //just for orbital
+        this.Auto = false;
+        this.ActiveAniClip = null;
     }
 
     setPostProcessing(outCol, outCut, blurAmount, bgCol)
@@ -118,9 +116,9 @@ export function CameraMove(Camera, Direction, DeltaMs)
     }
 }
 
-export function MouseLook(Camera, DeltaMouse)
+export function MouseLook(Camera, DeltaMouse, DeltaMs)
 {
-    let RotationSpeed = gRotationSpeed * gSpeed;
+    let RotationSpeed = gRotationSpeed * gSpeed * DeltaMs * .05;
     let WorldUp = [0.0, 1.0, 0.0];
     switch(Camera.Mode)
     {
@@ -183,7 +181,87 @@ export function GetViewMatrix(Camera)
     mat4.lookAt(Model, Camera.Eye, center, Camera.UpDir);
     return Model;
 }
-  
+export class CameraAniClip
+{
+    constructor(Speed, Keyframes, ConnectedCamera = null)
+    {
+        this.Speed = Speed; //not implemented currently
+        this.Keyframes = Keyframes;
+        this.ConnectedCamera = ConnectedCamera;
+        this.Running = false;
+        this.LastTime = 0.0;
+        this.RunTime = 0.0;
+        this.PrevKey;
+        this.StartTime = 0.0;
+    }
+    Run(CurrentTime) //Trigger Run at Start of Debug. First Cycle of Update Cam Will run
+    //After that trogger updatecam through the animationloop. 
+    {
+        if (this.ConnectedCamera == null) {console.error("NO CAMERA CONNECTED TO ANIMATION CLIP"); return;}
+        this.ConnectedCamera.Auto = true;
+        this.Running = true;
+        this.PrevKey = new CameraAniKey(0.0, this.ConnectedCamera.ViewDir, this.ConnectedCamera.Eye);
+        this.StartTime = CurrentTime;
+        UpdateCam(0.0);
+    }
+    UpdateCam(CurrentTime)
+    {
+        let ClosestKey;
+        let Time = CurrentTime - this.StartTime;
+        let ClosestDelta = 9999999.9;
+        let CurrentDelta;
+        for(let i = 0; i < this.Keyframes.length; i++)
+        {
+            CurrentDelta = this.Keyframes[i].TimeCode - Time;
+            if (this.Keyframes[i].TimeCode > Time && CurrentDelta < ClosestDelta)
+            {
+                ClosestDelta = CurrentDelta;
+                ClosestKey = this.Keyframes[i];
+            }
+        }
+        if (ClosestKey == undefined)
+        {
+            this.PrevKey = new CameraAniKey(0.0, this.ConnectedCamera.ViewDir, this.ConnectedCamera.Eye);
+            return;
+        }
+        let Alpha = Time / (ClosestKey.TimeCode - this.PrevKey.TimeCode);
+        this.ConnectedCamera.ViewDir = Vec3ArrLerp(this.PrevKey.ViewDir, ClosestKey.ViewDir, Alpha);
+        this.ConnectedCamera.Eye = Vec3ArrLerp(this.PrevKey.Eye, ClosestKey.Eye, Alpha);
+        this.PrevKey = ClosestKey;
+    }
+    Pause()
+    {
+        this.ConnectedCamera.Auto = false;
+        this.Running = false;
+    }
+    Stop()
+    {
+        this.ConnectedCamera.Auto = false;
+        this.Running = false;
+    }
+}
+export class CameraAniKey
+{
+    constructor(TimeCode, ViewDir, Eye)
+    {
+        this.TimeCode = TimeCode; //in relation to 0 being start of movement
+        this.ViewDir = ViewDir;
+        this.Eye = Eye;
+    }
+}
+
+
+
+
+//==========================CAMERA ANIMATION CLIPS=======================================
+//the connected camera is set as null by init but should be set to camera whenever it is connected
+export let CamAniClips = [];
+let KeyframeColec = [];
+let K1 = new CameraAniKey(0.0, [0.0,0.0,0.0], [0.0,0.0,0.0]);
+let K2 = new CameraAniKey(10.0, [10.0, -10.0, 50.0], [100.0, -50.0, 10.0]);
+KeyframeColec.push(K1, K2);
+let TestClip = new CameraAniClip(1.0, KeyframeColec, null);
+CamAniClips.push(TestClip);
     
     
    

@@ -81,7 +81,7 @@ let gBloomFBO;
 //Imported functions
 import { Move,Rotate,Scale } from './translations.js';
 import { Normalize,ToRadian,lerp,sleep, Transform, Clamp } from './Utils.js';
-import { CameraMove, MouseLook, GetViewMatrix, Camera } from './Camera.js';
+import { CameraMove, MouseLook, GetViewMatrix, Camera, CamAniClips, CameraAniClip, CameraAniKey } from './Camera.js';
 import { SinPreComp,CosPreComp,TanPreComp,ArcSinPreComp,ArcCosPreComp } from './PreCompWave.js';
 import { createNoise3D } from './Externals/simplex-noise.js';
 import { SetProgramInfo,loadTexture,setPositionAttribute,createTexture2DFromBuffer,
@@ -96,7 +96,6 @@ import { CharClips } from './Animation.js';
 import { PlayAudio, StopAudio, gAudioContext} from './AudioManager.js';
 import { MidiObj } from './MidiManager.js';
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { LoadThreeScene, AddAnimation, UpdateModel,UpdateBoneMatrix } from './ChudThreeImplementation.js';
 import {SoundObject} from './SoundObject.js';
 
