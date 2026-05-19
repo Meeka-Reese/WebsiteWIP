@@ -1825,7 +1825,7 @@ const TransformationLoop = ()=>
   gFleshGroundL.lightness = gMidiObj.ccVals[1];
   gFleshGroundR.lightness = gMidiObj.ccVals[1];
   gFleshParticles.Position[1] = -300.0 + (Math.abs(gSinView[Math.floor(gTimeSinceRun * .24) % WAVE_BUFFER_SIZE]) + gCharTrans.Position[1]) * 50.0;
-  console.log(" Elapsed Time " + Sound1.currentTime);
+  //console.log(" Elapsed Time " + Sound1.currentTime);
   if (gCamera.ActiveAniClip != null) //Camera Animation
       {
         if (gCamera.ActiveAniClip.Running == false)
