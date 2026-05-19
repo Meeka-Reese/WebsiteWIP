@@ -257,11 +257,185 @@ export class CameraAniKey
 //the connected camera is set as null by init but should be set to camera whenever it is connected
 export let CamAniClips = [];
 let KeyframeColec = [];
+<<<<<<< Updated upstream
 let K1 = new CameraAniKey(0.0, [0.0,0.0,0.0], [0.0,0.0,0.0]);
 let K2 = new CameraAniKey(10.0, [10.0, -10.0, 50.0], [100.0, -50.0, 10.0]);
 KeyframeColec.push(K1, K2);
 let TestClip = new CameraAniClip(1.0, KeyframeColec, null);
 CamAniClips.push(TestClip);
+=======
+let TCPose = {
+    FrontFar: {Eye: [49.0,219.0,-669.0], FocusPoint: [0.0,5.0,0.0]},
+    Front: {Eye: [-119.96, 67.3, -139.2], FocusPoint: [0.0,20.0,0.0]},
+    FrontMid: {Eye: [-119.96, 67.3, -340.2], FocusPoint: [0.0,20.0,0.0]},
+    Close: {Eye: [118.0, 40.0, -105.0], FocusPoint: [0.0,20.0,0.0]},
+    Close2: {Eye: [118.0, 40.0, -150.0], FocusPoint: [0.0,20.0,0.0]},
+    TopRightFar: {Eye: [-223, 86.5, -599], FocusPoint: [0.0,5.0,0.0]},
+    Bottom: {Eye: [56, 3.6, -133], FocusPoint: [0.0,-10.0,0.0]},
+    Back: {Eye: [56, 3.6, 200], FocusPoint: [0.0,5.0,0.0]},
+    SideRight: {Eye: [-161.6, 44.6, -11.3], FocusPoint: [0.0,5.0,0.0]},
+    SideRight2: {Eye: [0.6, 70.6, -60.3], FocusPoint: [0.0,5.0,0.0]},
+    BottomLeft: {Eye: [75.9, -64.5, -48.7], FocusPoint: [0.0,5.0,0.0]},
+    FrontClose: {Eye: [0.0, 50.0, -78.0], FocusPoint: [0.0,5.0,0.0]},
+    Veins: {Eye: [-306, 12, 65], FocusPoint: [0.0,5.0,0.0]},
+    Veins2: {Eye: [-250, 40, 140], FocusPoint: [0.0,5.0,0.0]},
+    Veins3: {Eye: [56, 3.6, 400], FocusPoint: [0.0,5.0,0.0]},
+};
+
+KeyframeColec.push(new CameraAniKey(0.01, TCPose.Veins.Eye, TCPose.Veins.FocusPoint, false)); //Start
+KeyframeColec.push(new CameraAniKey(21.0, TCPose.Front.Eye, TCPose.Front.FocusPoint, true)); //Kick and drums
+KeyframeColec.push(new CameraAniKey(42.0, TCPose.FrontMid.Eye, TCPose.FrontMid.FocusPoint, true)); //Push it in
+KeyframeColec.push(new CameraAniKey(73.0, TCPose.SideRight2.Eye, TCPose.SideRight2.FocusPoint, true)); //Little movement
+KeyframeColec.push(new CameraAniKey(87.0, TCPose.FrontMid.Eye, TCPose.FrontMid.FocusPoint, true)); //Crop
+KeyframeColec.push(new CameraAniKey(103.5, TCPose.BottomLeft.Eye, TCPose.BottomLeft.FocusPoint, true)); //Tie the lungs
+KeyframeColec.push(new CameraAniKey(124.7, TCPose.TopRightFar.Eye, TCPose.TopRightFar.FocusPoint, true)); //impacts
+KeyframeColec.push(new CameraAniKey(124.8, TCPose.FrontClose.Eye, TCPose.FrontClose.FocusPoint, false)); //impacts //little off
+KeyframeColec.push(new CameraAniKey(126.5, TCPose.TopRightFar.Eye, TCPose.TopRightFar.FocusPoint, true)); //impacts
+KeyframeColec.push(new CameraAniKey(127.5, TCPose.FrontClose.Eye, TCPose.FrontClose.FocusPoint, false)); //impacts
+KeyframeColec.push(new CameraAniKey(128.8, TCPose.TopRightFar.Eye, TCPose.TopRightFar.FocusPoint, true)); //impacts
+KeyframeColec.push(new CameraAniKey(130.0, TCPose.FrontClose.Eye, TCPose.FrontClose.FocusPoint, false)); //impacts
+KeyframeColec.push(new CameraAniKey(131.4, TCPose.TopRightFar.Eye, TCPose.TopRightFar.FocusPoint, true)); //impacts
+KeyframeColec.push(new CameraAniKey(132.7, TCPose.FrontClose.Eye, TCPose.FrontClose.FocusPoint, false)); //impacts //also little off
+KeyframeColec.push(new CameraAniKey(134.0, TCPose.TopRightFar.Eye, TCPose.TopRightFar.FocusPoint, true)); //impacts
+KeyframeColec.push(new CameraAniKey(135.3, TCPose.Bottom.Eye, TCPose.Bottom.FocusPoint, false)); //Bells flower pose time offset just for fluid motion
+KeyframeColec.push(new CameraAniKey(145.0, TCPose.FrontMid.Eye, TCPose.FrontMid.FocusPoint, true));
+KeyframeColec.push(new CameraAniKey(156.0, TCPose.Veins2.Eye, TCPose.Veins2.FocusPoint, true));
+KeyframeColec.push(new CameraAniKey(167.0, TCPose.Veins.Eye, TCPose.Veins.FocusPoint, true));
+KeyframeColec.push(new CameraAniKey(179.9, TCPose.Front.Eye, TCPose.Front.FocusPoint, true));
+
+KeyframeColec.push(new CameraAniKey(180.0, TCPose.FrontFar.Eye, TCPose.FrontFar.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(180.3, TCPose.SideRight2.Eye, TCPose.SideRight2.FocusPoint, false)); //glitch 
+KeyframeColec.push(new CameraAniKey(180.5, TCPose.Close.Eye, TCPose.Close.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(180.75, TCPose.Front.Eye, TCPose.Front.FocusPoint, false)); //enterance
+KeyframeColec.push(new CameraAniKey(182.6, TCPose.TopRightFar.Eye, TCPose.TopRightFar.FocusPoint, true)); 
+
+KeyframeColec.push(new CameraAniKey(182.7, TCPose.FrontFar.Eye, TCPose.FrontFar.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(182.9, TCPose.SideRight2.Eye, TCPose.SideRight2.FocusPoint, false)); //glitch 
+KeyframeColec.push(new CameraAniKey(183.2, TCPose.Close.Eye, TCPose.Close.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(183.75, TCPose.Front.Eye, TCPose.Front.FocusPoint, false)); //enterance
+KeyframeColec.push(new CameraAniKey(185.2, TCPose.TopRightFar.Eye, TCPose.TopRightFar.FocusPoint, true)); 
+
+KeyframeColec.push(new CameraAniKey(185.3, TCPose.FrontFar.Eye, TCPose.FrontFar.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(185.4, TCPose.SideRight2.Eye, TCPose.SideRight2.FocusPoint, false)); //glitch 
+KeyframeColec.push(new CameraAniKey(185.5, TCPose.Close.Eye, TCPose.Close.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(185.7, TCPose.Front.Eye, TCPose.Front.FocusPoint, false)); //glitch down
+KeyframeColec.push(new CameraAniKey(186.0, TCPose.Close.Eye, TCPose.Close.FocusPoint, true)); //glitch
+KeyframeColec.push(new CameraAniKey(187.97, TCPose.TopRightFar.Eye, TCPose.TopRightFar.FocusPoint, true)); 
+
+KeyframeColec.push(new CameraAniKey(188.0, TCPose.FrontFar.Eye, TCPose.FrontFar.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(188.2, TCPose.SideRight2.Eye, TCPose.SideRight2.FocusPoint, false)); //glitch 
+KeyframeColec.push(new CameraAniKey(188.3, TCPose.Close.Eye, TCPose.Close.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(188.55, TCPose.Front.Eye, TCPose.Front.FocusPoint, false)); //enterance
+KeyframeColec.push(new CameraAniKey(190.5, TCPose.TopRightFar.Eye, TCPose.TopRightFar.FocusPoint, true)); 
+
+KeyframeColec.push(new CameraAniKey(190.6, TCPose.FrontFar.Eye, TCPose.FrontFar.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(190.8, TCPose.SideRight2.Eye, TCPose.SideRight2.FocusPoint, false)); //glitch 
+KeyframeColec.push(new CameraAniKey(191.0, TCPose.Close.Eye, TCPose.Close.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(191.2, TCPose.Front.Eye, TCPose.Front.FocusPoint, true)); //enterance
+KeyframeColec.push(new CameraAniKey(193.15, TCPose.TopRightFar.Eye, TCPose.TopRightFar.FocusPoint, true)); 
+
+KeyframeColec.push(new CameraAniKey(193.25, TCPose.FrontFar.Eye, TCPose.FrontFar.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(193.9, TCPose.SideRight2.Eye, TCPose.SideRight2.FocusPoint, true)); //enterance 
+KeyframeColec.push(new CameraAniKey(195.8, TCPose.TopRightFar.Eye, TCPose.TopRightFar.FocusPoint, true)); 
+
+KeyframeColec.push(new CameraAniKey(195.9, TCPose.FrontFar.Eye, TCPose.FrontFar.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(196.1, TCPose.SideRight2.Eye, TCPose.SideRight2.FocusPoint, false)); //glitch 
+KeyframeColec.push(new CameraAniKey(196.3, TCPose.Close.Eye, TCPose.Close.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(197.2, TCPose.Front.Eye, TCPose.Front.FocusPoint, false)); //enterance
+KeyframeColec.push(new CameraAniKey(198.4, TCPose.TopRightFar.Eye, TCPose.TopRightFar.FocusPoint, true)); 
+
+KeyframeColec.push(new CameraAniKey(198.4, TCPose.FrontFar.Eye, TCPose.FrontFar.FocusPoint, false)); //glitch //stutter
+KeyframeColec.push(new CameraAniKey(198.44, TCPose.SideRight2.Eye, TCPose.SideRight2.FocusPoint, false)); //glitch 
+KeyframeColec.push(new CameraAniKey(198.48, TCPose.FrontFar.Eye, TCPose.FrontFar.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(198.52, TCPose.SideRight2.Eye, TCPose.SideRight2.FocusPoint, false)); //glitch 
+KeyframeColec.push(new CameraAniKey(198.56, TCPose.FrontFar.Eye, TCPose.FrontFar.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(198.60, TCPose.FrontFar.Eye, TCPose.FrontFar.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(198.64, TCPose.SideRight2.Eye, TCPose.SideRight2.FocusPoint, false)); //glitch 
+KeyframeColec.push(new CameraAniKey(198.68, TCPose.FrontFar.Eye, TCPose.FrontFar.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(198.72, TCPose.SideRight2.Eye, TCPose.SideRight2.FocusPoint, false)); //glitch 
+KeyframeColec.push(new CameraAniKey(198.74, TCPose.FrontFar.Eye, TCPose.FrontFar.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(198.8, TCPose.SideRight2.Eye, TCPose.SideRight2.FocusPoint, false)); //glitch 
+KeyframeColec.push(new CameraAniKey(199.6, TCPose.Front.Eye, TCPose.Front.FocusPoint, true)); //enterance
+KeyframeColec.push(new CameraAniKey(201.0, TCPose.TopRightFar.Eye, TCPose.TopRightFar.FocusPoint, true)); 
+
+KeyframeColec.push(new CameraAniKey(201.1, TCPose.FrontFar.Eye, TCPose.FrontFar.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(201.4, TCPose.SideRight2.Eye, TCPose.SideRight2.FocusPoint, false)); //glitch 
+KeyframeColec.push(new CameraAniKey(201.5, TCPose.Close.Eye, TCPose.Close.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(201.7, TCPose.Front.Eye, TCPose.Front.FocusPoint, false)); //enterance
+KeyframeColec.push(new CameraAniKey(203.65, TCPose.TopRightFar.Eye, TCPose.TopRightFar.FocusPoint, true)); 
+
+KeyframeColec.push(new CameraAniKey(203.75, TCPose.FrontFar.Eye, TCPose.FrontFar.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(204.4, TCPose.Front.Eye, TCPose.Front.FocusPoint, true)); //enterance
+KeyframeColec.push(new CameraAniKey(206.25, TCPose.TopRightFar.Eye, TCPose.TopRightFar.FocusPoint, true));
+
+KeyframeColec.push(new CameraAniKey(206.35, TCPose.FrontFar.Eye, TCPose.FrontFar.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(206.6, TCPose.SideRight2.Eye, TCPose.SideRight2.FocusPoint, false)); //glitch 
+KeyframeColec.push(new CameraAniKey(206.7, TCPose.Close.Eye, TCPose.Close.FocusPoint, true)); //glitch
+KeyframeColec.push(new CameraAniKey(207.0, TCPose.Front.Eye, TCPose.Front.FocusPoint, true)); //enterance
+KeyframeColec.push(new CameraAniKey(208.9, TCPose.TopRightFar.Eye, TCPose.TopRightFar.FocusPoint, true)); 
+
+KeyframeColec.push(new CameraAniKey(209.0, TCPose.FrontFar.Eye, TCPose.FrontFar.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(209.15, TCPose.SideRight2.Eye, TCPose.SideRight2.FocusPoint, true)); //glitch 
+KeyframeColec.push(new CameraAniKey(209.2, TCPose.Close.Eye, TCPose.Close.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(209.5, TCPose.SideRight2.Eye, TCPose.SideRight2.FocusPoint, false)); //glitch 
+KeyframeColec.push(new CameraAniKey(209.66, TCPose.Front.Eye, TCPose.Front.FocusPoint, false)); //enterance
+KeyframeColec.push(new CameraAniKey(211.53, TCPose.TopRightFar.Eye, TCPose.TopRightFar.FocusPoint, true)); 
+
+KeyframeColec.push(new CameraAniKey(211.63, TCPose.FrontFar.Eye, TCPose.FrontFar.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(211.88, TCPose.SideRight2.Eye, TCPose.SideRight2.FocusPoint, false)); //glitch 
+KeyframeColec.push(new CameraAniKey(212.0, TCPose.Close.Eye, TCPose.Close.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(212.3, TCPose.Front.Eye, TCPose.Front.FocusPoint, false)); //enterance
+KeyframeColec.push(new CameraAniKey(214.17, TCPose.TopRightFar.Eye, TCPose.TopRightFar.FocusPoint, true)); 
+
+KeyframeColec.push(new CameraAniKey(214.27, TCPose.FrontFar.Eye, TCPose.FrontFar.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(214.9, TCPose.Front.Eye, TCPose.Front.FocusPoint, true)); //enterance
+KeyframeColec.push(new CameraAniKey(216.8, TCPose.TopRightFar.Eye, TCPose.TopRightFar.FocusPoint, true));
+
+KeyframeColec.push(new CameraAniKey(216.9, TCPose.FrontFar.Eye, TCPose.FrontFar.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(217.2, TCPose.SideRight2.Eye, TCPose.SideRight2.FocusPoint, false)); //glitch 
+KeyframeColec.push(new CameraAniKey(217.3, TCPose.Close.Eye, TCPose.Close.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(217.5, TCPose.Front.Eye, TCPose.Front.FocusPoint, false)); //enterance
+KeyframeColec.push(new CameraAniKey(219.43, TCPose.TopRightFar.Eye, TCPose.TopRightFar.FocusPoint, true));
+
+KeyframeColec.push(new CameraAniKey(219.53, TCPose.FrontFar.Eye, TCPose.FrontFar.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(219.7, TCPose.SideRight2.Eye, TCPose.SideRight2.FocusPoint, true)); //glitch 
+KeyframeColec.push(new CameraAniKey(220.0, TCPose.Close.Eye, TCPose.Close.FocusPoint, true)); //glitch
+KeyframeColec.push(new CameraAniKey(220.2, TCPose.Front.Eye, TCPose.Front.FocusPoint, false)); //enterance
+KeyframeColec.push(new CameraAniKey(222.0, TCPose.TopRightFar.Eye, TCPose.TopRightFar.FocusPoint, true));
+
+KeyframeColec.push(new CameraAniKey(222.1, TCPose.FrontFar.Eye, TCPose.FrontFar.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(222.3, TCPose.SideRight2.Eye, TCPose.SideRight2.FocusPoint, false)); //glitch 
+KeyframeColec.push(new CameraAniKey(222.4, TCPose.Close.Eye, TCPose.Close.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(222.5, TCPose.Veins.Eye, TCPose.Veins.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(222.65, TCPose.BottomLeft.Eye, TCPose.BottomLeft.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(222.8, TCPose.Front.Eye, TCPose.Front.FocusPoint, false)); //enterance
+KeyframeColec.push(new CameraAniKey(224.65, TCPose.TopRightFar.Eye, TCPose.TopRightFar.FocusPoint, true));
+
+KeyframeColec.push(new CameraAniKey(224.75, TCPose.FrontFar.Eye, TCPose.FrontFar.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(225.0, TCPose.SideRight2.Eye, TCPose.SideRight2.FocusPoint, false)); //glitch 
+KeyframeColec.push(new CameraAniKey(225.1, TCPose.Close.Eye, TCPose.Close.FocusPoint, true)); //glitch
+KeyframeColec.push(new CameraAniKey(225.4, TCPose.Front.Eye, TCPose.Front.FocusPoint, false)); //enterance
+KeyframeColec.push(new CameraAniKey(227.25, TCPose.TopRightFar.Eye, TCPose.TopRightFar.FocusPoint, true));
+
+KeyframeColec.push(new CameraAniKey(227.35, TCPose.FrontFar.Eye, TCPose.FrontFar.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(227.7, TCPose.SideRight2.Eye, TCPose.SideRight2.FocusPoint, true)); //glitch 
+KeyframeColec.push(new CameraAniKey(227.8, TCPose.FrontFar.Eye, TCPose.FrontFar.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(227.86, TCPose.Veins.Eye, TCPose.Veins.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(227.92, TCPose.BottomLeft.Eye, TCPose.BottomLeft.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(227.95, TCPose.Veins.Eye, TCPose.Veins.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(228.0, TCPose.BottomLeft.Eye, TCPose.BottomLeft.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(228.05, TCPose.Veins.Eye, TCPose.Veins.FocusPoint, false)); //glitch
+KeyframeColec.push(new CameraAniKey(228.08, TCPose.Front.Eye, TCPose.Front.FocusPoint, false)); //enterance
+KeyframeColec.push(new CameraAniKey(229.9, TCPose.TopRightFar.Eye, TCPose.TopRightFar.FocusPoint, true));
+
+
+KeyframeColec.push(new CameraAniKey(243.0, TCPose.TopRightFar.Eye, TCPose.TopRightFar.FocusPoint, true)); //loop
+KeyframeColec.push(new CameraAniKey(261.0, TCPose.Veins.Eye, TCPose.Veins.FocusPoint, true)); //ending start
+KeyframeColec.push(new CameraAniKey(286.0, TCPose.BottomLeft.Eye, TCPose.BottomLeft.FocusPoint, true)); //end
+
+let TransformSongClip = new CameraAniClip(1.0, KeyframeColec, null);
+CamAniClips.push(TransformSongClip);
+>>>>>>> Stashed changes
     
     
    
