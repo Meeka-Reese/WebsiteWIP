@@ -2,12 +2,12 @@ import { mat4,vec3,vec4,quat } from './Externals/esm/index.js';
 import { loadTexture, LoadImage } from  './ShaderFunc.js';
 import { gGL, gTimeSinceRun } from './webgl-demo.js';
 import { CreateImageArray } from './ShaderFunc.js';
-import { Keyframe, Timeline, AnimationClip, CharClips} from './Animation.js';
+import { Keyframe, Timeline, AnimationClip, CharClips, gInitTransClip} from './Animation.js';
 import { lerp, Vec3ArrLerp} from './Utils.js';
 
 
 export class Bone {
-    constructor(Position, Scale, Rotation, ParentIndex, WeightMap, WeightMapArray, Index, Origin)
+    constructor(Position, Scale, Rotation, ParentIndex, WeightMap, WeightMapArray, Index, Origin, BoneName)
     {
         this.Position = Position;
         this.Scale = Scale;
@@ -18,6 +18,7 @@ export class Bone {
         let ModelMat = mat4.create();
         this.Index = Index;
         this.Origin = Origin;
+        this.BoneName = BoneName;
     }
     Transform(Position, Scale, Rotation)
     {
@@ -59,7 +60,7 @@ export class Armature{
         this.boneParentIndicies = [];
         this.StartTime = StartTime;
         this.AllClips = AllClips;
-        this.Timeline = new Timeline(StartTime);
+        this.Timeline = new Timeline(StartTime, gInitTransClip);
 
         this.VertWeightDataColec = VertWeightDataColec;
         this.WeightBuffer1 = null;
@@ -183,16 +184,17 @@ export class Armature{
         {
             let keyframe = this.Timeline.Keyframes[i];
             //console.log(keyframe.Time - keyframe.StartTime);
-            if (!(DeltaTime < keyframe.Time && DeltaTime > keyframe.StartTime)) {continue;}
+            if ((keyframe.Time + keyframe.StartTime) < DeltaTime) {continue;} // if end time is less than dela time continue
+            if ((keyframe.StartTime) > DeltaTime) {continue;} // if start is in the future continue
             let Alpha = keyframe.Time != 0 ? Math.min((DeltaTime - keyframe.StartTime) / (keyframe.Time - keyframe.StartTime), 1) : 1; // Alpha working
+            console.log(Alpha);
             
-            let ActiveBoneIndex = this.BoneStringColec.indexOf(keyframe.BoneName);
-            ActiveBone = this.BoneColec[ActiveBoneIndex];
-
-            let LastKeyframeColec = this.Timeline.KeyframeMap.get(keyframe.BoneName);
-            //console.log("Colec Length " + LastKeyframeColec.length);
-            let RecentKeyframe = null;
-            if (LastKeyframeColec != undefined) 
+            let ActiveBoneIndex = this.BoneStringColec.indexOf(keyframe.BoneName); //ind of bone in keyframe
+            ActiveBone = this.BoneColec[ActiveBoneIndex]; //bone in keyframe
+            //console.log(ActiveBone.BoneName);
+            let LastKeyframeColec = this.Timeline.KeyframeMap.get(keyframe.BoneName); // finding previous value for bone
+            let RecentKeyframe = null; //init val
+            if (LastKeyframeColec != undefined)  //if previous bone dict could be found (Should never be undefined)
             {
                 let RecentTime = 999999.99;
                 for (let i = 0; i < LastKeyframeColec.length; i++)
@@ -201,7 +203,7 @@ export class Armature{
                     if (DeltaKeyTime > 0.0 && DeltaKeyTime < RecentTime) {RecentKeyframe = LastKeyframeColec[i]; RecentTime = DeltaKeyTime;}
                 }
             }
-            if (RecentKeyframe == null) {console.warn("RECENT KEYFRAME IS NULL FOR " + ActiveBone.BoneName);}
+           // if (RecentKeyframe == null) {console.warn("RECENT KEYFRAME IS NULL FOR " + ActiveBone.BoneName);}
             if (keyframe.PreviousPos == null)
             {
                 keyframe.PreviousPos = RecentKeyframe == null ? ActiveBone.Position: RecentKeyframe.Position;
@@ -270,7 +272,7 @@ export async function LoadBones(MainDirectory, ImageNameColec, ParentColec) //Wo
         let WeightMap = await loadTexture(gGL, TotalDirectory);
         let WeightMapArray = await LoadImage(TotalDirectory);
         let Origin = vec3.fromValues(0.0,0.0,0.0);
-        let BoneInst = new Bone(Pos, Scale, Rot, null, WeightMap, WeightMapArray, i, Origin);
+        let BoneInst = new Bone(Pos, Scale, Rot, null, WeightMap, WeightMapArray, i, Origin, ImageNameColec[i]);
         BoneColec.push(BoneInst);//ImageNameColec[i], 
         BoneStringColec.push(ImageNameColec[i]);
     }

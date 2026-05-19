@@ -56,7 +56,7 @@ export class MidiObj
                         break;
                     case(61):
                         console.log("Tom");
-                        let PosBone = [-30.0 + Math.random()*60.0, -45.0 + Math.random()*60.0, -30.0 + Math.random()*60.0];
+                        let PosBone = [-30.0 + Math.random()*60.0, -40.0 + Math.random()*60.0, -30.0 + Math.random()*60.0];
                         let RotBone = [Math.random() * 90.0, Math.random() * 90.0, Math.random() * 90.0];
                         let SizeBone = 3.0;
                         let ScaleBone = [SizeBone, SizeBone, SizeBone];
@@ -71,7 +71,7 @@ export class MidiObj
                         break;
                     case(63):
                         console.log("Flower Spawn");
-                        let PosFlower = [-100.0 + Math.random()*200.0, -70.0 + Math.random()*10.0, -100.0 + Math.random()*200.0];
+                        let PosFlower = [-100.0 + Math.random()*200.0, -70.0 + Math.random()*10.0, 100.0 + (Math.random()*100.0)];
                         if (this.LastAlmondXZ != [0.0,0.0])
                         {
                             PosFlower = [this.LastAlmondXZ[0], PosFlower[1], this.LastAlmondXZ[1]]; 
@@ -92,7 +92,7 @@ export class MidiObj
                             Dir2Flower, Dir3Flower, Dir4Flower, Dir5Flower);
                         break;
                     case(64):
-                        let PosAlmond = [-100.0 + Math.random()*200.0, 200.0 + Math.random()*10.0, -100.0 + Math.random()*200.0];
+                        let PosAlmond = [-100.0 + Math.random()*200.0, 200.0 + Math.random()*6.0, 0.0 + Math.random()*130.0];
                         this.LastAlmondXZ = [PosAlmond[0], PosAlmond[2]];
                         let RotRandMagAlmond = 5.0;
                         let RotAlmond = [Math.random() * RotRandMagAlmond, Math.random() * RotRandMagAlmond, Math.random() * RotRandMagAlmond];

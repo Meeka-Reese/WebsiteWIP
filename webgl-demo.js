@@ -970,7 +970,7 @@ NewTime = gTime.getTime() * .001;
   LocTreeColec[9].Color = [.8,0.0,0.1, 1.0];
   
   let T11Scale = TreeScale * .9;
-  LocTreeColec[10].Position = [190.0,-80.0,100.0];
+  LocTreeColec[10].Position = [40.0,-80.0,100.0];
   LocTreeColec[10].Rotation = [-10.0,-10.0,-10.0];
   LocTreeColec[10].Scale = [T11Scale, T11Scale, T11Scale];
   LocTreeColec[10].Color = [.8,0.0,0.1, 1.0];
@@ -1442,6 +1442,10 @@ function Input()
     if (gKeysPressed['n']) { document.getElementById("PlayMusic").style.opacity = 0.0;}
     if (gKeysPressed['Tab'] && document.pointerLockElement === gCanvas){document.exitPointerLock();gKeysPressed['Tab'] = false;} // so I don't leave zoom callws :(
     if (gKeysPressed['h'] && gActiveMainLoop == AboutMeLoop) {document.getElementById("GoHome").style.opacity = 0.0; GoHome();}
+    if (gKeysPressed['x'] && gActiveMainLoop == TransformationLoop) {document.getElementById("ExitCam").style.opacity = 0.0; gCamera.ActiveAniClip = null;} //exit camera animation
+    if (gKeysPressed['i'] && gActiveMainLoop == TransformationLoop) {document.getElementById("ExitCam").style.opacity = 0.0;} //Hide Exit Message
+
+
 }
 function CheckRaycast(SelectColor, DeselectColor)
 {
@@ -1539,15 +1543,18 @@ function RaycastClick(Obj)
       TriggerAboutMeSong();
       break;
     case gHomeButton:
+        document.getElementById("ExitCam").style.opacity = 0.0;
         GoHome();
       break
     case gPauseButton:
+      document.getElementById("ExitCam").style.opacity = 0.0;
       console.log("Pausing");
       Sound1.pause();
       //Sound1.currentTime = 0;
       gMidiObj.StopMidi();
       break
     case gPlayButton:
+      document.getElementById("ExitCam").style.opacity = 1.0;
       console.log("Playing");
       PlayTransformSong();
       break
@@ -1981,6 +1988,13 @@ const TransformationLoop = ()=>
   
     StarLookAt(gFleshParticles, gCamera);
     Draw(gProgramInfoFleshPart, gFleshParticles, gCamera, gLight1);
+    if (gCamera.ActiveAniClip == null) //hide if playing camera animation
+    {
+      Draw(gProgramInfoDef, gHomeButton, gCamera,gLight1);
+      Draw(gProgramInfoDef, gPauseButton, gCamera,gLight1);
+      Draw(gProgramInfoDef, gPlayButton, gCamera,gLight1);
+      Draw(gProgramInfoDef, gUIBacking, gCamera,gLight1);
+    }
     
     gGL.disable(gGL.DEPTH_TEST);
     
@@ -1990,11 +2004,8 @@ const TransformationLoop = ()=>
     gGL.viewport(0, 0, gCanvasWidth, gCanvasHeight);
     Draw(gProgramInfoPostProcessingFlesh, gPostProcessingQuad, gCamera, gLight1, null, gMidiObj);
     gGL.enable(gGL.DEPTH_TEST);
-    Draw(gProgramInfoDef, gHomeButton, gCamera,gLight1);
-  Draw(gProgramInfoDef, gPauseButton, gCamera,gLight1);
-  Draw(gProgramInfoDef, gPlayButton, gCamera,gLight1);
-  Draw(gProgramInfoDef, gUIBacking, gCamera,gLight1);
-    if (document.pointerLockElement === gCanvas)
+    
+    if (document.pointerLockElement === gCanvas && gCamera.ActiveAniClip == null) //hide if playing camera ani or no pointerlock
     {
       Draw(gProgramInfoScreenImage, gCrossHair, gCamera, gLight1);
     }

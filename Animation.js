@@ -1,4 +1,5 @@
 import { gTimeSinceRun } from "./webgl-demo.js";
+export let gInitTransClip = [];
 export class Keyframe
 {
     constructor(StartTime, Time, Position, Rotation, Scale, BoneName)
@@ -16,13 +17,14 @@ export class Keyframe
 }
 export class Timeline
 {
-    constructor(StartTime)
+    constructor(StartTime, InitClip)
     {
         this.AnimationClips = [];
         this.Keyframes = [];
         this.KeyframeMap = new Map();
         this.StartTime = StartTime;
         this.setKeyframes(this.StartTime);
+        this.InitClip = InitClip;
     }
     addAnimationClip(Clip)
     {
@@ -108,6 +110,21 @@ export class Timeline
             this.KeyframeMap.get(ActiveBoneName).push(ActiveKeyframe);
         }
     }
+    for (let i = 0; i < this.InitClip.length; i++)
+    {
+        ActiveKeyframe = this.InitClip[i];
+        ActiveBoneName = ActiveKeyframe.BoneName;
+
+        if (!this.KeyframeMap.has(ActiveBoneName))
+        {
+            let KeyframeColec = [this.InitClip[i]];
+            this.KeyframeMap.set(ActiveBoneName, KeyframeColec);
+        }
+        else
+        {
+            this.KeyframeMap.get(ActiveBoneName).push(ActiveKeyframe);
+        }
+    }
 
     console.log(`setKeyframes complete | total keyframes: ${this.Keyframes.length}`);
     }
@@ -162,6 +179,28 @@ export class CharClips
 
         let WalkCyleColec = [];
         let Ws = .1; //Walk Speed
+
+        k1  = new Keyframe(0.0, 0.0, [0.0,0.0,0.0], [0.0,0.0,0.0], [1.0,1.0,1.0], "Torso");
+        k2  = new Keyframe(0.0, 0.0, [0.0,0.0,0.0], [0.0,0.0,0.0], [1.0,1.0,1.0], "Chest");
+        k3  = new Keyframe(0.0, 0.0, [0.0,0.0,0.0], [0.0,0.0,0.0], [1.0,1.0,1.0], "LShould");
+        k4  = new Keyframe(0.0, 0.0, [0.0,0.0,0.0], [0.0,0.0,0.0], [1.0,1.0,1.0], "LForearm");
+        k5  = new Keyframe(0.0, 0.0, [0.0,0.0,0.0], [0.0,0.0,0.0], [1.0,1.0,1.0], "LArm");
+        k6  = new Keyframe(0.0, 0.0, [0.0,0.0,0.0], [0.0,0.0,0.0], [1.0,1.0,1.0], "LHand");
+        k7  = new Keyframe(0.0, 0.0, [0.0,0.0,0.0], [0.0,0.0,0.0], [1.0,1.0,1.0], "RShould");
+        k8  = new Keyframe(0.0, 0.0, [0.0,0.0,0.0], [0.0,0.0,0.0], [1.0,1.0,1.0], "RForearm");
+        k9  = new Keyframe(0.0, 0.0, [0.0,0.0,0.0], [0.0,0.0,0.0], [1.0,1.0,1.0], "RArm");
+        k10 = new Keyframe(0.0, 0.0, [0.0,0.0,0.0], [0.0,0.0,0.0], [1.0,1.0,1.0], "RHand");
+        k11 = new Keyframe(0.0, 0.0, [0.0,0.0,0.0], [0.0,0.0,0.0], [1.0,1.0,1.0], "Head");
+        k12 = new Keyframe(0.0, 0.0, [0.0,0.0,0.0], [0.0,0.0,0.0], [1.0,1.0,1.0], "WaistL");
+        k13 = new Keyframe(0.0, 0.0, [0.0,0.0,0.0], [0.0,0.0,0.0], [1.0,1.0,1.0], "ThighL");
+        k14 = new Keyframe(0.0, 0.0, [0.0,0.0,0.0], [0.0,0.0,0.0], [1.0,1.0,1.0], "CalfL");
+        k15 = new Keyframe(0.0, 0.0, [0.0,0.0,0.0], [0.0,0.0,0.0], [1.0,1.0,1.0], "FootL");
+        k16 = new Keyframe(0.0, 0.0, [0.0,0.0,0.0], [0.0,0.0,0.0], [1.0,1.0,1.0], "WaistR");
+        k17 = new Keyframe(0.0, 0.0, [0.0,0.0,0.0], [0.0,0.0,0.0], [1.0,1.0,1.0], "ThighR");
+        k18 = new Keyframe(0.0, 0.0, [0.0,0.0,0.0], [0.0,0.0,0.0], [1.0,1.0,1.0], "CalfR");
+        k19 = new Keyframe(0.0, 0.0, [0.0,0.0,0.0], [0.0,0.0,0.0], [1.0,1.0,1.0], "FootR");
+        k20 = new Keyframe(0.0, 0.0, [0.0,0.0,0.0], [0.0,0.0,0.0], [1.0,1.0,1.0], "Head.001");
+        gInitTransClip.push(k1, k2, k3, k4, k5, k6, k7, k8, k9, k10, k11, k12, k13, k14, k15, k16, k17, k18, k19, k20);
 
         //Loop Around Pos
       //Loop Around Pos
