@@ -41,8 +41,8 @@
 #Gif {
   display: block;
   position: fixed;
-  top: 20vh !important;
-  left: 25vw !important;
+  top: 20vh;
+  left: 25vw;
   width:50vw;
   height:50vh / 50vw; 
   image-rendering: pixelated;
@@ -52,16 +52,16 @@
 #LoadTxt{
   display: block;
   position: fixed;
-  top: 50vh !important;
-  left: 18vw !important;
+  top: 50vh;
+  left: 18vw;
   font-size: 20vw;  
   color: white;
   z-index: 6;
 }
 #PlayMusic{
   position: fixed;
-    top: 0px !important;
-    left: 0px !important;
+    top: 0px;
+    left: 0px;
     font-size: max(4vw, 4vh);
     width: min(50vw, 40%);
     height: 15vw;
@@ -72,8 +72,8 @@
 }
 #GoHome{
   position: fixed;
-    top: 0px !important;
-    left: 0px !important;
+    top: 0px;
+    left: 0px;
     font-size: max(4vw, 4vh);
     width: min(50vw, 40%);
     height: 10vw;
@@ -85,10 +85,10 @@
 #ExitCam
 {
   position: fixed;
-  top: 0px !important;
-  left: 0px !important;
-  font-size: max(4vw, 4vh);
-  width: min(50vw, 40%);
+  top: 0px;
+  left: 0px;
+  font-size: max(50px, 50px);
+  width: min(50%, 40%);
   height: 10vw;
   color: white;
   background-color: #00000055;
