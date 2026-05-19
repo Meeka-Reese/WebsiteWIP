@@ -899,8 +899,8 @@ NewTime = gTime.getTime() * .001;
   gPauseButton.Scale = [1.0, 1.0, 1.0];
   gPauseButton.Color = [.8, .8, .8, 1.0];
 
-  gUIBacking.Position = [120.0,0.0,0.0];
-  gUIBacking.Rotation = [0.0,180.0,0.0];
+  gUIBacking.Position = [160.0,0.0,0.0];
+  gUIBacking.Rotation = [0.0,90.0,0.0];
   gUIBacking.Scale = [UIScale, UIScale, UIScale];
   gUIBacking.Color = [.8, .1, .2, 1.0];
 
@@ -1500,6 +1500,12 @@ else if(gActiveMainLoop == TransformationLoop)
 }
 function RaycastClick(Obj)
 {
+  let DeselectColor = [.2,.2,.5,1.0];
+  gRaycastIndex = -1;
+  for (let Obj of gRaycastColecTransform)//reset all to deselect color
+    {
+      Obj.Color = DeselectColor;
+    }
   switch(Obj){
     case gOpt1:
       gActiveMainLoop = TransformationLoop;
@@ -1545,6 +1551,10 @@ function RaycastClick(Obj)
       console.log("Playing");
       PlayTransformSong();
       break
+    case gCamAniOn: //not set up yet
+      gCamera.ActiveAniClip = CamAniClips[0]; //Step 1 attatch camera aniclip to camera
+      CamAniClips[0].ConnectedCamera = gCamera; //Step 2 assign attatched camera to ani clip
+      break;
     default:
       break;
   }
@@ -1571,6 +1581,9 @@ async function PlayTransformSong()
     //Sound1.currentTime = 0;
     Sound1.play();
     gMidiObj.StartMidi();
+    gCamera.ActiveAniClip = CamAniClips[0];
+    CamAniClips[0].ConnectedCamera = gCamera;
+
 }
 function ClickFunc(event)
 {
@@ -1646,7 +1659,7 @@ const MainLoop = ()=>
 
     Input();
     gMouseMoved = Math.abs(gDeltaMouse[0]) + Math.abs(gDeltaMouse[1]) >= .001 ? true : false;
-    MouseLook(gCamera, gDeltaMouse, gDeltaTime);
+    MouseLook(gCamera, gDeltaMouse, );
     if (gFrameCount % 2 == 0)
     {
       WaveUpdateMesh(gSimpleWave, 1.0);
@@ -1662,7 +1675,6 @@ const MainLoop = ()=>
       let ViewMat = GetViewMatrix(gCamera);
       
       MainThemeObj.SetPan(ViewMat, gAudioContext.currentTime);
-
 
 
       //======================RENDER RAYCAST============================
@@ -1789,7 +1801,7 @@ const TransformationLoop = ()=>
 {
   gTime = new Date();
   let newTime = gTime.getTime();
-  gDeltaTime = newTime- gPreviousTime;
+  gDeltaTime = newTime - gPreviousTime;
   gTimeSinceRun = newTime - gTimeStart;
   gPreviousTime = newTime;
   
@@ -1806,6 +1818,18 @@ const TransformationLoop = ()=>
   gFleshGroundL.lightness = gMidiObj.ccVals[1];
   gFleshGroundR.lightness = gMidiObj.ccVals[1];
   gFleshParticles.Position[1] = -300.0 + (Math.abs(gSinView[Math.floor(gTimeSinceRun * .24) % WAVE_BUFFER_SIZE]) + gCharTrans.Position[1]) * 50.0;
+  console.log(" Elapsed Time " + Sound1.currentTime);
+  if (gCamera.ActiveAniClip != null) //Camera Animation
+      {
+        if (gCamera.ActiveAniClip.Running == false)
+        {
+          gCamera.ActiveAniClip.Run(newTime * .001)
+        }
+        else
+        {
+          gCamera.ActiveAniClip.UpdateCam(newTime * .001);
+        }
+      }
   //======================RENDER RAYCAST============================
   ClearFBO(null, gGL);
   ClearFBO(gMainFBO, gGL);
