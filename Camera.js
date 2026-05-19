@@ -257,13 +257,12 @@ export class CameraAniKey
 //the connected camera is set as null by init but should be set to camera whenever it is connected
 export let CamAniClips = [];
 let KeyframeColec = [];
-<<<<<<< Updated upstream
 let K1 = new CameraAniKey(0.0, [0.0,0.0,0.0], [0.0,0.0,0.0]);
 let K2 = new CameraAniKey(10.0, [10.0, -10.0, 50.0], [100.0, -50.0, 10.0]);
 KeyframeColec.push(K1, K2);
 let TestClip = new CameraAniClip(1.0, KeyframeColec, null);
 CamAniClips.push(TestClip);
-=======
+
 let TCPose = {
     FrontFar: {Eye: [49.0,219.0,-669.0], FocusPoint: [0.0,5.0,0.0]},
     Front: {Eye: [-119.96, 67.3, -139.2], FocusPoint: [0.0,20.0,0.0]},
@@ -435,7 +434,7 @@ KeyframeColec.push(new CameraAniKey(286.0, TCPose.BottomLeft.Eye, TCPose.BottomL
 
 let TransformSongClip = new CameraAniClip(1.0, KeyframeColec, null);
 CamAniClips.push(TransformSongClip);
->>>>>>> Stashed changes
+
     
     
    
