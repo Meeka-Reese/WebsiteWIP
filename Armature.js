@@ -187,7 +187,7 @@ export class Armature{
             if ((keyframe.Time + keyframe.StartTime) < DeltaTime) {continue;} // if end time is less than dela time continue
             if ((keyframe.StartTime) > DeltaTime) {continue;} // if start is in the future continue
             let Alpha = keyframe.Time != 0 ? Math.min((DeltaTime - keyframe.StartTime) / (keyframe.Time - keyframe.StartTime), 1) : 1; // Alpha working
-           // console.log(Alpha);
+            console.log(Alpha);
             
             let ActiveBoneIndex = this.BoneStringColec.indexOf(keyframe.BoneName); //ind of bone in keyframe
             ActiveBone = this.BoneColec[ActiveBoneIndex]; //bone in keyframe

@@ -92,7 +92,7 @@ export class MidiObj
                             Dir2Flower, Dir3Flower, Dir4Flower, Dir5Flower);
                         break;
                     case(64):
-                        let PosAlmond = [-100.0 + Math.random()*200.0, 200.0 + Math.random()*6.0, 0.0 + Math.random()*130.0];
+                        let PosAlmond = [-100.0 + Math.random()*200.0, 180.0 + Math.random()*6.0, 0.0 + Math.random()*130.0];
                         this.LastAlmondXZ = [PosAlmond[0], PosAlmond[2]];
                         let RotRandMagAlmond = 5.0;
                         let RotAlmond = [Math.random() * RotRandMagAlmond, Math.random() * RotRandMagAlmond, Math.random() * RotRandMagAlmond];
