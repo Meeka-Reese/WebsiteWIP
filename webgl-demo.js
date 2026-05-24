@@ -1684,9 +1684,7 @@ const MainLoop = ()=>
 
     Input();
     gMouseMoved = Math.abs(gDeltaMouse[0]) + Math.abs(gDeltaMouse[1]) >= .001 ? true : false;
-    let LocDeltMouse = gIsMobile ? gTouchDelta : gDeltaMouse;
-    //console.log(LocDeltMouse);
-    //gTouchDelta = [0.0,0.0]; // Reset touch
+    let LocDeltMouse = gIsMobile ? gTouchDelta : gDeltaMouse; //Mobile touch not set up yet 
     MouseLook(gCamera, LocDeltMouse);
     if (gFrameCount % 2 == 0)
     {
@@ -1835,7 +1833,8 @@ const TransformationLoop = ()=>
   
 
   Input();
-  MouseLook(gCamera, gDeltaMouse, gDeltaTime);
+  let LocDeltMouse = gIsMobile ? gTouchDelta : gDeltaMouse; //Mobile touch not set up yet 
+  MouseLook(gCamera, LocDeltMouse);
   //Animation
   gCharArmature.ApplyAnimation(gTimeSinceRun * .001);
   gScreenSpaceQuadTrans.lightness = gMidiObj.ccVals[1];
@@ -2074,7 +2073,8 @@ const AboutMeLoop = async ()=>
 
     Input();
     gMouseMoved = Math.abs(gDeltaMouse[0]) + Math.abs(gDeltaMouse[1]) >= .001 ? true : false;
-    MouseLook(gCamera, gDeltaMouse, gDeltaTime);
+    let LocDeltMouse = gIsMobile ? gTouchDelta : gDeltaMouse; //Mobile touch not set up yet 
+    MouseLook(gCamera, LocDeltMouse);
     
       //Animation
       let initPos = gGameAudioText.Position[0];
@@ -2269,6 +2269,13 @@ main();
 
 async function main() {
   gIsMobile = MobileCheck();
+  if (gIsMobile) 
+  {
+    document.getElementById("GoHome").style.opacity = 0.0;
+    document.getElementById("LoadTxt").style.opacity = 0.0;
+    document.getElementById("MobileInfo").style.opacity = 1.0;
+    return;
+  }
   let LoadTxt = document.getElementById("LoadTxt");
   LoadTxt.style.color = '#990000'; 
   document.getElementById("Gif").style.opacity = 1.0;

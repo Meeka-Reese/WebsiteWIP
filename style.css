@@ -96,6 +96,17 @@
   z-index: 7;
 }
 
+#MobileInfo
+{
+  display: block;
+  position: fixed;
+  top: 50vh;
+  left: 10vw;
+  font-size: 10vw;  
+  color: white;
+  z-index: 6;
+}
+
 
 html, body {
   margin: 0;
