@@ -138,7 +138,7 @@ let gConditions =
 
 
 //Transformation Scene
-let gCharTrans, gCharHairTrans, gFleshGroundL, gFleshGroundR, gFlower, gBloodCloud
+let gCharTrans, gCharHairTrans, gFleshGroundL, gFleshGroundR, gFlower
 ,gScreenSpaceQuadTrans, gPostProcessingQuad, gHomeButton, gPlayButton, gPauseButton, gUIBacking, gAtSign; 
 let gCharBoneColec = [];
 let gCharArmature;
@@ -501,17 +501,12 @@ async function SetUpScene()
 ]);
    const assets = [
     {key: 'cube1', path: './models/Cube.obj'},
-    {key: 'cube2', path: './models/Cube.obj'},
-    {key: 'cube3', path: './models/Cube.obj'},
-    {key: 'cube4', path: './models/Cube.obj'},
     {key: 'sailBoatLP', path: './models/SailBoatLP.obj'},
     {key: 'sphereLP', path: './models/SphereLP.obj'},
     {key: 'spellCircle1LP', path: './models/SpellCircleLP.obj'},
-    {key: 'spellCircle2LP', path: './models/SpellCircleLP.obj'},
     {key: 'spellCircleVolumeLP', path: './models/SpellCircleVolumeLP.obj'},
     {key: 'maskCircleLP', path: './models/MaskCircleLP.obj'},
     {key: 'arrow1LP', path: './models/ArrowLP.obj'},
-    {key: 'arrow2LP', path: './models/ArrowLP.obj'},
     {key: 'charHead', path: './models/CharHead.obj'},
     {key: 'atSign', path: './models/AtSign.obj'},
     {key: 'charHairLP', path: './models/CharHairLP.obj'},//end main scene (little overlap ofc)
@@ -527,27 +522,7 @@ async function SetUpScene()
     {key: 'pause', path: './models/Pause.obj'},
     {key: 'uiBacking', path: './models/UIBacking.obj'},
     {key: 'veinThick1', path: './models/VeinsThick.obj'},
-    {key: 'veinThick2', path: './models/VeinsThick2.obj'},
-    {key: 'veinThick3', path: './models/VeinsThick.obj'},
-    {key: 'veinThick4', path: './models/VeinsThick2.obj'},
-    {key: 'veinThick5', path: './models/VeinsThick.obj'},
-    {key: 'veinThick6', path: './models/VeinsThick2.obj'},
-    {key: 'veinThick7', path: './models/VeinsThick.obj'},
-    {key: 'veinThick8', path: './models/VeinsThick2.obj'},
-    {key: 'veinThick9', path: './models/VeinsThick.obj'},
-    {key: 'veinThick10', path: './models/VeinsThick2.obj'},
-    {key: 'veinThick11', path: './models/VeinsThick.obj'},
     {key: 'veinThin1', path: './models/VeinsThin.obj'},
-    {key: 'veinThin2', path: './models/VeinsThin2.obj'},
-    {key: 'veinThin3', path: './models/VeinsThin.obj'},
-    {key: 'veinThin4', path: './models/VeinsThin2.obj'},
-    {key: 'veinThin5', path: './models/VeinsThin.obj'},
-    {key: 'veinThin6', path: './models/VeinsThin2.obj'},
-    {key: 'veinThin7', path: './models/VeinsThin.obj'},
-    {key: 'veinThin8', path: './models/VeinsThin2.obj'},
-    {key: 'veinThin9', path: './models/VeinsThin.obj'},
-    {key: 'veinThin10', path: './models/VeinsThin2.obj'},
-    {key: 'veinThin11', path: './models/VeinsThin.obj'},
     {key: 'commissionsText', path: './models/CommissionsText.obj'},
     {key: 'gameAudioText', path: './models/GameAudioText.obj'},
     {key: 'soundDesignText', path: './models/SoundDesignText.obj'},
@@ -560,22 +535,20 @@ async function SetUpScene()
    const results = await Promise.all(
     assets.map(a => LoadOBJ(gGL, a.path))
 );
-  const [cube1, cube2, cube3, cube4, sailBoatLP, sphereLP, spellCircle1LP, spellCircle2LP, spellCircleVolumeLP,
-        maskCircleLP, arrow1LP, arrow2LP, charHead, atSign, charHairLP, charFullBodyUp, charHairTrans, fleshCube, 
-        flowerBloom, flowerStem, flowerBud, flowerWilting, home, play, pause, uiBacking, veinThick1, veinThick2,
-        veinThick3, veinThick4, veinThick5, veinThick6, veinThick7, veinThick8, veinThick9, veinThick10, veinThick11, 
-      veinThin1, veinThin2, veinThin3,veinThin4,veinThin5,veinThin6,veinThin7,veinThin8,veinThin9,veinThin10,veinThin11,
-      commissionsText, gameAudioText, soundDesignText, visualsText, contactText, star] = results;
+  const [cube1, sailBoatLP, sphereLP, spellCircle1LP, spellCircleVolumeLP,
+        maskCircleLP, arrow1LP, charHead, atSign, charHairLP, charFullBodyUp, charHairTrans, fleshCube, 
+        flowerBloom, flowerStem, flowerBud, flowerWilting, home, play, pause, uiBacking, veinThick1,
+      veinThin1, commissionsText, gameAudioText, soundDesignText, visualsText, contactText, star] = results;
    LoadTxt.style.color = '#fbff00';
    gTime = new Date();
    let NewTime = gTime.getTime() * .001;
    let DeltaTime = NewTime - initTime;
    initTime = NewTime;
-   console.log("Time to load Textures : " + DeltaTime);
+   console.log("Time to load Models and Textures : " + DeltaTime);
    //===================================OBJECTS========================================
   
    
-   gNoiseCube = cube1;
+   gNoiseCube = Object.assign({}, cube1);
    gNoiseCube.Texture3D = Noise3DText;
    gNoiseCube.Texture = CloudDetailNoiseText;
    gNoiseCube.TextureBN = BlueNoiseText;
@@ -586,20 +559,20 @@ async function SetUpScene()
   gMoon = sphereLP;
   gMoon.Texture = MoonText;
 
-  gSpellCircle = spellCircle1LP;
+  gSpellCircle = Object.assign({}, spellCircle1LP);
   gSpellCircle.Color = [0.5,.8,1.0,.3];
 
   gSpellCircleVolume = spellCircleVolumeLP;
   gSpellCircleVolume.Texture = CloudDetailNoiseText;
 
-  gSpellCircleOutline = spellCircle2LP;
+  gSpellCircleOutline = Object.assign({}, spellCircle1LP);
 
   gCircleMask = maskCircleLP;
   gCircleMask.Color = [1.0,1.0,1.0,0.0];
 
-  gOpt1 = arrow1LP;
+  gOpt1 = Object.assign({}, arrow1LP);
 
-  gOpt2 = arrow2LP;
+  gOpt2 = Object.assign({}, arrow1LP);
 
   gCharHead = charHead;
   gCharHead.Texture = GirlText;
@@ -610,11 +583,11 @@ async function SetUpScene()
  gAtSign = atSign;
 
 
-  gGlassSphere = cube2; // used for volume of raymarch sphere
+  gGlassSphere = Object.assign({}, cube1); // used for volume of raymarch sphere
   gGlassSphere.Normal = GlassNoiseNormText;
   gGlassSphere.Displacement = GlassDisplacementText;
 
-  gGlassSphere2 = cube3;
+  gGlassSphere2 = Object.assign({}, cube1);
   gGlassSphere2.Normal = GlassNoiseNormText;
   gGlassSphere2.Displacement = GlassDisplacementText;
 
@@ -665,56 +638,52 @@ async function SetUpScene()
 
   let LocTreeColec = new Array(11);
 
-      LocTreeColec[0] = veinThin1; //Vein opt 1
+      LocTreeColec[0] = Object.assign({}, veinThin1); //Vein opt 1
       LocTreeColec[0].TextureBN = VeinTree1Text; //need to set morph
       LocTreeColec[0].Texture = VeinTree1Text;
-      LocTreeColec[0].vertexBuffer2 = veinThick1.vertexBuffer;
-      LocTreeColec[1] = veinThin2; // Vein opt 2
+      LocTreeColec[0].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
+      LocTreeColec[1] = Object.assign({}, veinThin1); // Vein opt 2
       LocTreeColec[1].TextureBN = VeinTree2Text; //need to set morph
       LocTreeColec[1].Texture = VeinTree2Text;
-      LocTreeColec[1].vertexBuffer2 = veinThick2.vertexBuffer;
-      LocTreeColec[2] = veinThin3; // Vein opt 2
+      LocTreeColec[1].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
+      LocTreeColec[2] = Object.assign({}, veinThin1); // Vein opt 2
       LocTreeColec[2].TextureBN = VeinTree2Text; //need to set morph
       LocTreeColec[2].Texture = VeinTree1Text;
-      LocTreeColec[2].vertexBuffer2 = veinThick3.vertexBuffer;
-      LocTreeColec[3] = veinThin4; // Vein opt 2
+      LocTreeColec[2].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
+      LocTreeColec[3] = Object.assign({}, veinThin1); // Vein opt 2
       LocTreeColec[3].TextureBN = VeinTree2Text; //need to set morph
       LocTreeColec[3].Texture = VeinTree2Text;
-      LocTreeColec[3].vertexBuffer2 = veinThick4.vertexBuffer;
-      LocTreeColec[4] = veinThin5; // Vein opt 2
+      LocTreeColec[3].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
+      LocTreeColec[4] = Object.assign({}, veinThin1); // Vein opt 2
       LocTreeColec[4].TextureBN = VeinTree2Text; //need to set morph
       LocTreeColec[4].Texture = VeinTree1Text;
-      LocTreeColec[4].vertexBuffer2 = veinThick5.vertexBuffer;
-      LocTreeColec[5] = veinThin6; // Vein opt 2
+      LocTreeColec[4].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
+      LocTreeColec[5] = Object.assign({}, veinThin1); // Vein opt 2
       LocTreeColec[5].TextureBN = VeinTree2Text; //need to set morph
       LocTreeColec[5].Texture = VeinTree2Text;
-      LocTreeColec[5].vertexBuffer2 = veinThick6.vertexBuffer;
-      LocTreeColec[6] = veinThin7; // Vein opt 2
+      LocTreeColec[5].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
+      LocTreeColec[6] = Object.assign({}, veinThin1); // Vein opt 2
       LocTreeColec[6].TextureBN = VeinTree2Text; //need to set morph
       LocTreeColec[6].Texture = VeinTree1Text;
-      LocTreeColec[6].vertexBuffer2 = veinThick7.vertexBuffer;
-      LocTreeColec[7] = veinThin8; // Vein opt 2
+      LocTreeColec[6].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
+      LocTreeColec[7] = Object.assign({}, veinThin1); // Vein opt 2
       LocTreeColec[7].TextureBN = VeinTree2Text; //need to set morph
       LocTreeColec[7].Texture = VeinTree2Text;
-      LocTreeColec[7].vertexBuffer2 = veinThick8.vertexBuffer;
-      LocTreeColec[8] = veinThin9; // Vein opt 2
+      LocTreeColec[7].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
+      LocTreeColec[8] = Object.assign({}, veinThin1); // Vein opt 2
       LocTreeColec[8].TextureBN = VeinTree2Text; //need to set morph
       LocTreeColec[8].Texture = VeinTree1Text;
-      LocTreeColec[8].vertexBuffer2 = veinThick9.vertexBuffer;
-      LocTreeColec[9] = veinThin10; // Vein opt 2
+      LocTreeColec[8].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
+      LocTreeColec[9] = Object.assign({}, veinThin1); // Vein opt 2
       LocTreeColec[9].TextureBN = VeinTree2Text; //need to set morph
       LocTreeColec[9].Texture = VeinTree2Text;
-      LocTreeColec[9].vertexBuffer2 = veinThick10.vertexBuffer;
-      LocTreeColec[10] = veinThin11; // Vein opt 2
+      LocTreeColec[9].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
+      LocTreeColec[10] = Object.assign({}, veinThin1); // Vein opt 2
       LocTreeColec[10].TextureBN = VeinTree2Text; //need to set morph
       LocTreeColec[10].Texture = VeinTree1Text;
-      LocTreeColec[10].vertexBuffer2 = veinThick11.vertexBuffer;
+      LocTreeColec[10].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
 
 
-  gBloodCloud = cube4;
-  gBloodCloud.Texture3D = Noise3DText;
-  gBloodCloud.Texture = CloudDetailNoiseText;
-  gBloodCloud.TextureBN = BlueNoiseText;
 
   gScreenSpaceQuadTrans.Texture = GlassDisplacementText;
   gScreenSpaceQuadTrans.TextureBN = GirlFullText;
@@ -884,11 +853,6 @@ NewTime = gTime.getTime() * .001;
   gFlower.Position = [0.0,0.0,30.0];
   gFlower.Rotation = [0.0,0.0,0.0];
   gFlower.Scale = [3.0, 3.0, 3.0];
-
-  let gBloodCloudSize = 150.0;
-  gBloodCloud.Rotation = [0.0,0.0,0.0];
-  gBloodCloud.Position = [50.0,50.0,40.0];
-  gBloodCloud.Scale = [gBloodCloudSize,gBloodCloudSize,gBloodCloudSize];
 
   let UIScale = 10.0;
   gHomeButton.Position = [0.0, 0.0, 2.75];
@@ -1607,7 +1571,7 @@ async function PlayTransformSong()
     gCamera.ActiveAniClip = CamAniClips[0];
     CamAniClips[0].ConnectedCamera = gCamera;
     gCapturer.start();
-    gIsRecording = true;
+    //gIsRecording = true; //Turnon to enable recording
 
 }
 function ClickFunc(event)
@@ -1894,7 +1858,6 @@ const TransformationLoop = ()=>
   gGL.bindFramebuffer(gGL.FRAMEBUFFER, gMainFBO);  
   //Set depth texture
   gGL.clear(gGL.DEPTH_BUFFER_BIT); 
-  gBloodCloud.DepthTexture = gDepthMap;
   //
 
   //======================RENDER BLOOM============================
@@ -2331,7 +2294,6 @@ async function main() {
   gFragElenco = await loadShaderFiles(gFragElenco, './Shaders/ElencoScreenFrag.glsl');
   gFragMorph = await loadShaderFiles(gFragMorph, './Shaders/MorphFrag.glsl');
   gFragTreeMorph = await loadShaderFiles(gFragTreeMorph, './Shaders/TreeMorphFrag.glsl');
-  gFragBloodCloud = await loadShaderFiles(gFragBloodCloud, './Shaders/BloodCloudFrag.glsl');
   gFragScreenBGTrans = await loadShaderFiles(gFragScreenBGTrans, './Shaders/ScreenBGFrag.glsl');
   gFragPostProcessingFlesh = await loadShaderFiles(gFragPostProcessingFlesh, './Shaders/PostProcessingFleshFrag.glsl');
   gFragPostProcessingAndrew = await loadShaderFiles(gFragPostProcessingAndrew, './Shaders/PostProcessingAndrewFrag.glsl');
@@ -2358,7 +2320,6 @@ async function main() {
   gShaderProgramElenco = initShader(gGL, gVertSkybox, gFragElenco);
   gShaderProgramMorph = initShader(gGL, gVertMorph, gFragMorph);
   gShaderProgramTreeMorph = initShader(gGL, gVertTreeMorph, gFragTreeMorph);
-  gShaderProgramBloodCloud = initShader(gGL, gVertSourceDef, gFragBloodCloud);
   gShaderProgramScreenBGTrans = initShader(gGL, gVertSkybox, gFragScreenBGTrans);
   gShaderProgramPostProcessingFlesh = initShader(gGL, gVertSkybox, gFragPostProcessingFlesh);
   gShaderProgramGLTFDef = initShader(gGL, gVertGLTFDef, gFragSourceFlat);
@@ -2389,7 +2350,6 @@ async function main() {
      gProgramInfoFleshPart, gShaderProgramFleshPart,
      gProgramInfoMorph, gShaderProgramMorph,
      gProgramInfoTreeMorph, gShaderProgramTreeMorph,
-     gProgramInfoBloodCloud, gShaderProgramBloodCloud,
      gProgramInfoScreenBGTrans, gShaderProgramScreenBGTrans,
      gProgramInfoPostProcessingFlesh, gShaderProgramPostProcessingFlesh,
      gProgramInfoGLTFDef, gShaderProgramGLTFDef,

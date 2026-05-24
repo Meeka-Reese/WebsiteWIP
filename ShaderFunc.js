@@ -16,7 +16,6 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
     ProgramInfoFleshPart, ShaderProgramFleshPart,
     ProgramInfoMorph, ShaderProgramMorph,
     ProgramInfoTreeMorph, ShaderProgramTreeMorph,
-    ProgramInfoBloodCloud, ShaderProgramBloodCloud,
     ProgramInfoScreenBGTrans, ShaderProgramScreenBGTrans,
     ProgramInfoPostProcessingFlesh, ShaderProgramPostProcessingFlesh,
     ProgramInfoGLTFDef, ShaderProgramGLTFDef,
@@ -352,26 +351,6 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         alpha: GL.getUniformLocation(ShaderProgramTreeMorph, "Alpha"),
         time: GL.getUniformLocation(ShaderProgramTreeMorph, "Time"),
         lightness: GL.getUniformLocation(ShaderProgramTreeMorph, "Lightness"),
-    };
-
-    ProgramInfoBloodCloud.program = ShaderProgramBloodCloud;
-    ProgramInfoBloodCloud.attribLocations = {
-        vertexPosition: GL.getAttribLocation(ShaderProgramBloodCloud, "aVertPos"),
-        normalPosition: GL.getAttribLocation(ShaderProgramBloodCloud, "aNorm"),
-        UVPosition: GL.getAttribLocation(ShaderProgramBloodCloud, "aUVCord"),
-    };
-    ProgramInfoBloodCloud.uniformLocations = {
-        projectionMatrix: GL.getUniformLocation(ShaderProgramBloodCloud, "uProjMatrix"),
-        ViewMatrix: GL.getUniformLocation(ShaderProgramBloodCloud, "uViewMatrix"),
-        modelMatrix: GL.getUniformLocation(ShaderProgramBloodCloud, "uModelMatrix"),
-        texture: GL.getUniformLocation(ShaderProgramBloodCloud, "uTexture"),
-        textureBN: GL.getUniformLocation(ShaderProgramBloodCloud, "uTextureBlueNoise"),
-        texture3D: GL.getUniformLocation(ShaderProgramBloodCloud, "uTexture3D"),
-        time: GL.getUniformLocation(ShaderProgramBloodCloud, "Time"),
-        cameraViewDir: GL.getUniformLocation(ShaderProgramBloodCloud, "CameraViewDir"),
-        viewPosition: GL.getUniformLocation(ShaderProgramBloodCloud, "viewPos"),
-        depthTexture: GL.getUniformLocation(ShaderProgramBloodCloud, "depthTexture"),
-        resolution: GL.getUniformLocation(ShaderProgramBloodCloud, "uResolution"),
     };
 
     ProgramInfoScreenBGTrans.program = ShaderProgramScreenBGTrans;
