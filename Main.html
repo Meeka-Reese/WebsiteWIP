@@ -31,6 +31,16 @@
         <script type="module" src="webgl-demo.js"></script>
         <script type="module" src="./Externals/webgl-obj-loader.js"></script>
         <script type="module" src="GenerateMesh.js"></script> 
+        <script src="./Externals/src_CC/CCapture.js"></script> 
+        <script src="./Externals/src_CC/download.js"></script> 
+        <script src="./Externals/src_CC/tar.js"></script> 
+        <script src="./Externals/src_CC/Whammy.js"></script> 
+        <script src="./Externals/src_CC/webm-writer-0.2.0.js"></script> 
+        <script>window.gCapturer = new CCapture({ format: 'webm', framerate: 60});
+                window.gIsRecording = false;
+                window.gCaptureTime = 0.0;
+                window.gIsMobile = false;
+        </script>
         <!-- Audio Files -->
         <audio id="TransformSong" preload="auto" src="./AudioFiles/Transform24BitMasterNew.wav"></audio>
         <audio id="MainTheme" preload="auto" src="./AudioFiles/MainPageTheme.mp3"></audio>

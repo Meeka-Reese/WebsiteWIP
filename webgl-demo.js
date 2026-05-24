@@ -65,6 +65,10 @@ let gRaycastText; // storing in different var to avoid editing binded buff
 let gCurrentMousePos = [0,0];
 let gMouseMoved = false;
 
+//Mobile
+let gTouchDelta = [0.0,0.0];
+let gTouchSpeed = 15.0;
+
 //Transparency and glass and stuff
 let gMainFBO;
 let gGlassFBO;
@@ -80,7 +84,7 @@ let gBloomFBO;
 
 //Imported functions
 import { Move,Rotate,Scale } from './translations.js';
-import { Normalize,ToRadian,lerp,sleep, Transform, Clamp } from './Utils.js';
+import { Normalize,ToRadian,lerp,sleep, Transform, Clamp, MobileCheck} from './Utils.js';
 import { CameraMove, MouseLook, GetViewMatrix, Camera, CamAniClips, CameraAniClip, CameraAniKey } from './Camera.js';
 import { SinPreComp,CosPreComp,TanPreComp,ArcSinPreComp,ArcCosPreComp } from './PreCompWave.js';
 import { createNoise3D } from './Externals/simplex-noise.js';
@@ -201,6 +205,7 @@ let gKeysPressed = {};
 //CanvasData
 let gCanvasWidth;
 let gCanvasHeight;
+let gCanvasAspect;
 
 
 //=========GLOBAL AUDIO===========
@@ -402,6 +407,7 @@ gAboutMeSoundObjColec.push(AboutMeBassObj, AboutMeBirdTextureObj, AboutMeHatObj,
   }
 //-----------------------GLOBALS-----------------------------
 
+
 export function makeStruct(keys) {
     if (!keys) return null;
     const k = keys.split(', ');
@@ -413,6 +419,7 @@ export function makeStruct(keys) {
     }
     return constructor;
   }
+
 
   async function SetUpAboutMeAudio()
   {
@@ -1426,7 +1433,16 @@ function CalcMouseDelta(event)
   }
   
 }
-function Input()
+function touchHandler(e) //For Mobile
+{
+  if (e.touches) {
+    gTouchDelta[0] = ((e.touches[0].pageX / gCanvasWidth) - .5) * gTouchSpeed * gCanvasAspect;
+    gTouchDelta[1] = (((e.touches[0].pageY * 2.0) / gCanvasHeight) - .5) * gTouchSpeed;
+    console.log(e.touches[0].pageX + " " +  gCanvasWidth);
+    e.preventDefault();
+  }
+}
+function Input() //For Computer
 {
     //Forward = 0
     //Backwards = 1
@@ -1554,7 +1570,7 @@ function RaycastClick(Obj)
       gMidiObj.StopMidi();
       break
     case gPlayButton:
-      document.getElementById("ExitCam").style.opacity = 1.0;
+      //document.getElementById("ExitCam").style.opacity = 1.0;
       console.log("Playing");
       PlayTransformSong();
       break
@@ -1590,6 +1606,8 @@ async function PlayTransformSong()
     gMidiObj.StartMidi();
     gCamera.ActiveAniClip = CamAniClips[0];
     CamAniClips[0].ConnectedCamera = gCamera;
+    gCapturer.start();
+    gIsRecording = true;
 
 }
 function ClickFunc(event)
@@ -1607,7 +1625,7 @@ function ClickFunc(event)
   
   if(document.activeElement == document.getElementById("Body"))
   {
-    if (gCanvas.requestPointerLock) {
+    if (gCanvas.requestPointerLock && !gIsMobile) {
       gCanvas.requestPointerLock();
     } else {
       console.error("Pointer Lock API not supported");
@@ -1666,7 +1684,10 @@ const MainLoop = ()=>
 
     Input();
     gMouseMoved = Math.abs(gDeltaMouse[0]) + Math.abs(gDeltaMouse[1]) >= .001 ? true : false;
-    MouseLook(gCamera, gDeltaMouse, );
+    let LocDeltMouse = gIsMobile ? gTouchDelta : gDeltaMouse;
+    //console.log(LocDeltMouse);
+    //gTouchDelta = [0.0,0.0]; // Reset touch
+    MouseLook(gCamera, LocDeltMouse);
     if (gFrameCount % 2 == 0)
     {
       WaveUpdateMesh(gSimpleWave, 1.0);
@@ -1793,7 +1814,6 @@ const MainLoop = ()=>
    // Draw(gProgramInfoElenco, gElencoVis, gCamera, gLight1);
     
   
-
     gFrameCount++;
     gCycleNum++;
     if (gActiveMainLoop != MainLoop) {gInitLoad = true;}
@@ -1811,6 +1831,7 @@ const TransformationLoop = ()=>
   gDeltaTime = newTime - gPreviousTime;
   gTimeSinceRun = newTime - gTimeStart;
   gPreviousTime = newTime;
+  if (gIsRecording) {gCaptureTime += gDeltaTime * .001}
   
 
   Input();
@@ -2012,6 +2033,14 @@ const TransformationLoop = ()=>
 
   gFrameCount++;
   gCycleNum++;
+  if (gIsRecording){gCapturer.capture(gCanvas);}
+  
+  if (gCamera.ActiveAniClip == null && gIsRecording)
+  {
+    gIsRecording = false;
+    gCapturer.stop();
+    gCapturer.save();
+  }
   if (gActiveMainLoop != TransformationLoop) {gInitLoad = true;}
     else {gInitLoad = false;}
   requestAnimationFrame(gActiveMainLoop);
@@ -2233,12 +2262,13 @@ function ResizeCanvas(gl, canvas)
   
     
     
-    
+    gCanvasAspect = gCanvasHeight / gCanvasWidth;
   }
 }
 main();
 
 async function main() {
+  gIsMobile = MobileCheck();
   let LoadTxt = document.getElementById("LoadTxt");
   LoadTxt.style.color = '#990000'; 
   document.getElementById("Gif").style.opacity = 1.0;
@@ -2509,8 +2539,14 @@ async function main() {
     document.getElementById("Gif").style.opacity = 0.0;
     document.getElementById("GoHome").style.opacity = 0.0;
     document.getElementById("LoadTxt").style.opacity = 0.0;
-    document.getElementById("PlayMusic").style.opacity = 1.0;
+    if (!gIsMobile) {document.getElementById("PlayMusic").style.opacity = 1.0;}
     FrameCount();
+    console.log(gIsMobile);
+    if (gIsMobile)
+    {
+      gCanvas.addEventListener("touchstart", touchHandler);
+      gCanvas.addEventListener("touchmove", touchHandler);
+    }
     
    
 }
