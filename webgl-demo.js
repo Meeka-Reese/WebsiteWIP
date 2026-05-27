@@ -10,15 +10,14 @@ let gVertSourceDef, gVertSkybox, gVertStar, gVertRaycast, gVertTrans, gVertFlesh
 
 let gFragSourceWave, gFragSourceFlat, gFragSourceCloud, gFragSkybox, gFragStar, gFragColor,
 gFragVolGlow, gFragDef, gFragRaycast, gFragGlass, gFragScreenFlat, gFragTransFlat, gFragFlesh, gFragElenco,
-gFragFleshPart, gFragMorph, gFragTreeMorph, gFragBloodCloud, gFragScreenBGTrans, gFragPostProcessingFlesh, gFragPostProcessingAndrew, 
+gFragFleshPart, gFragMorph, gFragTreeMorph, gFragScreenBGTrans, gFragPostProcessingFlesh, gFragPostProcessingAndrew, 
 gFragToon, gFragPostProcessing;
 
 
 let gShaderProgramDef, gShaderProgramWave, gShaderProgramFlat, gShaderProgramCloud,
 gShaderProgramSkybox, gShaderProgramStar, gShaderProgramFleshPart, gShaderProgramColor, gShaderProgramVolGlow,
 gShaderProgramRaycast, gShaderProgramGlass, gShaderProgramScreenRender, gShaderProgramScreenImage,
-gShaderProgramTrans, gShaderProgramFlesh, gShaderProgramElenco, gShaderProgramMorph, gShaderProgramTreeMorph,
-gShaderProgramBloodCloud, gShaderProgramScreenBGTrans, gShaderProgramPostProcessingFlesh, gShaderProgramGLTFDef,
+gShaderProgramTrans, gShaderProgramFlesh, gShaderProgramElenco, gShaderProgramMorph, gShaderProgramTreeMorph, gShaderProgramScreenBGTrans, gShaderProgramPostProcessingFlesh, gShaderProgramGLTFDef,
 gShaderProgramPostProcessingAndrew, gShaderProgramToon, gShaderProgramPostProcessing;
 
 let gProgramInfoDef = {};
@@ -39,7 +38,6 @@ let gProgramInfoFlesh = {};
 let gProgramInfoElenco = {};
 let gProgramInfoMorph = {};
 let gProgramInfoTreeMorph = {};
-let gProgramInfoBloodCloud = {};
 let gProgramInfoScreenBGTrans = {};
 let gProgramInfoPostProcessingFlesh = {};
 let gProgramInfoGLTFDef = {};
@@ -57,8 +55,6 @@ let gGlassDepthMap;
 let gRaycastFBO;
 let gRaycastColecMain = [];
 let gRaycastColecTransform = [];
-let gMainRaycastFuncs = new Map();
-let gTransRaycastFuncs = new Map();
 let gRaycastMap;
 let gRaycastIndex;
 let gRaycastText; // storing in different var to avoid editing binded buff
@@ -108,6 +104,7 @@ import {SoundObject} from './SoundObject.js';
 
 //=======================GLOBALS=============================
 //Scene
+let gSceneLoadState = {Main: false, Transform: false, AboutMe: false};
 let gActiveMainLoop;
 let gCamera;
 let gLight1, gLight2, gLight3;
@@ -125,7 +122,8 @@ let gCircleMask;
 let gRockWall;
 let gGlassSphere;
 let gGlassSphere2;
-let gCharHead, gCharHair;
+let gGlassSphere3;
+let gCharHead, gCharHair, gAtSign, gMusicNote;
 let gScreenSpaceQuad;
 let gCrossHair;
 let gOpt1, gOpt2, gOpt3; //set up raytracing Options
@@ -135,11 +133,11 @@ let gConditions =
 {
   AudioInit : false,
 }
-
+let gNoise3DText;
 
 //Transformation Scene
 let gCharTrans, gCharHairTrans, gFleshGroundL, gFleshGroundR, gFlower
-,gScreenSpaceQuadTrans, gPostProcessingQuad, gHomeButton, gPlayButton, gPauseButton, gUIBacking, gAtSign; 
+,gScreenSpaceQuadTrans, gPostProcessingQuad, gHomeButton, gPlayButton, gPauseButton, gUIBacking; 
 let gCharBoneColec = [];
 let gCharArmature;
 let gRCDict = new Map();
@@ -436,11 +434,9 @@ export function makeStruct(keys) {
       gAboutMeSoundObjColec[i].PanNode.coneOuterGain = 0;
     }
   }
-async function SetUpScene()
+async function LoadMainScene()
 {
-
-
-  
+  if (gSceneLoadState.Main == true) {return}
   gTime = new Date();
   let initTime = gTime.getTime() * .001;
   //== Main Scene ==
@@ -450,7 +446,7 @@ async function SetUpScene()
    let ImgBufNoise = await CreateWorley3D(4, ImgSize);
 
    //===================================TEXTURES========================================
-   let Noise3DText = await createTexture3DFromBuffer(gGL, ImgBufNoise, ImgSize, ImgSize, ImgSize);
+   gNoise3DText = await createTexture3DFromBuffer(gGL, ImgBufNoise, ImgSize, ImgSize, ImgSize);
    LoadTxt.style.color = '#ffb700';
    const [
     BlueNoiseText,
@@ -458,46 +454,18 @@ async function SetUpScene()
     SailBoatText,
     MoonText,
     GirlText,
-    GirlFullText,
     CrosshairText,
     GlassNoiseNormText,
     GlassDisplacementText,
-    VeinsText,
-    FlowerBloomText,
-    VeinTree1Text,
-    VeinTree2Text,
-    ElencoText,
-    EarRingText,
-    BodyText,
-    HairText,
-    ShirtText,
-    ShoeText,
-    SkirtText,
-    SocksText,
-    ShoeLaceText,
 ] = await Promise.all([
     loadTexture(gGL, './Textures/BlueNoise.png', 4),
     loadTexture(gGL, './Textures/CloudDetailNoise.png', 4),
     loadTexture(gGL, './Textures/SailBoat.png', 4),
     loadTexture(gGL, './Textures/Moon.png', 4),
     loadTexture(gGL, './Textures/Girl.png', 4),
-    loadTexture(gGL, './Textures/GirlTextureFull.png', 4),
     loadTexture(gGL, './Textures/crosshair.png', 4),
     loadTexture(gGL, './Textures/GlassNoiseNorm.png', 4),
     loadTexture(gGL, './Textures/GlassDisplacement.png', 4),
-    loadTexture(gGL, './Textures/Veins.png', 4),
-    loadTexture(gGL, './Textures/FlowerBloom.png', 4),
-    loadTexture(gGL, './Textures/VeinTreeThin.png', 4),
-    loadTexture(gGL, './Textures/VeinTreeThin2.png', 4),
-    loadTexture(gGL, './Textures/Elenco.png', 4),
-    loadTexture(gGL, './Textures/CharMeTexts/EarRing.png', 4, false),
-    loadTexture(gGL, './Textures/CharMeTexts/Body.png', 4, false),
-    loadTexture(gGL, './Textures/CharMeTexts/Hair.png', 4, false),
-    loadTexture(gGL, './Textures/CharMeTexts/Shirt.png', 4, false),
-    loadTexture(gGL, './Textures/CharMeTexts/Shoe.png', 4, false),
-    loadTexture(gGL, './Textures/CharMeTexts/Skirt.png', 4, false),
-    loadTexture(gGL, './Textures/CharMeTexts/Socks.png', 4, false),
-    loadTexture(gGL, './Textures/CharMeTexts/ShoeLace.png', 4, false),
 ]);
    const assets = [
     {key: 'cube1', path: './models/Cube.obj'},
@@ -509,26 +477,8 @@ async function SetUpScene()
     {key: 'arrow1LP', path: './models/ArrowLP.obj'},
     {key: 'charHead', path: './models/CharHead.obj'},
     {key: 'atSign', path: './models/AtSign.obj'},
-    {key: 'charHairLP', path: './models/CharHairLP.obj'},//end main scene (little overlap ofc)
-    {key: 'charFullBodyUp', path: './models/CharFullBodyLP.obj'},
-    {key: 'charHairTrans', path: './models/CharHairTrans.obj'},
-    {key: 'fleshCube', path: './models/FleshCube.obj'},
-    {key: 'flowerBloom', path: './models/FlowerBloom.obj'},
-    {key: 'flowerStem', path: './models/FlowerStem.obj'},
-    {key: 'flowerBud', path: './models/FlowerBud.obj'},
-    {key: 'flowerWilting', path: './models/FlowerWilting.obj'},
-    {key: 'home', path: './models/Home.obj'},
-    {key: 'play', path: './models/Play.obj'},
-    {key: 'pause', path: './models/Pause.obj'},
-    {key: 'uiBacking', path: './models/UIBacking.obj'},
-    {key: 'veinThick1', path: './models/VeinsThick.obj'},
-    {key: 'veinThin1', path: './models/VeinsThin.obj'},
-    {key: 'commissionsText', path: './models/CommissionsText.obj'},
-    {key: 'gameAudioText', path: './models/GameAudioText.obj'},
-    {key: 'soundDesignText', path: './models/SoundDesignText.obj'},
-    {key: 'visualsText', path: './models/VisualsText.obj'},
-    {key: 'contactText', path: './models/ContactText.obj'},
-    {key: 'star', path: './models/Star.obj'},
+    {key: 'charHairLP', path: './models/CharHairLP.obj'},
+    {key: 'musicNote', path: './models/MusicNote.obj'},
    ];
 
 
@@ -536,9 +486,7 @@ async function SetUpScene()
     assets.map(a => LoadOBJ(gGL, a.path))
 );
   const [cube1, sailBoatLP, sphereLP, spellCircle1LP, spellCircleVolumeLP,
-        maskCircleLP, arrow1LP, charHead, atSign, charHairLP, charFullBodyUp, charHairTrans, fleshCube, 
-        flowerBloom, flowerStem, flowerBud, flowerWilting, home, play, pause, uiBacking, veinThick1,
-      veinThin1, commissionsText, gameAudioText, soundDesignText, visualsText, contactText, star] = results;
+        maskCircleLP, arrow1LP, charHead, atSign, charHairLP, musicNote] = results;
    LoadTxt.style.color = '#fbff00';
    gTime = new Date();
    let NewTime = gTime.getTime() * .001;
@@ -549,7 +497,7 @@ async function SetUpScene()
   
    
    gNoiseCube = Object.assign({}, cube1);
-   gNoiseCube.Texture3D = Noise3DText;
+   gNoiseCube.Texture3D = gNoise3DText;
    gNoiseCube.Texture = CloudDetailNoiseText;
    gNoiseCube.TextureBN = BlueNoiseText;
 
@@ -574,6 +522,8 @@ async function SetUpScene()
 
   gOpt2 = Object.assign({}, arrow1LP);
 
+  gOpt3 = Object.assign({}, arrow1LP);
+
   gCharHead = charHead;
   gCharHead.Texture = GirlText;
 
@@ -581,6 +531,8 @@ async function SetUpScene()
  gCharHair.Texture = GirlText;
 
  gAtSign = atSign;
+
+ gMusicNote = musicNote;
 
 
   gGlassSphere = Object.assign({}, cube1); // used for volume of raymarch sphere
@@ -591,9 +543,11 @@ async function SetUpScene()
   gGlassSphere2.Normal = GlassNoiseNormText;
   gGlassSphere2.Displacement = GlassDisplacementText;
 
-  gCrossHair.Texture = CrosshairText;
+  gGlassSphere3 = Object.assign({}, cube1);
+  gGlassSphere3.Normal = GlassNoiseNormText;
+  gGlassSphere3.Displacement = GlassDisplacementText;
 
-  gElencoVis.Texture = ElencoText;
+  gCrossHair.Texture = CrosshairText;
   
   LoadTxt.style.color = '#aaff00';
   gTime = new Date();
@@ -601,163 +555,20 @@ async function SetUpScene()
   DeltaTime = NewTime - initTime;
   initTime = NewTime;
   console.log("Time to load MainScene : " + DeltaTime);
-  //== Transform Scene ==
   
-  gCharTrans = charFullBodyUp;
-  gCharTrans.Texture = GirlFullText;
-  gCharTrans.Texture3D = Noise3DText;
-
-  gCharHairTrans = charHairTrans;
-  gCharHairTrans.Texture = GirlText;
-  gCharHairTrans.Texture3D = Noise3DText;
-  gFleshGroundL = fleshCube;
-  gFleshGroundL.Texture3D = Noise3DText;
-  gFleshGroundL.TextureBN = GlassNoiseNormText;
-  gFleshGroundL.Texture = VeinsText;
-  gFleshGroundR = fleshCube;
-  gFleshGroundR.Texture3D = Noise3DText;
-  gFleshGroundR.TextureBN = GlassNoiseNormText;
-  gFleshGroundR.Texture = VeinsText;
-  gFleshParticles.DepthTexture = VeinsText;
-
-  gFlower = flowerBloom;
-  let Target = flowerStem;
-  let Target2 = flowerBud;
-  let gTarget3 = flowerWilting;
-  gFlower.vertexBuffer2 = Target.vertexBuffer;
-  gFlower.vertexBuffer3 = Target2.vertexBuffer;
-  gFlower.vertexBuffer4 = gTarget3.vertexBuffer;
-  gFlower.Texture = FlowerBloomText;
-  gFlower.TextureBN = FlowerBloomText;
-
-  gHomeButton = home;
-  gPlayButton = play;
-  gPauseButton = pause;
-  gUIBacking = uiBacking;
-
-
-  let LocTreeColec = new Array(11);
-
-      LocTreeColec[0] = Object.assign({}, veinThin1); //Vein opt 1
-      LocTreeColec[0].TextureBN = VeinTree1Text; //need to set morph
-      LocTreeColec[0].Texture = VeinTree1Text;
-      LocTreeColec[0].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
-      LocTreeColec[1] = Object.assign({}, veinThin1); // Vein opt 2
-      LocTreeColec[1].TextureBN = VeinTree2Text; //need to set morph
-      LocTreeColec[1].Texture = VeinTree2Text;
-      LocTreeColec[1].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
-      LocTreeColec[2] = Object.assign({}, veinThin1); // Vein opt 2
-      LocTreeColec[2].TextureBN = VeinTree2Text; //need to set morph
-      LocTreeColec[2].Texture = VeinTree1Text;
-      LocTreeColec[2].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
-      LocTreeColec[3] = Object.assign({}, veinThin1); // Vein opt 2
-      LocTreeColec[3].TextureBN = VeinTree2Text; //need to set morph
-      LocTreeColec[3].Texture = VeinTree2Text;
-      LocTreeColec[3].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
-      LocTreeColec[4] = Object.assign({}, veinThin1); // Vein opt 2
-      LocTreeColec[4].TextureBN = VeinTree2Text; //need to set morph
-      LocTreeColec[4].Texture = VeinTree1Text;
-      LocTreeColec[4].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
-      LocTreeColec[5] = Object.assign({}, veinThin1); // Vein opt 2
-      LocTreeColec[5].TextureBN = VeinTree2Text; //need to set morph
-      LocTreeColec[5].Texture = VeinTree2Text;
-      LocTreeColec[5].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
-      LocTreeColec[6] = Object.assign({}, veinThin1); // Vein opt 2
-      LocTreeColec[6].TextureBN = VeinTree2Text; //need to set morph
-      LocTreeColec[6].Texture = VeinTree1Text;
-      LocTreeColec[6].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
-      LocTreeColec[7] = Object.assign({}, veinThin1); // Vein opt 2
-      LocTreeColec[7].TextureBN = VeinTree2Text; //need to set morph
-      LocTreeColec[7].Texture = VeinTree2Text;
-      LocTreeColec[7].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
-      LocTreeColec[8] = Object.assign({}, veinThin1); // Vein opt 2
-      LocTreeColec[8].TextureBN = VeinTree2Text; //need to set morph
-      LocTreeColec[8].Texture = VeinTree1Text;
-      LocTreeColec[8].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
-      LocTreeColec[9] = Object.assign({}, veinThin1); // Vein opt 2
-      LocTreeColec[9].TextureBN = VeinTree2Text; //need to set morph
-      LocTreeColec[9].Texture = VeinTree2Text;
-      LocTreeColec[9].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
-      LocTreeColec[10] = Object.assign({}, veinThin1); // Vein opt 2
-      LocTreeColec[10].TextureBN = VeinTree2Text; //need to set morph
-      LocTreeColec[10].Texture = VeinTree1Text;
-      LocTreeColec[10].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
-
-
-
-  gScreenSpaceQuadTrans.Texture = GlassDisplacementText;
-  gScreenSpaceQuadTrans.TextureBN = GirlFullText;
-
-  gTime = new Date();
-  NewTime = gTime.getTime() * .001;
-  DeltaTime = NewTime - initTime;
-  initTime = NewTime;
-  console.log("Time to load Trans Scene : " + DeltaTime);
-//-=-=-=-=-=-=-=-=-=-=-=-=-=======About Me Scene================-=-=-=-=-=-=-=-=-=-=-=-=-
-
-({ ModelMap: gCharMeDict, AnimationMixer: gCharMeAniMixer, AnimationClips: gCharMeAniClips, AniScene: gSceneAboutMe} = await LoadThreeScene('./models/CharTest3.glb'));
-//console.log(gCharMeDict);
-//Skirt, Body, EarRing, Hair, Shirt, ShoeL, ShoeR, Socks, ShoeLaceL, ShoeLaceR
-
-gCharMeDict.get("Skirt").Texture =  SkirtText;
-gCharMeDict.get("Body").Texture =  BodyText;
-gCharMeDict.get("EarRing").Texture =  EarRingText;
-gCharMeDict.get("Hair").Texture =  HairText;
-gCharMeDict.get("Shirt").Texture =  ShirtText;
-gCharMeDict.get("ShoeL").Texture =  ShoeText;
-gCharMeDict.get("ShoeR").Texture =  ShoeText;
-gCharMeDict.get("Socks").Texture =  SocksText;
-gCharMeDict.get("ShoeLaceL").Texture =  ShoeLaceText;
-gCharMeDict.get("ShoeLaceR").Texture =  ShoeLaceText;
-
-gStar2 = star;
-
-
-
-
-
-
-//-=-=-=-=-=-=-=-=-=-=-=-=-=======About Me Scene================-=-=-=-=-=-=-=-=-=-=-=-=-
-gCharMeDict.forEach((val, key) =>
-{
-  if (key != "Body")
-  {
-    val.ParentTrans = gCharMeDict.get("Body");
-    val.ParentScale = gCharMeDict.get("Body");
-  }
-})
-gCharMeDict.get("Body").Rotation[1] = 180.0;
-
-gCommissionsText = commissionsText;
-gGameAudioText = gameAudioText;
-gSoundDesignText = soundDesignText;
-gVisualsText = visualsText;
-gContactText = contactText;
 gTime = new Date();
 NewTime = gTime.getTime() * .001;
   DeltaTime = NewTime - initTime;
   initTime = NewTime;
   console.log("Time to load AboutMeScene : " + DeltaTime);
    //==========================SET PARENTING======================================
-   //== Main Scene ==
   gCharHead.ParentTrans = gGlassSphere;
     gCharHair.ParentTrans = gCharHead;
     gAtSign.ParentTrans = gGlassSphere2;
-  //== Transform Scene ==
-  gCharHairTrans.ParentTrans = gCharTrans;
-  gCharHairTrans.ParentScale = gCharTrans;
-  gHomeButton.ParentTrans = gUIBacking;
-  gHomeButton.ParentScale = gUIBacking;
-  gPauseButton.ParentTrans = gUIBacking;
-  gPauseButton.ParentScale = gUIBacking;
-  gPlayButton.ParentTrans = gUIBacking;
-  gPlayButton.ParentScale = gUIBacking;
-  
-  
+    gMusicNote.ParentTrans = gGlassSphere3;
 
   LoadTxt.style.color = '#08c979';
   //==========================SET POSITION======================================
-  //== Main Scene ==
   let BoatScale = 3.0;
   gBoatMesh.Scale = [BoatScale, BoatScale, BoatScale];
   gBoatMesh.Rotation = [0.0,0.0,0.0];
@@ -801,6 +612,11 @@ NewTime = gTime.getTime() * .001;
   gOpt2.Rotation = [0.0,60.0,0.0];
   gOpt2.Scale = [optSize,optSize,optSize];
   gOpt2.Color = [.7,.7,.7,1.0];
+  gOpt3.Position = [90.0,2.0,85.0];
+  gOpt3.Rotation = [0.0,120.0,0.0];
+  gOpt3.Scale = [optSize,optSize,optSize];
+  gOpt3.Color = [.7,.7,.7,1.0];
+
   let gCharSize = 10.0;
   gCharHead.Position = [0.0,-28.0,1.0];
   gCharHead.Rotation = [0.0,180.0,0.0];
@@ -814,6 +630,12 @@ NewTime = gTime.getTime() * .001;
   gAtSign.Rotation = [0.0,0.0,0.0];
   gAtSign.Scale = [atScale, atScale, atScale];
   gAtSign.Color = [1.0,1.0,1.0,1.0];
+
+  let gNoteSize = 1.8;
+  gMusicNote.Position = [3.0,0.0,0.0];
+  gMusicNote.Rotation = [0.0,180.0,0.0];
+  gMusicNote.Scale = [gNoteSize, gNoteSize, gNoteSize];
+  gMusicNote.Color = [0.0, 0.0,0.0,1.0];
   
   let GSphereSize = 20.0;
   gGlassSphere.Position = [45.0,26.0,110.0];
@@ -825,179 +647,291 @@ NewTime = gTime.getTime() * .001;
   gGlassSphere2.Scale = [GSphereSize,GSphereSize,GSphereSize];
   gGlassSphere2.Rotation = [0.0,0.0,0.0];
 
-  
+  gGlassSphere3.Position = [96.0,26.0,95.0];
+  gGlassSphere3.Scale = [GSphereSize,GSphereSize,GSphereSize];
+  gGlassSphere3.Rotation = [0.0,0.0,0.0];
 
-  //======================= Transform Scene =======================
-  let CharTransScale = 14.0;
-  gCharTrans.Position = [0.0,10.0,0.0];
-  gCharTrans.Scale = [CharTransScale,CharTransScale,CharTransScale];
-  gCharTrans.Rotation = [0.0,180.0,0.0];
-  gCharHairTrans.Position = [0.0,0.0,0.0];
-  gCharHairTrans.Rotation = [0.0,0.0,0.0];
-  gCharHairTrans.Scale = [1.0,1.0,1.0];
-  let FleshGroundScale = 130.0;
-  gFleshGroundL.Position = [0.0,-145.0,-100.0];
-  gFleshGroundL.Rotation = [0.0,-20.0,0.0];
-  gFleshGroundL.Scale = [FleshGroundScale*1.1,FleshGroundScale * .4,FleshGroundScale];
-  gFleshGroundL.Color = [.8,0.0,.4, 1.0];
-  gFleshGroundL.uvScale = [5.0, 5.0];
-  gFleshGroundR.Position = [0.0,-150.0,-120.0];
-  gFleshGroundR.Rotation = [0.0, -60.0,0.0];
-  gFleshGroundR.Scale = [FleshGroundScale * 1.1,FleshGroundScale * .4,FleshGroundScale];
-  gFleshGroundR.Color = [.8,0.0,.25, 1.0];
-  gFleshGroundR.uvScale = [5.0, 5.0];
-  let FleshPartScale = 1.0;
-  gFleshParticles.Position = [0.0,90.0,0.0];
-  gFleshParticles.Rotation = [0.0,0.0,0.0];
-  gFleshParticles.Scale = [FleshPartScale,FleshPartScale * 4.0,FleshPartScale];
-  gFlower.Position = [0.0,0.0,30.0];
-  gFlower.Rotation = [0.0,0.0,0.0];
-  gFlower.Scale = [3.0, 3.0, 3.0];
+    //==========================FILL RAYCAST ARRAY======================================
+    //== Main Scene ==
+    gRaycastColecMain.push(gOpt1, gOpt2, gOpt3);
+    gRCDict.set(gOpt1, gGlassSphere);
+    gRCDict.set(gOpt2, gGlassSphere2);
+    gRCDict.set(gOpt3, gGlassSphere3);
 
-  let UIScale = 10.0;
-  gHomeButton.Position = [0.0, 0.0, 2.75];
-  gHomeButton.Rotation = [0.0, 0.0, 0.0];
-  gHomeButton.Scale = [1.0, 1.0, 1.0];
-  gHomeButton.Color = [.8, .8, .8, 1.0];
+      gSceneLoadState.Main = true;
+}
 
-  gPlayButton.Position = [0.0, 0.0, .75];
-  gPlayButton.Rotation = [0.0, 0.0, 0.0];
-  gPlayButton.Scale = [1.0, 1.0, 1.0];
-  gPlayButton.Color = [0.0, .8, .8, 1.0];
+async function LoadTransformScene()
+{
+  if (gSceneLoadState.Transform == true) {return}
+   //Clear screen to solid color
+  gActiveMainLoop = LoadLoop;
+  document.getElementById("Gif").style.opacity = 1.0;
+  document.getElementById("LoadTxt").style.opacity = 1.0;
 
-  gPauseButton.Position = [0.0, 0.0, -2.0];
-  gPauseButton.Rotation = [0.0, 0.0, 0.0];
-  gPauseButton.Scale = [1.0, 1.0, 1.0];
-  gPauseButton.Color = [.8, .8, .8, 1.0];
+  gTime = new Date();
+  let initTime = gTime.getTime() * .001;
+  let LoadTxt = document.getElementById("LoadTxt");
 
-  gUIBacking.Position = [160.0,0.0,0.0];
-  gUIBacking.Rotation = [0.0,90.0,0.0];
-  gUIBacking.Scale = [UIScale, UIScale, UIScale];
-  gUIBacking.Color = [.8, .1, .2, 1.0];
+  const [
+    GirlText,
+    GirlFullText,
+    GlassNoiseNormText,
+    GlassDisplacementText,
+    VeinsText,
+    FlowerBloomText,
+    VeinTree1Text,
+    VeinTree2Text,
+] = await Promise.all([
+    loadTexture(gGL, './Textures/Girl.png', 4),
+    loadTexture(gGL, './Textures/GirlTextureFull.png', 4),
+    loadTexture(gGL, './Textures/GlassNoiseNorm.png', 4),
+    loadTexture(gGL, './Textures/GlassDisplacement.png', 4),
+    loadTexture(gGL, './Textures/Veins.png', 4),
+    loadTexture(gGL, './Textures/FlowerBloom.png', 4),
+    loadTexture(gGL, './Textures/VeinTreeThin.png', 4),
+    loadTexture(gGL, './Textures/VeinTreeThin2.png', 4),
+]);
+   const assets = [
+    {key: 'charFullBodyUp', path: './models/CharFullBodyLP.obj'},
+    {key: 'charHairTrans', path: './models/CharHairTrans.obj'},
+    {key: 'fleshCube', path: './models/FleshCube.obj'},
+    {key: 'flowerBloom', path: './models/FlowerBloom.obj'},
+    {key: 'flowerStem', path: './models/FlowerStem.obj'},
+    {key: 'flowerBud', path: './models/FlowerBud.obj'},
+    {key: 'flowerWilting', path: './models/FlowerWilting.obj'},
+    {key: 'home', path: './models/Home.obj'},
+    {key: 'play', path: './models/Play.obj'},
+    {key: 'pause', path: './models/Pause.obj'},
+    {key: 'uiBacking', path: './models/UIBacking.obj'},
+    {key: 'veinThick1', path: './models/VeinsThick.obj'},
+    {key: 'veinThin1', path: './models/VeinsThin.obj'},
+   ];
+
+
+   const results = await Promise.all(
+    assets.map(a => LoadOBJ(gGL, a.path))
+);
+  const [charFullBodyUp, charHairTrans, fleshCube, 
+        flowerBloom, flowerStem, flowerBud, flowerWilting, home, play, pause, uiBacking, veinThick1,
+      veinThin1] = results;
+  gCharTrans = charFullBodyUp;
+
+  //======MODEL AND TEXT ASSIGN ==========  
+  gCharTrans.Texture = GirlFullText;
+  gCharTrans.Texture3D = gNoise3DText;
+
+  gCharHairTrans = charHairTrans;
+  gCharHairTrans.Texture = GirlText;
+  gCharHairTrans.Texture3D = gNoise3DText;
+  gFleshGroundL = fleshCube;
+  gFleshGroundL.Texture3D = gNoise3DText;
+  gFleshGroundL.TextureBN = GlassNoiseNormText;
+  gFleshGroundL.Texture = VeinsText;
+  gFleshGroundR = fleshCube;
+  gFleshGroundR.Texture3D = gNoise3DText;
+  gFleshGroundR.TextureBN = GlassNoiseNormText;
+  gFleshGroundR.Texture = VeinsText;
+  gFleshParticles.DepthTexture = VeinsText;
+
+  gFlower = flowerBloom;
+  let Target = flowerStem;
+  let Target2 = flowerBud;
+  let gTarget3 = flowerWilting;
+  gFlower.vertexBuffer2 = Target.vertexBuffer;
+  gFlower.vertexBuffer3 = Target2.vertexBuffer;
+  gFlower.vertexBuffer4 = gTarget3.vertexBuffer;
+  gFlower.Texture = FlowerBloomText;
+  gFlower.TextureBN = FlowerBloomText;
+
+  gHomeButton = home;
+  gPlayButton = play;
+  gPauseButton = pause;
+  gUIBacking = uiBacking;
+
+
+  let LocTreeColec = new Array(11);
+
+  LocTreeColec[0] = Object.assign({}, veinThin1); //Vein opt 1
+  LocTreeColec[0].TextureBN = VeinTree1Text; //need to set morph
+  LocTreeColec[0].Texture = VeinTree1Text;
+  LocTreeColec[0].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
+  LocTreeColec[1] = Object.assign({}, veinThin1); // Vein opt 2
+  LocTreeColec[1].TextureBN = VeinTree2Text; //need to set morph
+  LocTreeColec[1].Texture = VeinTree2Text;
+  LocTreeColec[1].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
+  LocTreeColec[2] = Object.assign({}, veinThin1); // Vein opt 2
+  LocTreeColec[2].TextureBN = VeinTree2Text; //need to set morph
+  LocTreeColec[2].Texture = VeinTree1Text;
+  LocTreeColec[2].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
+  LocTreeColec[3] = Object.assign({}, veinThin1); // Vein opt 2
+  LocTreeColec[3].TextureBN = VeinTree2Text; //need to set morph
+  LocTreeColec[3].Texture = VeinTree2Text;
+  LocTreeColec[3].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
+  LocTreeColec[4] = Object.assign({}, veinThin1); // Vein opt 2
+  LocTreeColec[4].TextureBN = VeinTree2Text; //need to set morph
+  LocTreeColec[4].Texture = VeinTree1Text;
+  LocTreeColec[4].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
+  LocTreeColec[5] = Object.assign({}, veinThin1); // Vein opt 2
+  LocTreeColec[5].TextureBN = VeinTree2Text; //need to set morph
+  LocTreeColec[5].Texture = VeinTree2Text;
+  LocTreeColec[5].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
+  LocTreeColec[6] = Object.assign({}, veinThin1); // Vein opt 2
+  LocTreeColec[6].TextureBN = VeinTree2Text; //need to set morph
+  LocTreeColec[6].Texture = VeinTree1Text;
+  LocTreeColec[6].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
+  LocTreeColec[7] = Object.assign({}, veinThin1); // Vein opt 2
+  LocTreeColec[7].TextureBN = VeinTree2Text; //need to set morph
+  LocTreeColec[7].Texture = VeinTree2Text;
+  LocTreeColec[7].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
+  LocTreeColec[8] = Object.assign({}, veinThin1); // Vein opt 2
+  LocTreeColec[8].TextureBN = VeinTree2Text; //need to set morph
+  LocTreeColec[8].Texture = VeinTree1Text;
+  LocTreeColec[8].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
+  LocTreeColec[9] = Object.assign({}, veinThin1); // Vein opt 2
+  LocTreeColec[9].TextureBN = VeinTree2Text; //need to set morph
+  LocTreeColec[9].Texture = VeinTree2Text;
+  LocTreeColec[9].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
+  LocTreeColec[10] = Object.assign({}, veinThin1); // Vein opt 2
+  LocTreeColec[10].TextureBN = VeinTree2Text; //need to set morph
+  LocTreeColec[10].Texture = VeinTree1Text;
+  LocTreeColec[10].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
+
+  gScreenSpaceQuadTrans.Texture = GlassDisplacementText;
+  gScreenSpaceQuadTrans.TextureBN = GirlFullText;
+
+  //======= SET PARENTING ===================
+  gCharHairTrans.ParentTrans = gCharTrans;
+  gCharHairTrans.ParentScale = gCharTrans;
+  gHomeButton.ParentTrans = gUIBacking;
+  gHomeButton.ParentScale = gUIBacking;
+  gPauseButton.ParentTrans = gUIBacking;
+  gPauseButton.ParentScale = gUIBacking;
+  gPlayButton.ParentTrans = gUIBacking;
+  gPlayButton.ParentScale = gUIBacking;
+//======= SET POSITIONS ===================
+let CharTransScale = 14.0;
+gCharTrans.Position = [0.0,10.0,0.0];
+gCharTrans.Scale = [CharTransScale,CharTransScale,CharTransScale];
+gCharTrans.Rotation = [0.0,180.0,0.0];
+gCharHairTrans.Position = [0.0,0.0,0.0];
+gCharHairTrans.Rotation = [0.0,0.0,0.0];
+gCharHairTrans.Scale = [1.0,1.0,1.0];
+let FleshGroundScale = 130.0;
+gFleshGroundL.Position = [0.0,-145.0,-100.0];
+gFleshGroundL.Rotation = [0.0,-20.0,0.0];
+gFleshGroundL.Scale = [FleshGroundScale*1.1,FleshGroundScale * .4,FleshGroundScale];
+gFleshGroundL.Color = [.8,0.0,.4, 1.0];
+gFleshGroundL.uvScale = [5.0, 5.0];
+gFleshGroundR.Position = [0.0,-150.0,-120.0];
+gFleshGroundR.Rotation = [0.0, -60.0,0.0];
+gFleshGroundR.Scale = [FleshGroundScale * 1.1,FleshGroundScale * .4,FleshGroundScale];
+gFleshGroundR.Color = [.8,0.0,.25, 1.0];
+gFleshGroundR.uvScale = [5.0, 5.0];
+let FleshPartScale = 1.0;
+gFleshParticles.Position = [0.0,90.0,0.0];
+gFleshParticles.Rotation = [0.0,0.0,0.0];
+gFleshParticles.Scale = [FleshPartScale,FleshPartScale * 4.0,FleshPartScale];
+gFlower.Position = [0.0,0.0,30.0];
+gFlower.Rotation = [0.0,0.0,0.0];
+gFlower.Scale = [3.0, 3.0, 3.0];
+
+let UIScale = 10.0;
+gHomeButton.Position = [0.0, 0.0, 2.75];
+gHomeButton.Rotation = [0.0, 0.0, 0.0];
+gHomeButton.Scale = [1.0, 1.0, 1.0];
+gHomeButton.Color = [.8, .8, .8, 1.0];
+
+gPlayButton.Position = [0.0, 0.0, .75];
+gPlayButton.Rotation = [0.0, 0.0, 0.0];
+gPlayButton.Scale = [1.0, 1.0, 1.0];
+gPlayButton.Color = [0.0, .8, .8, 1.0];
+
+gPauseButton.Position = [0.0, 0.0, -2.0];
+gPauseButton.Rotation = [0.0, 0.0, 0.0];
+gPauseButton.Scale = [1.0, 1.0, 1.0];
+gPauseButton.Color = [.8, .8, .8, 1.0];
+
+gUIBacking.Position = [160.0,0.0,0.0];
+gUIBacking.Rotation = [0.0,90.0,0.0];
+gUIBacking.Scale = [UIScale, UIScale, UIScale];
+gUIBacking.Color = [.8, .1, .2, 1.0];
 
 
 
 
 //==========TREES==========
-  let TreeScale = 20.0;
-  let T1Scale = TreeScale * 1.0;
-  LocTreeColec[0].Position = [-150.0,-110.0,0.0];
-  LocTreeColec[0].Rotation = [0.0,0.0,20.0];
-  LocTreeColec[0].Scale = [T1Scale, T1Scale, T1Scale];
-  LocTreeColec[0].Color = [.8,0.0,0.1, 1.0];
+let TreeScale = 20.0;
+let T1Scale = TreeScale * 1.0;
+LocTreeColec[0].Position = [-150.0,-110.0,0.0];
+LocTreeColec[0].Rotation = [0.0,0.0,20.0];
+LocTreeColec[0].Scale = [T1Scale, T1Scale, T1Scale];
+LocTreeColec[0].Color = [.8,0.0,0.1, 1.0];
 
-  let T2Scale = TreeScale * .8;
-  LocTreeColec[1].Position = [-130.0,-110.0,60.0];
-  LocTreeColec[1].Rotation = [30.0,50.0,50.0];
-  LocTreeColec[1].Scale = [T2Scale, T2Scale, T2Scale];
-  LocTreeColec[1].Color = [.8,0.0,0.1, 1.0];
+let T2Scale = TreeScale * .8;
+LocTreeColec[1].Position = [-130.0,-110.0,60.0];
+LocTreeColec[1].Rotation = [30.0,50.0,50.0];
+LocTreeColec[1].Scale = [T2Scale, T2Scale, T2Scale];
+LocTreeColec[1].Color = [.8,0.0,0.1, 1.0];
 
-  let T3Scale = TreeScale * 1.2;
-  LocTreeColec[2].Position = [-90.0,-110.0,100.0];
-  LocTreeColec[2].Rotation = [60.0,-120.0,20.0];
-  LocTreeColec[2].Scale = [T3Scale, T3Scale, T3Scale];
-  LocTreeColec[2].Color = [.8,0.0,0.1, 1.0];
+let T3Scale = TreeScale * 1.2;
+LocTreeColec[2].Position = [-90.0,-110.0,100.0];
+LocTreeColec[2].Rotation = [60.0,-120.0,20.0];
+LocTreeColec[2].Scale = [T3Scale, T3Scale, T3Scale];
+LocTreeColec[2].Color = [.8,0.0,0.1, 1.0];
 
-  let T4Scale = TreeScale * .6;
-  LocTreeColec[3].Position = [-90.0,-75.0,100.0];
-  LocTreeColec[3].Rotation = [60.0,20.0,20.0];
-  LocTreeColec[3].Scale = [T4Scale, T4Scale, T4Scale];
-  LocTreeColec[3].Color = [.8,0.0,0.1, 1.0];
+let T4Scale = TreeScale * .6;
+LocTreeColec[3].Position = [-90.0,-75.0,100.0];
+LocTreeColec[3].Rotation = [60.0,20.0,20.0];
+LocTreeColec[3].Scale = [T4Scale, T4Scale, T4Scale];
+LocTreeColec[3].Color = [.8,0.0,0.1, 1.0];
 
-  let T5Scale = TreeScale * 1.5;
-  LocTreeColec[4].Position = [-110.0,-80.0,100.0];
-  LocTreeColec[4].Rotation = [20.0,0.0,-10.0];
-  LocTreeColec[4].Scale = [T5Scale, T5Scale, T5Scale];
-  LocTreeColec[4].Color = [.8,0.0,0.1, 1.0];
+let T5Scale = TreeScale * 1.5;
+LocTreeColec[4].Position = [-110.0,-80.0,100.0];
+LocTreeColec[4].Rotation = [20.0,0.0,-10.0];
+LocTreeColec[4].Scale = [T5Scale, T5Scale, T5Scale];
+LocTreeColec[4].Color = [.8,0.0,0.1, 1.0];
 
-  let T6Scale = TreeScale * 1.8;
-  LocTreeColec[5].Position = [-20.0,-70.0,120.0];
-  LocTreeColec[5].Rotation = [20.0,-30.0,-10.0];
-  LocTreeColec[5].Scale = [T6Scale, T6Scale, T6Scale];
-  LocTreeColec[5].Color = [.8,0.0,0.1, 1.0];
+let T6Scale = TreeScale * 1.8;
+LocTreeColec[5].Position = [-20.0,-70.0,120.0];
+LocTreeColec[5].Rotation = [20.0,-30.0,-10.0];
+LocTreeColec[5].Scale = [T6Scale, T6Scale, T6Scale];
+LocTreeColec[5].Color = [.8,0.0,0.1, 1.0];
 
-  let T7Scale = TreeScale * 1.3;
-  LocTreeColec[6].Position = [45.0,-100.0,100.0];
-  LocTreeColec[6].Rotation = [40.0,-10.0,-10.0];
-  LocTreeColec[6].Scale = [T7Scale, T7Scale, T7Scale];
-  LocTreeColec[6].Color = [.8,0.0,0.1, 1.0];
+let T7Scale = TreeScale * 1.3;
+LocTreeColec[6].Position = [45.0,-100.0,100.0];
+LocTreeColec[6].Rotation = [40.0,-10.0,-10.0];
+LocTreeColec[6].Scale = [T7Scale, T7Scale, T7Scale];
+LocTreeColec[6].Color = [.8,0.0,0.1, 1.0];
 
-  let T8Scale = TreeScale * .95;
-  LocTreeColec[7].Position = [80.0,-100.0,80.0];
-  LocTreeColec[7].Rotation = [10.0,10.0,-10.0];
-  LocTreeColec[7].Scale = [T8Scale, T8Scale, T8Scale];
-  LocTreeColec[7].Color = [.8,0.0,0.1, 1.0];
+let T8Scale = TreeScale * .95;
+LocTreeColec[7].Position = [80.0,-100.0,80.0];
+LocTreeColec[7].Rotation = [10.0,10.0,-10.0];
+LocTreeColec[7].Scale = [T8Scale, T8Scale, T8Scale];
+LocTreeColec[7].Color = [.8,0.0,0.1, 1.0];
 
-  let T9Scale = TreeScale * .6;
-  LocTreeColec[8].Position = [120.0,-100.0,75.0];
-  LocTreeColec[8].Rotation = [30.0,-10.0,-10.0];
-  LocTreeColec[8].Scale = [T9Scale, T9Scale, T9Scale];
-  LocTreeColec[8].Color = [.8,0.0,0.1, 1.0];
+let T9Scale = TreeScale * .6;
+LocTreeColec[8].Position = [120.0,-100.0,75.0];
+LocTreeColec[8].Rotation = [30.0,-10.0,-10.0];
+LocTreeColec[8].Scale = [T9Scale, T9Scale, T9Scale];
+LocTreeColec[8].Color = [.8,0.0,0.1, 1.0];
 
-  let T10Scale = TreeScale * .7;
-  LocTreeColec[9].Position = [120.0,-90.0,85.0];
-  LocTreeColec[9].Rotation = [-20.0,-30.0,-40.0];
-  LocTreeColec[9].Scale = [T10Scale, T10Scale, T10Scale];
-  LocTreeColec[9].Color = [.8,0.0,0.1, 1.0];
-  
-  let T11Scale = TreeScale * .9;
-  LocTreeColec[10].Position = [40.0,-80.0,100.0];
-  LocTreeColec[10].Rotation = [-10.0,-10.0,-10.0];
-  LocTreeColec[10].Scale = [T11Scale, T11Scale, T11Scale];
-  LocTreeColec[10].Color = [.8,0.0,0.1, 1.0];
+let T10Scale = TreeScale * .7;
+LocTreeColec[9].Position = [120.0,-90.0,85.0];
+LocTreeColec[9].Rotation = [-20.0,-30.0,-40.0];
+LocTreeColec[9].Scale = [T10Scale, T10Scale, T10Scale];
+LocTreeColec[9].Color = [.8,0.0,0.1, 1.0];
 
-  for (let i = 0; i < LocTreeColec.length; i++)
-  {
-    gTreeColec.push(LocTreeColec[i]);
-  }
+let T11Scale = TreeScale * .9;
+LocTreeColec[10].Position = [40.0,-80.0,100.0];
+LocTreeColec[10].Rotation = [-10.0,-10.0,-10.0];
+LocTreeColec[10].Scale = [T11Scale, T11Scale, T11Scale];
+LocTreeColec[10].Color = [.8,0.0,0.1, 1.0];
 
-  //===============ABOUT ME LOOP==================
-  let StarScale = 2.0;
-  gStar2.Position = [-20.0,0.0,0.0];
-  gStar2.Rotation = [90.0,0.0,0.0];
-  gStar2.Scale = [StarScale, StarScale, StarScale];
-  gStar2.Color = [1.0, 1.0, 1.0, 1.0];
-
-  let TextSize = 34.0;
-  let TextColor = [.6,.2,.8,1.0];
-  gCommissionsText.Position = [350.0, 100.0,0.0];
-  gCommissionsText.Rotation = [0.0,180.0,0.0];
-  gCommissionsText.Scale = [TextSize, TextSize, TextSize];
-  gCommissionsText.Color = TextColor;
-  gGameAudioText.Position = [330, 40.0,0.0];
-  gGameAudioText.Rotation = [0.0,180.0,0.0];
-  gGameAudioText.Scale = [TextSize, TextSize, TextSize];
-  gGameAudioText.Color = [.4, .2, .5, 1.0];
-  gSoundDesignText.Position = [320, -80.0,0.0];
-  gSoundDesignText.Rotation = [0.0,180.0,0.0];
-  gSoundDesignText.Scale = [TextSize, TextSize, TextSize];
-  gSoundDesignText.Color = [0.0, .65, .4, 1.0];
-  gVisualsText.Position = [340, -170.0,0.0];
-  gVisualsText.Rotation = [0.0,180.0,0.0];
-  gVisualsText.Scale = [TextSize, TextSize, TextSize];
-  gVisualsText.Color = [.2, .4, .5, 1.0];
-  gContactText.Position = [-60, 50.0,0.0];
-  gContactText.Rotation = [0.0,180.0,0.0];
-  gContactText.Scale = [TextSize, TextSize, TextSize];
-  gContactText.Color = TextColor;
-
-
-
-  let StarNum = 70;
-  let RandMagPos = 400.0;
-  let RandMagRot = 180.0;
-  let RandScale = 1.0;
-  for (let i = 0; i< StarNum; i++)
-  {
-    let Pole = [Math.random() < .5 ? -1.0 : 1.0, Math.random() < .5 ? -1.0 : 1.0, Math.random() < .5 ? -1.0 : 1.0];
-    let Pos = [gStar2.Position[0] + (Math.random() * RandMagPos * Pole[0]), gStar2.Position[1] + (Math.random() * RandMagPos * Pole[1]), gStar2.Position[2] + (Math.random() * RandMagPos * Pole[2])];
-    let Rot = [gStar2.Rotation[0], gStar2.Rotation[1] + (Math.random() * RandMagRot),gStar2.Rotation[2]];
-    let Scale = [gStar2.Scale[0] * (.5 + (Math.random() * RandScale)), gStar2.Scale[1] * (.5 + (Math.random() * RandScale)), gStar2.Scale[2] * (.5 + (Math.random() * RandScale))];
-    let StarTrans = new Transform(Pos, Rot, Scale);
-    gStarTransforms.push(StarTrans);
-  }
-
-
+for (let i = 0; i < LocTreeColec.length; i++)
+{
+  gTreeColec.push(LocTreeColec[i]);
+}
   //==== Armature Setup ====== 
   
   let CharBoneImageNameColec = ["Torso", "Chest", "LShould", "LForearm", "LArm", "LHand", "RShould", "RForearm",
@@ -1035,7 +969,6 @@ NewTime = gTime.getTime() * .001;
   gCharBoneColec[19].Origin = vec3.fromValues(0.0, 4.0, 0.0); //Head.001
 
 
-  //console.log(gCharTrans.originalIndicies);
   let CharStringColec = [];
   CharStringColec = BoneData.stringColec;
   let AllCharClips = new CharClips();
@@ -1045,23 +978,159 @@ NewTime = gTime.getTime() * .001;
   gMidiObj = new MidiObj(gCharArmature.Timeline, AllCharClips);
   await gMidiObj.LoadFile('./MidiFiles/RetimedTrigger.mid');
   LoadTxt.style.color = '#09e2ed';
-  
-    //==========================FILL RAYCAST ARRAY======================================
-    //== Main Scene ==
-    gRaycastColecMain.push(gOpt1, gOpt2);
-    gRCDict.set(gOpt1, gGlassSphere);
-    gRCDict.set(gOpt2, gGlassSphere2);
-    //== Transform Scene ==
-    gRaycastColecTransform.push(gHomeButton, gPauseButton, gPlayButton);
 
-      //Surface Mapping
-      let MinDist = 1.0;
-      let NumObj = 500; // Make this one mesh
-      let ModelMat = mat4.create();
-      SetUpModelMatrix(ModelMat, gCharTrans);
-      await PlaceColecOnSurf(gCharTrans.vertices, gCharTrans.vertexNormals,ModelMat,'./models/Cube.obj', 
-      MinDist,NumObj, gSurfObjColec, gSurfColecVertIndicies);
+  //=========== RAYCAST SETUP =========================
+  gRaycastColecTransform.push(gHomeButton, gPauseButton, gPlayButton);
+
+  //Surface Mapping
+  let MinDist = 1.0;
+  let NumObj = 500; // Make this one mesh
+  let ModelMat = mat4.create();
+  SetUpModelMatrix(ModelMat, gCharTrans);
+  await PlaceColecOnSurf(gCharTrans.vertices, gCharTrans.vertexNormals,ModelMat,'./models/Cube.obj', 
+  MinDist,NumObj, gSurfObjColec, gSurfColecVertIndicies);
+
+
+  gTime = new Date();
+  let NewTime = gTime.getTime() * .001;
+  let DeltaTime = NewTime - initTime;
+  initTime = NewTime;
+  console.log("Time to load Trans Scene : " + DeltaTime);
+
+  gSceneLoadState.Transform = true;
 }
+async function LoadAboutMe()
+{
+    if (gSceneLoadState.AboutMe == true) {return}
+     //Clear screen to solid color
+    gActiveMainLoop = LoadLoop;
+    document.getElementById("Gif").style.opacity = 1.0;
+    document.getElementById("LoadTxt").style.opacity = 1.0;
+   
+
+    gTime = new Date();
+    let initTime = gTime.getTime() * .001;
+    let LoadTxt = document.getElementById("LoadTxt");
+    LoadTxt.style.color = 'ffb700';
+
+    const [
+      EarRingText,
+      BodyText,
+      HairText,
+      ShirtText,
+      ShoeText,
+      SkirtText,
+      SocksText,
+      ShoeLaceText,
+    ] = await Promise.all([
+      loadTexture(gGL, './Textures/CharMeTexts/EarRing.png', 4, false),
+      loadTexture(gGL, './Textures/CharMeTexts/Body.png', 4, false),
+      loadTexture(gGL, './Textures/CharMeTexts/Hair.png', 4, false),
+      loadTexture(gGL, './Textures/CharMeTexts/Shirt.png', 4, false),
+      loadTexture(gGL, './Textures/CharMeTexts/Shoe.png', 4, false),
+      loadTexture(gGL, './Textures/CharMeTexts/Skirt.png', 4, false),
+      loadTexture(gGL, './Textures/CharMeTexts/Socks.png', 4, false),
+      loadTexture(gGL, './Textures/CharMeTexts/ShoeLace.png', 4, false),
+    ]);
+    const assets = [
+      {key: 'commissionsText', path: './models/CommissionsText.obj'},
+      {key: 'gameAudioText', path: './models/GameAudioText.obj'},
+      {key: 'soundDesignText', path: './models/SoundDesignText.obj'},
+      {key: 'visualsText', path: './models/VisualsText.obj'},
+      {key: 'contactText', path: './models/ContactText.obj'},
+      {key: 'star', path: './models/Star.obj'},
+    ];
+
+
+    const results = await Promise.all(
+      assets.map(a => LoadOBJ(gGL, a.path))
+  );
+    const [commissionsText, gameAudioText, soundDesignText, visualsText, contactText, star] = results;
+    LoadTxt.style.color = 'fbff00';
+    gSceneLoadState.AboutMe = true;
+
+  ({ ModelMap: gCharMeDict, AnimationMixer: gCharMeAniMixer, AnimationClips: gCharMeAniClips, AniScene: gSceneAboutMe} = await LoadThreeScene('./models/CharTest3.glb'));
+  //console.log(gCharMeDict);
+  //Skirt, Body, EarRing, Hair, Shirt, ShoeL, ShoeR, Socks, ShoeLaceL, ShoeLaceR
+
+  gCharMeDict.get("Skirt").Texture =  SkirtText;
+  gCharMeDict.get("Body").Texture =  BodyText;
+  gCharMeDict.get("EarRing").Texture =  EarRingText;
+  gCharMeDict.get("Hair").Texture =  HairText;
+  gCharMeDict.get("Shirt").Texture =  ShirtText;
+  gCharMeDict.get("ShoeL").Texture =  ShoeText;
+  gCharMeDict.get("ShoeR").Texture =  ShoeText;
+  gCharMeDict.get("Socks").Texture =  SocksText;
+  gCharMeDict.get("ShoeLaceL").Texture =  ShoeLaceText;
+  gCharMeDict.get("ShoeLaceR").Texture =  ShoeLaceText;
+
+  gStar2 = star;
+  gCharMeDict.forEach((val, key) =>
+  {
+    if (key != "Body")
+    {
+      val.ParentTrans = gCharMeDict.get("Body");
+      val.ParentScale = gCharMeDict.get("Body");
+    }
+  })
+  gCharMeDict.get("Body").Rotation[1] = 180.0;
+
+  gCommissionsText = commissionsText;
+  gGameAudioText = gameAudioText;
+  gSoundDesignText = soundDesignText;
+  gVisualsText = visualsText;
+  gContactText = contactText;
+  LoadTxt.style.color = 'aaff00';
+  let StarScale = 2.0;
+    gStar2.Position = [-20.0,0.0,0.0];
+    gStar2.Rotation = [90.0,0.0,0.0];
+    gStar2.Scale = [StarScale, StarScale, StarScale];
+    gStar2.Color = [1.0, 1.0, 1.0, 1.0];
+
+    let TextSize = 34.0;
+    let TextColor = [.6,.2,.8,1.0];
+    gCommissionsText.Position = [350.0, 100.0,0.0];
+    gCommissionsText.Rotation = [0.0,180.0,0.0];
+    gCommissionsText.Scale = [TextSize, TextSize, TextSize];
+    gCommissionsText.Color = TextColor;
+    gGameAudioText.Position = [330, 40.0,0.0];
+    gGameAudioText.Rotation = [0.0,180.0,0.0];
+    gGameAudioText.Scale = [TextSize, TextSize, TextSize];
+    gGameAudioText.Color = [.4, .2, .5, 1.0];
+    gSoundDesignText.Position = [320, -80.0,0.0];
+    gSoundDesignText.Rotation = [0.0,180.0,0.0];
+    gSoundDesignText.Scale = [TextSize, TextSize, TextSize];
+    gSoundDesignText.Color = [0.0, .65, .4, 1.0];
+    gVisualsText.Position = [340, -170.0,0.0];
+    gVisualsText.Rotation = [0.0,180.0,0.0];
+    gVisualsText.Scale = [TextSize, TextSize, TextSize];
+    gVisualsText.Color = [.2, .4, .5, 1.0];
+    gContactText.Position = [-60, 50.0,0.0];
+    gContactText.Rotation = [0.0,180.0,0.0];
+    gContactText.Scale = [TextSize, TextSize, TextSize];
+    gContactText.Color = TextColor;
+    LoadTxt.style.color = '08c979';
+
+
+    let StarNum = 70;
+    let RandMagPos = 400.0;
+    let RandMagRot = 180.0;
+    let RandScale = 1.0;
+    for (let i = 0; i< StarNum; i++)
+    {
+      let Pole = [Math.random() < .5 ? -1.0 : 1.0, Math.random() < .5 ? -1.0 : 1.0, Math.random() < .5 ? -1.0 : 1.0];
+      let Pos = [gStar2.Position[0] + (Math.random() * RandMagPos * Pole[0]), gStar2.Position[1] + (Math.random() * RandMagPos * Pole[1]), gStar2.Position[2] + (Math.random() * RandMagPos * Pole[2])];
+      let Rot = [gStar2.Rotation[0], gStar2.Rotation[1] + (Math.random() * RandMagRot),gStar2.Rotation[2]];
+      let Scale = [gStar2.Scale[0] * (.5 + (Math.random() * RandScale)), gStar2.Scale[1] * (.5 + (Math.random() * RandScale)), gStar2.Scale[2] * (.5 + (Math.random() * RandScale))];
+      let StarTrans = new Transform(Pos, Rot, Scale);
+      gStarTransforms.push(StarTrans);
+    }
+}
+async function LoadLiquidSim()
+{
+
+}
+
 
 
 
@@ -1474,6 +1543,8 @@ else if(gActiveMainLoop == TransformationLoop)
   if (ObjIndex == -1) {return null;}
 
   let ObjSelec = gRaycastColecTransform[ObjIndex];
+  console.log(ObjSelec);
+  console.log("Index " + ObjIndex + " Raycast Colec " + gRaycastColecTransform.length);
   ObjSelec.Color = SelectColor;
   let DispObj = gRCDict.get(ObjSelec);
   if (DispObj != null && "isHover" in DispObj){DispObj.isHover = 1.0;}
@@ -1482,7 +1553,7 @@ else if(gActiveMainLoop == TransformationLoop)
   
 
 }
-function RaycastClick(Obj)
+async function RaycastClick(Obj)
 {
   let DeselectColor = [.2,.2,.5,1.0];
   gRaycastIndex = -1;
@@ -1492,6 +1563,7 @@ function RaycastClick(Obj)
     }
   switch(Obj){
     case gOpt1:
+      if (gSceneLoadState.Transform == false) {await LoadTransformScene();}
       gActiveMainLoop = TransformationLoop;
       console.log("ENTERING TRANSFORMATION LOOP");
       gCamera.Eye[2] = -150.0;
@@ -1507,6 +1579,7 @@ function RaycastClick(Obj)
       document.getElementById("PlayMusic").style.opacity = 0.0;
       break;
     case gOpt2:
+      if (gSceneLoadState.AboutMe == false) {await LoadAboutMe();}
       gCamera.Mode = 1;
       gActiveMainLoop = AboutMeLoop;
       gCamera.Eye[2] = -550.0;
@@ -1556,7 +1629,7 @@ function GoHome()
       console.log("ENTERING MAIN LOOP");
       Sound1.pause();
       Sound1.currentTime = 0;
-      gMidiObj.StopMidi();
+      if (gMidiObj != undefined) {gMidiObj.StopMidi()};
       Sound2.pause();
       Sound2.currentTime = 0;
       Sound2.play();
@@ -1734,6 +1807,7 @@ const MainLoop = ()=>
     gGL.enable(gGL.DEPTH_TEST); 
     Draw(gProgramInfoDef, gOpt1, gCamera,gLight1);
     Draw(gProgramInfoDef, gOpt2, gCamera,gLight1);
+    Draw(gProgramInfoDef, gOpt3, gCamera,gLight1);
     gGL.enable(gGL.CULL_FACE);
     Draw(gProgramInfoFlat, gMoon, gCamera, gLight1);
     
@@ -1750,6 +1824,7 @@ const MainLoop = ()=>
     gScreenSpaceQuad.Texture = gRenderText;
     gGlassSphere.Texture = gRenderText;
     gGlassSphere2.Texture = gRenderText;
+    gGlassSphere3.Texture = gRenderText;
     gGL.bindFramebuffer(gGL.FRAMEBUFFER, gGlassFBO);   
     gGL.viewport(0, 0, gCanvasWidth, gCanvasHeight);
     gGL.disable(gGL.CULL_FACE);
@@ -1758,11 +1833,13 @@ const MainLoop = ()=>
     gGL.enable(gGL.CULL_FACE);
     Draw(gProgramInfoGlass, gGlassSphere, gCamera, gLight3);
     Draw(gProgramInfoGlass, gGlassSphere2, gCamera, gLight3);
+    Draw(gProgramInfoGlass, gGlassSphere3, gCamera, gLight3);
     gGL.cullFace(gGL.BACK);
     gGL.enable(gGL.DEPTH_TEST);
     Draw(gProgramInfoFlat, gCharHead, gCamera, gLight1);
     Draw(gProgramInfoFlat, gCharHair, gCamera, gLight1);
     Draw(gProgramInfoDef, gAtSign, gCamera, gLight1);
+    Draw(gProgramInfoDef, gMusicNote, gCamera, gLight1);
     gGL.disable(gGL.DEPTH_TEST);
     
     gScreenSpaceQuad.Texture = gGlassRendText;
@@ -2179,6 +2256,20 @@ const AboutMeLoop = async ()=>
     else {gInitLoad = false;}
     requestAnimationFrame(gActiveMainLoop);
 }
+const LoadLoop = ()=>
+{
+  //Clear screen to solid color
+  gGL.clearColor(.8, .5, .65, 1.0); //Pink
+  gGL.clear(gGL.COLOR_BUFFER_BIT); //Command to clear buffer bit and fill with clear color
+  if (gActiveMainLoop != LoadLoop)
+  {
+    document.getElementById("Gif").style.opacity = 0.0;
+    document.getElementById("LoadTxt").style.opacity = 0.0;
+    gGL.clearColor(0.0, 0.0, 0.0, 0.0); //Pink
+  gGL.clear(gGL.COLOR_BUFFER_BIT); //Command to clear buffer bit and fill with clear color
+  }
+  requestAnimationFrame(gActiveMainLoop);
+}
 
 function ResizeCanvas(gl, canvas)
 {
@@ -2260,10 +2351,9 @@ async function main() {
     return;
   }
 
-  // Set clear color to black, fully opaque
-  gGL.clearColor(.8, .5, .65, 1.0); 
-  // Clear the color buffer with specified clear color
-  gGL.clear(gGL.COLOR_BUFFER_BIT);
+  //Clear screen to solid color
+  gGL.clearColor(.8, .5, .65, 1.0); //Pink
+  gGL.clear(gGL.COLOR_BUFFER_BIT); //Command to clear buffer bit and fill with clear color
 
   //Load glsl file text content
   //Vert
@@ -2493,7 +2583,7 @@ async function main() {
     gDeltaTime = newTime- gPreviousTime;
     gTimeSinceRun = newTime - gTimeStart;
     gPreviousTime = newTime;
-    await SetUpScene();
+    await LoadMainScene();
     await SetUpAboutMeAudio();
     //Scene Setup
     LoadTxt.style.color = '#0aff2f'; 

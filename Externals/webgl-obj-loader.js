@@ -1,10 +1,17 @@
 export async function LoadOBJ(gl, path, DebugInd = false)
 {
+  let Time = new Date();
+  let StartTime = Time.getTime() * .001;
   const ObjLoad = await fetch(path);
   if(!ObjLoad.ok) throw new Error("Failed to load OBJ");
   let ObjText = await ObjLoad.text();
   let obj = new OBJ.Mesh(ObjText, null, DebugInd);
   OBJ.initMeshBuffers(gl, obj);
+  Time = new Date();
+  let EndTime = Time.getTime() * .001;
+  let ElapsedTime = EndTime - StartTime;
+  console.log(path);
+  console.log("Obj with Path " + path + " Took " + ElapsedTime + " seconds to load");
   return obj;
 }
 

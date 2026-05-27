@@ -4,6 +4,7 @@
   --primary-bg-color: #13151F;  
   --primary-font-size: 60px;
 }
+
 @font-face {
     font-family: CustomFont;
     src: url(./Fonts/Amore\Christmas.otf); /* url of the font */
@@ -47,7 +48,7 @@
   height:50vh / 50vw; 
   image-rendering: pixelated;
   transform: translateY(-100px);
-  z-index: 6;
+  z-index: 7;
 }
 #LoadTxt{
   display: block;
@@ -56,8 +57,16 @@
   left: 18vw;
   font-size: 20vw;  
   color: white;
-  z-index: 6;
+  z-index: 7;
 }
+/*
+Load Text Colors
+ffb700
+fbff00
+aaff00
+08c979
+09e2ed
+*/
 #PlayMusic{
   position: fixed;
     top: 0px;
