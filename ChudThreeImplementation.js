@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import {makeStruct, gGL} from './webgl-demo.js';
+import {makeStruct} from './webgl-demo.js';
 import {quat, vec3, vec4, mat4} from './Externals/esm/index.js';
 
 const ThreeStruct = makeStruct("Position, Rotation, Scale, vertexBuffer, indexBuffer, VertexCount, normalBuffer, Texture, textureBuffer, Color, Skeleton, ParentTrans, ParentScale");

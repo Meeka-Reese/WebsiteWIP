@@ -3,7 +3,6 @@ import { mat4 } from './Externals/esm/index.js';
 import { vec3 } from './Externals/esm/index.js';
 import { vec4 } from './Externals/esm/index.js';
 import { LoadOBJ } from './Externals/webgl-obj-loader.js';
-import { gGL } from './webgl-demo.js';
 export function GenerateIco(Object, progamInfo)
 {
     //Not Finished or being used, likely doing clouds with raymarching. Look to https://www.youtube.com/watch?v=4QOcCGI6xOU&t=314s

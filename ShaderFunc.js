@@ -1,4 +1,3 @@
-import { gGL } from "./webgl-demo.js";
 
 export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramInfoFlat, ShaderProgramFlat,
     ProgramInfoCloud, ShaderProgramCloud, ProgramInfoSkybox, ShaderProgramSkybox, 
@@ -12,7 +11,6 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
     ProgramInfoScreenImage, ShaderProgramScreenImage,
     ProgramInfoTrans, ShaderProgramTrans,
     ProgramInfoFlesh, ShaderProgramFlesh,
-    ProgramInfoElenco, ShaderProgramElenco,
     ProgramInfoFleshPart, ShaderProgramFleshPart,
     ProgramInfoMorph, ShaderProgramMorph,
     ProgramInfoTreeMorph, ShaderProgramTreeMorph,
@@ -22,6 +20,14 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
     ProgramInfoPostProcessingAndrew, ShaderProgramPostProcessingAndrew,
     ProgramInfoToon, ShaderProgramToon,
     ProgramInfoPostProcessing, ShaderProgramPostProcessing,
+    ProgramInfoScreenFluidDisp, ShaderProgramScreenFluidDisp,
+    ProgramInfoScreenFluidAdvect, ShaderProgramScreenFluidAdvect,
+    ProgramInfoScreenFlatFluid, ShaderProgramScreenFlatFluid,
+    ProgramInfoFluidFindDivergence, ShaderProgramScreenFluidFindDivergence,
+    ProgramInfoScreenFluidBorder, ShaderProgramScreenFluidBorder,
+    ProgramInfoScreenFluidPressureSolver, ShaderProgramScreenFluidPressureSolver,
+    ProgramInfoScreenFluidPressureCorrect, ShaderProgramScreenFluidPressureCorrect,
+    ProgramInfoScreenFluidMouseMove, ShaderProgramScreenFluidMouseMove,
     ) {
         //SOON TO DO - REORGANIZE TEXTURES SO THEY USE MULTIPLE TEXTURE SLOTS WITH GENERIC NAMES INSTEAD OF "TEXTUREBN"
     ProgramInfoDef.program = ShaderProgramDef;
@@ -137,8 +143,11 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         UVPosition: GL.getAttribLocation(ShaderProgramColor, "aUVCord"),
     };
     ProgramInfoColor.uniformLocations = {
-        color: GL.getUniformLocation(ShaderProgramColor, "uColor"),
+        projectionMatrix: GL.getUniformLocation(ShaderProgramColor, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramColor, "uViewMatrix"),
         modelMatrix: GL.getUniformLocation(ShaderProgramColor, "uModelMatrix"),
+        viewPosition: GL.getUniformLocation(ShaderProgramColor, "viewPos"),
+        color: GL.getUniformLocation(ShaderProgramColor,"objCol"),
     };
 
 
@@ -281,21 +290,6 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         ccVals: GL.getUniformLocation(ShaderProgramFlesh, "ccVals"),
         uvScale: GL.getUniformLocation(ShaderProgramFlesh, "UVScale"),
         lightness: GL.getUniformLocation(ShaderProgramFlesh, "Lightness"),
-    }
-
-    ProgramInfoElenco.program = ShaderProgramElenco;
-    ProgramInfoElenco.attribLocations = {
-        vertexPosition: GL.getAttribLocation(ShaderProgramElenco, "aVertPos"),
-        normalPosition: GL.getAttribLocation(ShaderProgramElenco, "aNorm"),
-        UVPosition: GL.getAttribLocation(ShaderProgramElenco, "aUVCord"),
-    }
-    ProgramInfoElenco.uniformLocations = {
-        projectionMatrix: GL.getUniformLocation(ShaderProgramElenco, "uProjMatrix"),
-        ViewMatrix: GL.getUniformLocation(ShaderProgramElenco, "uViewMatrix"),
-        modelMatrix: GL.getUniformLocation(ShaderProgramElenco, "uModelMatrix"),
-        texture: GL.getUniformLocation(ShaderProgramElenco, "uTexture"),
-        resolution: GL.getUniformLocation(ShaderProgramElenco, "uResolution"),
-        time: GL.getUniformLocation(ShaderProgramElenco, "Time"),
     }
 
     ProgramInfoFleshPart.program = ShaderProgramFleshPart;
@@ -460,6 +454,127 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         outlineCutoff: GL.getUniformLocation(ShaderProgramPostProcessing, "OutlineCutoff"),
         blurAmount: GL.getUniformLocation(ShaderProgramPostProcessing, "BlurAmount"),
         bgCol: GL.getUniformLocation(ShaderProgramPostProcessing, "BGCol"),
+    }
+
+    ProgramInfoScreenFluidDisp.program = ShaderProgramScreenFluidDisp;
+    ProgramInfoScreenFluidDisp.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramScreenFluidDisp, "aVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramScreenFluidDisp, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramScreenFluidDisp, "aUVCord"),
+    }
+    ProgramInfoScreenFluidDisp.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramScreenFluidDisp, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramScreenFluidDisp, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramScreenFluidDisp, "uModelMatrix"),
+        textureScene: GL.getUniformLocation(ShaderProgramScreenFluidDisp, "uTextureScene"),
+        prevTexture: GL.getUniformLocation(ShaderProgramScreenFluidDisp, "uTexturePrev"),
+        resolution: GL.getUniformLocation(ShaderProgramScreenFluidDisp, "uResolution"),
+        deltaTime: GL.getUniformLocation(ShaderProgramScreenFluidDisp, "DeltaTime"),
+    }
+
+    ProgramInfoScreenFluidAdvect.program = ShaderProgramScreenFluidAdvect;
+    ProgramInfoScreenFluidAdvect.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramScreenFluidAdvect, "aVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramScreenFluidAdvect, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramScreenFluidAdvect, "aUVCord"),
+    }
+    ProgramInfoScreenFluidAdvect.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramScreenFluidAdvect, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramScreenFluidAdvect, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramScreenFluidAdvect, "uModelMatrix"),
+        textureScene: GL.getUniformLocation(ShaderProgramScreenFluidAdvect, "uTextureScene"),
+        resolution: GL.getUniformLocation(ShaderProgramScreenFluidAdvect, "uResolution"),
+        deltaTime: GL.getUniformLocation(ShaderProgramScreenFluidAdvect, "DeltaTime"),
+    }
+
+    ProgramInfoScreenFlatFluid.program = ShaderProgramScreenFlatFluid;
+    ProgramInfoScreenFlatFluid.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramScreenFlatFluid, "aVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramScreenFlatFluid, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramScreenFlatFluid, "aUVCord"),
+    }
+    ProgramInfoScreenFlatFluid.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramScreenFlatFluid, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramScreenFlatFluid, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramScreenFlatFluid, "uModelMatrix"),
+        textureScene: GL.getUniformLocation(ShaderProgramScreenFlatFluid, "uTextureScene"),
+        resolution: GL.getUniformLocation(ShaderProgramScreenFlatFluid, "uResolution"),
+    }
+
+    ProgramInfoFluidFindDivergence.program = ShaderProgramScreenFluidFindDivergence;
+    ProgramInfoFluidFindDivergence.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramScreenFluidFindDivergence, "aVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramScreenFluidFindDivergence, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramScreenFluidFindDivergence, "aUVCord"),
+    }
+    ProgramInfoFluidFindDivergence.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramScreenFluidFindDivergence, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramScreenFluidFindDivergence, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramScreenFluidFindDivergence, "uModelMatrix"),
+        textureScene: GL.getUniformLocation(ShaderProgramScreenFluidFindDivergence, "uTextureScene"),
+        resolution: GL.getUniformLocation(ShaderProgramScreenFluidFindDivergence, "uResolution"),
+    }
+
+    ProgramInfoScreenFluidBorder.program = ShaderProgramScreenFluidBorder;
+    ProgramInfoScreenFluidBorder.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramScreenFluidBorder, "aVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramScreenFluidBorder, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramScreenFluidBorder, "aUVCord"),
+    }
+    ProgramInfoScreenFluidBorder.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramScreenFluidBorder, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramScreenFluidBorder, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramScreenFluidBorder, "uModelMatrix"),
+        textureScene: GL.getUniformLocation(ShaderProgramScreenFluidBorder, "uTextureScene"),
+        resolution: GL.getUniformLocation(ShaderProgramScreenFluidBorder, "uResolution"),
+    }
+
+    ProgramInfoScreenFluidPressureSolver.program = ShaderProgramScreenFluidPressureSolver;
+    ProgramInfoScreenFluidPressureSolver.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramScreenFluidPressureSolver, "aVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramScreenFluidPressureSolver, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramScreenFluidPressureSolver, "aUVCord"),
+    }
+    ProgramInfoScreenFluidPressureSolver.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramScreenFluidPressureSolver, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramScreenFluidPressureSolver, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramScreenFluidPressureSolver, "uModelMatrix"),
+        resolution: GL.getUniformLocation(ShaderProgramScreenFluidPressureSolver, "uResolution"),
+        textureDivergence: GL.getUniformLocation(ShaderProgramScreenFluidPressureSolver, "uTextureDivergence"),
+        prevTexture: GL.getUniformLocation(ShaderProgramScreenFluidPressureSolver, "uTexturePrev"),
+    }
+
+    ProgramInfoScreenFluidPressureCorrect.program = ShaderProgramScreenFluidPressureCorrect;
+    ProgramInfoScreenFluidPressureCorrect.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramScreenFluidPressureCorrect, "aVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramScreenFluidPressureCorrect, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramScreenFluidPressureCorrect, "aUVCord"),
+    }
+    ProgramInfoScreenFluidPressureCorrect.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramScreenFluidPressureCorrect, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramScreenFluidPressureCorrect, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramScreenFluidPressureCorrect, "uModelMatrix"),
+        resolution: GL.getUniformLocation(ShaderProgramScreenFluidPressureCorrect, "uResolution"),
+        textureScene: GL.getUniformLocation(ShaderProgramScreenFluidPressureCorrect, "uTextureScene"),
+        texturePressure: GL.getUniformLocation(ShaderProgramScreenFluidPressureCorrect, "uTexturePressure"),
+        deltaTime: GL.getUniformLocation(ShaderProgramScreenFluidPressureCorrect, "DeltaTime"),
+    }
+
+    ProgramInfoScreenFluidMouseMove.program = ShaderProgramScreenFluidMouseMove;
+    ProgramInfoScreenFluidMouseMove.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramScreenFluidMouseMove, "aVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramScreenFluidMouseMove, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramScreenFluidMouseMove, "aUVCord"),
+    }
+    ProgramInfoScreenFluidMouseMove.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramScreenFluidMouseMove, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramScreenFluidMouseMove, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramScreenFluidMouseMove, "uModelMatrix"),
+        resolution: GL.getUniformLocation(ShaderProgramScreenFluidMouseMove, "uResolution"),
+        textureScene: GL.getUniformLocation(ShaderProgramScreenFluidMouseMove, "uTextureScene"),
+        deltaTime: GL.getUniformLocation(ShaderProgramScreenFluidMouseMove, "DeltaTime"),
+        mousePos: GL.getUniformLocation(ShaderProgramScreenFluidMouseMove, "MousePos"),
+        mouseVel: GL.getUniformLocation(ShaderProgramScreenFluidMouseMove, "MouseVel"),
     }
 
 }
@@ -814,6 +929,15 @@ export function loadTexture(gl, url, numChans = 4, flip = true) {
     }
     else if (("textureScene" in programInfo))
     {console.log("textureScene Uniform Could Not Be Found!")};
+
+    if (programInfo.uniformLocations.prevTexture != null && Model.PrevTexture != null)
+    {
+      gl.activeTexture(gl.TEXTURE8);
+      gl.bindTexture(gl.TEXTURE_2D, Model.PrevTexture);
+      gl.uniform1i(programInfo.uniformLocations.prevTexture, 8); 
+    }
+    else if (("prevTexture" in programInfo))
+    {console.log("prevTexture Uniform Could Not Be Found!")};
     if (programInfo.uniformLocations.depthTexture != null && Model.DepthTexture != null)
     {
       gl.activeTexture(gl.TEXTURE1);
@@ -828,8 +952,27 @@ export function loadTexture(gl, url, numChans = 4, flip = true) {
         gl.bindTexture(gl.TEXTURE_2D, Model.TextureBN);
         gl.uniform1i(programInfo.uniformLocations.textureBN,2);
     }
-    else if(("texture3D" in programInfo))
+    else if(("textureBN" in programInfo))
     {console.log("texture3D Uniform Could Not Be Found!")}
+
+    if (programInfo.uniformLocations.textureDivergence != null && Model.TextureBN != null)
+    {
+        gl.activeTexture(gl.TEXTURE2);
+        gl.bindTexture(gl.TEXTURE_2D, Model.TextureBN);
+        gl.uniform1i(programInfo.uniformLocations.textureDivergence,2);
+    }
+    else if(("textureDivergence" in programInfo))
+    {console.log("textureDivergence Uniform Could Not Be Found!")}
+
+    if (programInfo.uniformLocations.texturePressure != null && Model.TextureBN != null)
+    {
+        gl.activeTexture(gl.TEXTURE2);
+        gl.bindTexture(gl.TEXTURE_2D, Model.TextureBN);
+        gl.uniform1i(programInfo.uniformLocations.texturePressure,2);
+    }
+    else if(("texturePressure" in programInfo))
+    {console.log("texturePressure Uniform Could Not Be Found!")}
+
     if (programInfo.uniformLocations.texture3D != null && Model.Texture3D != null)
     {
         gl.activeTexture(gl.TEXTURE3);
@@ -844,6 +987,12 @@ export function loadTexture(gl, url, numChans = 4, flip = true) {
     }
     else if(("time" in programInfo))
     {console.log("time Uniform Could Not Be Found!")}
+    if (programInfo.uniformLocations.deltaTime != null)
+    {
+        gl.uniform1f(programInfo.uniformLocations.deltaTime, DeltaTime * .001);
+    }
+    else if(("deltaTime" in programInfo))
+    {console.log("deltaTime Uniform Could Not Be Found!")}
     if (programInfo.uniformLocations.normal != null)
     {
         gl.activeTexture(gl.TEXTURE4);
@@ -947,6 +1096,20 @@ export function loadTexture(gl, url, numChans = 4, flip = true) {
     else if(("spawnTime" in programInfo))
     {console.log("spawnTime Uniform Could Not Be Found!")} 
 
+    if (programInfo.uniformLocations.mousePos != null)
+    {
+        gl.uniform2fv(programInfo.uniformLocations.mousePos, gScaledMousePos);
+    }
+    else if(("mousePos" in programInfo))
+    {console.log("mousePos Uniform Could Not Be Found!")} 
+
+    if (programInfo.uniformLocations.mouseVel != null)
+    {
+        gl.uniform2fv(programInfo.uniformLocations.mouseVel, gScaledDeltaMouse);
+    }
+    else if(("mouseVel" in programInfo))
+    {console.log("MouseVel Uniform Could Not Be Found!")} 
+
     if (programInfo.uniformLocations.lightness != null)
     {
         gl.uniform1f(programInfo.uniformLocations.lightness, Model.lightness);
@@ -1042,23 +1205,13 @@ export function loadTexture(gl, url, numChans = 4, flip = true) {
     
 }
 
-export function createTexture2DFromBuffer(gl, ImgBuffer, width, height)
+export async function createTexture2DFromBuffer(gl, ImgBuffer, width, height)
 {
     const texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texImage2D(
-        gl.TEXTURE_2D,
-        0,                    // level
-        gl.RGBA,              // internal format
-        width,
-        height,
-        0,                    // border
-        gl.RGBA,              // format
-        gl.UNSIGNED_BYTE,     // type
-        ImgBuffer             // data
-    );
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, width, height, 0, gl.RGBA, gl.FLOAT, ImgBuffer);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     
@@ -1118,23 +1271,25 @@ export function genDepthMap(gl, width, height)
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);  
     return DepthMap;
 }
-export function genEmptyTex(gl, width, height)
+export function genEmptyTex(gl, width, height, HighDef = false)
 {
+    let DataType = HighDef ? gl.FLOAT : gl.UNSIGNED_BYTE;
+    let InternalFormat = HighDef?  gl.RGBA32F :  gl.RGBA;
     const Texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, Texture);
     gl.texImage2D(
         gl.TEXTURE_2D,
         0,                    // level
-        gl.RGBA,              // internal format
+        InternalFormat,            // internal format
         width,
         height,
         0,                    // border
         gl.RGBA,              // format
-        gl.UNSIGNED_BYTE,     // type
+        DataType,     // type
         null             // data
     );
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     return Texture;

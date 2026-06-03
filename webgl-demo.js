@@ -6,19 +6,22 @@ Create FBO for Raycast with Object ID. Have definition of all raycast
 objects and make the rendered texture value be the index of the object
 */
 //=======================SHADERS=============================
-let gVertSourceDef, gVertSkybox, gVertStar, gVertRaycast, gVertTrans, gVertFlesh, gVertMorph, gVertTreeMorph, gVertGLTFDef;
+let gVertSourceDef, gVertSkybox, gVertStar, gVertRaycast, gVertTrans, gVertFlesh, gVertMorph, gVertTreeMorph, gVertGLTFDef, gVertSkyboxHigh;
 
 let gFragSourceWave, gFragSourceFlat, gFragSourceCloud, gFragSkybox, gFragStar, gFragColor,
 gFragVolGlow, gFragDef, gFragRaycast, gFragGlass, gFragScreenFlat, gFragTransFlat, gFragFlesh, gFragElenco,
 gFragFleshPart, gFragMorph, gFragTreeMorph, gFragScreenBGTrans, gFragPostProcessingFlesh, gFragPostProcessingAndrew, 
-gFragToon, gFragPostProcessing;
+gFragToon, gFragPostProcessing, gFragScreenFluidDisp, gFragScreenFluidAdvect, gFragScreenFlatFluid, gFragScreenFluidFindDivergence, gFragScreenFluidPressureSolver,
+gFragScreenFluidBorder, gFragScreenFluidPressureCorrect, gFragScreenFluidMouseMove;
 
 
 let gShaderProgramDef, gShaderProgramWave, gShaderProgramFlat, gShaderProgramCloud,
 gShaderProgramSkybox, gShaderProgramStar, gShaderProgramFleshPart, gShaderProgramColor, gShaderProgramVolGlow,
 gShaderProgramRaycast, gShaderProgramGlass, gShaderProgramScreenRender, gShaderProgramScreenImage,
 gShaderProgramTrans, gShaderProgramFlesh, gShaderProgramElenco, gShaderProgramMorph, gShaderProgramTreeMorph, gShaderProgramScreenBGTrans, gShaderProgramPostProcessingFlesh, gShaderProgramGLTFDef,
-gShaderProgramPostProcessingAndrew, gShaderProgramToon, gShaderProgramPostProcessing;
+gShaderProgramPostProcessingAndrew, gShaderProgramToon, gShaderProgramPostProcessing, 
+gShaderProgramScreenFluidDisp, gShaderProgramScreenFluidAdvect, gShaderProgramScreenFlatFluid, gShaderProgramScreenFluidFindDivergence, gShaderProgramScreenFluidPressureSolver,
+gShaderProgramScreenFluidBorder, gShaderProgramScreenFluidPressureCorrect, gShaderProgramScreenFluidMouseMove;
 
 let gProgramInfoDef = {};
 let gProgramInfoWave = {};
@@ -44,6 +47,14 @@ let gProgramInfoGLTFDef = {};
 let gProgramInfoPostProcessingAndrew = {};
 let gProgramInfoToon = {};
 let gProgramInfoPostProcessing = {};
+let gProgramInfoScreenFluidDisp = {};
+let gProgramInfoScreenFluidAdvect = {};
+let gProgramInfoScreenFlatFluid = {};
+let gProgramInfoScreenFluidFindDivergence = {};
+let gProgramInfoScreenFluidBorder = {};
+let gProgramInfoScreenFluidPressureSolver = {};
+let gProgramInfoScreenFluidPressureCorrect = {};
+let gProgramInfoScreenFluidMouseMove = {};
 
 //Depth
 let gDepthFBO;
@@ -58,7 +69,6 @@ let gRaycastColecTransform = [];
 let gRaycastMap;
 let gRaycastIndex;
 let gRaycastText; // storing in different var to avoid editing binded buff
-let gCurrentMousePos = [0,0];
 let gMouseMoved = false;
 
 //Mobile
@@ -98,13 +108,14 @@ import { MidiObj } from './MidiManager.js';
 import * as THREE from 'three';
 import { LoadThreeScene, AddAnimation, UpdateModel,UpdateBoneMatrix } from './ChudThreeImplementation.js';
 import {SoundObject} from './SoundObject.js';
+import { FluidSim2D } from './FluidSim.js';
 
 
 
 
 //=======================GLOBALS=============================
 //Scene
-let gSceneLoadState = {Main: false, Transform: false, AboutMe: false};
+let gSceneLoadState = {Main: false, Transform: false, AboutMe: false, LiquidSim: false};
 let gActiveMainLoop;
 let gCamera;
 let gLight1, gLight2, gLight3;
@@ -163,14 +174,17 @@ let gStar2;
 let gStarTransforms = [];
 let gCommissionsText, gGameAudioText, gSoundDesignText, gVisualsText, gContactText;
 
+//Fluid Sim Scene
+let gFluidSimObj;
+let gFluidFBO;
+let gFluidRendText;
+let gFluidDepthMap;
 
 //
 let gPreviousTime;
-let gDeltaTime;
 export let gTimeSinceRun;
 let gTimeStart;
 let gTime = new Date();
-export let gGL;
 let gCanvas;
 let gCycleNum = 0;
 let gBoatWaveIndices = [0,0,0,0];
@@ -195,7 +209,6 @@ let gArcCosView = new Float32Array(gArcCosPreCompBuf);
 let Noise3D = createNoise3D();
 
 //input variables
-let gDeltaMouse = [0.0,0.0];
 let gPreviousMouse;
 let gMousePosInit = false;
 let gKeysPressed = {};
@@ -207,11 +220,11 @@ let gCanvasAspect;
 
 
 //=========GLOBAL AUDIO===========
-const Sound1 = document.getElementById("TransformSong");
-let Track1 = gAudioContext.createMediaElementSource(Sound1);
+const SoundTransformSound = document.getElementById("TransformSong");
+let Track1 = gAudioContext.createMediaElementSource(SoundTransformSound);
 Track1.connect(gAudioContext.destination);
-const Sound2 = document.getElementById("MainTheme");
-let Track2 = gAudioContext.createMediaElementSource(Sound2);
+const SoundMainTheme = document.getElementById("MainTheme");
+let Track2 = gAudioContext.createMediaElementSource(SoundMainTheme);
 let T2PanNode = new PannerNode(gAudioContext);
 T2PanNode.refDistance = 10.0;
 T2PanNode.panningModel = "equalpower";
@@ -225,7 +238,7 @@ T2PanNode.coneOuterGain = 0;
 Track2.connect(T2PanNode);
 T2PanNode.connect(gAudioContext.destination);
 let SoundObjPos = vec3.create();
-let MainThemeObj = new SoundObject(SoundObjPos, 0, 1, Sound2, null, T2PanNode, 0);
+let MainThemeObj = new SoundObject(SoundObjPos, 0, 1, SoundMainTheme, null, T2PanNode, 0);
 
 let AcceptSound = document.getElementById("AcceptClick");
 
@@ -417,6 +430,20 @@ export function makeStruct(keys) {
     }
     return constructor;
   }
+  const Wave = makeStruct("ShaderProgram, vertexBuffer, indexBuffer, VertexCount, normalBuffer, \
+    textureBuffer, PosOffset, RowNum, ColNum, PositionsArray, IndicesArray, Color, \
+    Position, Rotation, Scale, \
+    ParentTrans, ParentScale\
+    Texture");
+    const Quad = makeStruct("ShaderProgram, vertexBuffer, indexBuffer, VertexCount, normalBuffer, \
+    textureBuffer, PositionsArray, IndicesArray, Color, \
+    Position, Rotation, Scale, \
+    ParentTrans, ParentScale\
+    Texture3D, Texture, DepthTexture, TextureBN, PrevTexture");
+    const QuadStar = makeStruct("ShaderPrrogram, vertexBuffer, indexBuffer, VertexCount, normalBuffer, \
+    textureBuffer, QuadPosBuffer, PositionsArray, IndicesArray, Color, LocalPosArray, QuadPosArray, \
+    ParentTrans, ParentScale \
+    DepthTexture");
 
 
   async function SetUpAboutMeAudio()
@@ -1125,9 +1152,40 @@ async function LoadAboutMe()
       let StarTrans = new Transform(Pos, Rot, Scale);
       gStarTransforms.push(StarTrans);
     }
+    gSceneLoadState.AboutMe = true;
 }
-async function LoadLiquidSim()
+async function LoadFluidSim()
 {
+  if (gSceneLoadState.LiquidSim == true) {return}
+  //Clear screen to solid color
+  gActiveMainLoop = LoadLoop;
+  document.getElementById("Gif").style.opacity = 1.0;
+  document.getElementById("LoadTxt").style.opacity = 1.0;
+
+  gTime = new Date();
+  let initTime = gTime.getTime() * .001;
+  let LoadTxt = document.getElementById("LoadTxt");
+  LoadTxt.style.color = 'ffb700';
+  let ScreenSpaceOrigin = [0.0,0.0,0.0];
+  let FluidSimQuad = new Quad(gShaderProgramSkybox, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
+    [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null, null);
+  GenerateQuad(FluidSimQuad,1.0,ScreenSpaceOrigin); 
+  let SimDim = [512, 512];
+  let StartVals = [255, 255, 255, 255];
+  let IterNum = 20;
+  gFluidSimObj = new FluidSim2D(FluidSimQuad, SimDim, StartVals, IterNum);
+  await gFluidSimObj.SetUpText();
+  await gFluidSimObj.UpdateText();
+  console.log(gFluidSimObj);
+
+  //Make sure load is cleared if not caught in load loop
+  document.getElementById("Gif").style.opacity = 0.0;
+  document.getElementById("LoadTxt").style.opacity = 0.0;
+  gGL.clearColor(0.0, 0.0, 0.0, 0.0); //Pink
+  gGL.clear(gGL.COLOR_BUFFER_BIT); //Command to clear buffer bit and fill with clear color
+
+
+  gSceneLoadState.LiquidSim = true;
 
 }
 
@@ -1482,15 +1540,15 @@ function Input() //For Computer
     //Left = 2
     //Right = 3 const Camera = makeStruct("Eye, ViewDir, UpDir");
     let Direction = -1;
-    if (gKeysPressed['w']){Direction = 0; CameraMove(gCamera, Direction, gDeltaTime);}
-    if (gKeysPressed['s']){Direction = 1; CameraMove(gCamera, Direction, gDeltaTime);}
-    if (gKeysPressed['a']){Direction = 2; CameraMove(gCamera, Direction, gDeltaTime);}
-    if (gKeysPressed['d']){Direction = 3; CameraMove(gCamera, Direction, gDeltaTime);}
+    if (gKeysPressed['w']){Direction = 0; CameraMove(gCamera, Direction, DeltaTime);}
+    if (gKeysPressed['s']){Direction = 1; CameraMove(gCamera, Direction, DeltaTime);}
+    if (gKeysPressed['a']){Direction = 2; CameraMove(gCamera, Direction, DeltaTime);}
+    if (gKeysPressed['d']){Direction = 3; CameraMove(gCamera, Direction, DeltaTime);}
     if (gKeysPressed['p'] && gActiveMainLoop == TransformationLoop){PlayTransformSong();}
     if (gKeysPressed['y'] && !gConditions.AudioInit) { document.getElementById("PlayMusic").style.opacity = 0.0; if (gAudioContext.state == "suspended" ){gAudioContext.resume();} AcceptObj.Play(0); MainThemeObj.Play(1); gConditions.AudioInit = true;}
     if (gKeysPressed['n']) { document.getElementById("PlayMusic").style.opacity = 0.0;}
     if (gKeysPressed['Tab'] && document.pointerLockElement === gCanvas){document.exitPointerLock();gKeysPressed['Tab'] = false;} // so I don't leave zoom callws :(
-    if (gKeysPressed['h'] && gActiveMainLoop == AboutMeLoop) {document.getElementById("GoHome").style.opacity = 0.0; GoHome();}
+    if (gKeysPressed['h'] && (gActiveMainLoop == AboutMeLoop || gActiveMainLoop == FluidVisLoop)) {document.getElementById("GoHome").style.opacity = 0.0; GoHome();}
     if (gKeysPressed['x'] && gActiveMainLoop == TransformationLoop) {document.getElementById("ExitCam").style.opacity = 0.0; gCamera.ActiveAniClip = null;} //exit camera animation
     if (gKeysPressed['i'] && gActiveMainLoop == TransformationLoop) {document.getElementById("ExitCam").style.opacity = 0.0;} //Hide Exit Message
 
@@ -1512,6 +1570,7 @@ function CheckRaycast(SelectColor, DeselectColor)
  
   let ObjIndex = (MousePixel[0] - 1); // -1 for indexing against array
   gRaycastIndex = ObjIndex;
+  //console.log(gRaycastIndex);
 
   for (let Obj of gRaycastColecMain)//reset all to deselect color
     {
@@ -1543,8 +1602,8 @@ else if(gActiveMainLoop == TransformationLoop)
   if (ObjIndex == -1) {return null;}
 
   let ObjSelec = gRaycastColecTransform[ObjIndex];
-  console.log(ObjSelec);
-  console.log("Index " + ObjIndex + " Raycast Colec " + gRaycastColecTransform.length);
+  //console.log(ObjSelec);
+  //console.log("Index " + ObjIndex + " Raycast Colec " + gRaycastColecTransform.length);
   ObjSelec.Color = SelectColor;
   let DispObj = gRCDict.get(ObjSelec);
   if (DispObj != null && "isHover" in DispObj){DispObj.isHover = 1.0;}
@@ -1569,10 +1628,10 @@ async function RaycastClick(Obj)
       gCamera.Eye[2] = -150.0;
       gCamera.Eye[1] = 25.0;
       gCharArmature.StartTime = gTimeSinceRun * .001;
-      Sound2.currentTime = 0;
-      Sound2.pause();
-      Sound1.pause();
-      Sound1.currentTime = 0;
+      SoundMainTheme.currentTime = 0;
+      SoundMainTheme.pause();
+      SoundTransformSound.pause();
+      SoundTransformSound.currentTime = 0;
       gMidiObj.StartMidi();
       gMidiObj.StopMidi();
       gCharArmature.Timeline.clearAniClips();
@@ -1585,15 +1644,25 @@ async function RaycastClick(Obj)
       gCamera.Eye[2] = -550.0;
       gCamera.Eye[1] = 0.0;
       gCamera.UpDir = [0.0,1.0,0.0];
-      Sound2.currentTime = 0;
-      Sound2.pause();
-      Sound1.pause();
-      Sound1.currentTime = 0;
+      SoundMainTheme.currentTime = 0;
+      SoundMainTheme.pause();
+      SoundTransformSound.pause();
+      SoundTransformSound.currentTime = 0;
       document.getElementById("PlayMusic").style.opacity = 0.0;
       document.getElementById("GoHome").style.opacity = 1.0;
       let Speed = .7;
       gCharMeAniMixer = AddAnimation(gSceneAboutMe, gCharMeAniMixer, gCharMeAniClips[0], Speed);
       TriggerAboutMeSong();
+      break;
+    case gOpt3:
+      if (gSceneLoadState.LiquidSim == false) {await LoadFluidSim();}
+      document.exitPointerLock();
+      gActiveMainLoop = FluidVisLoop;
+      gCamera.Eye = [0.0,0.0,0.0];
+      SoundMainTheme.currentTime = 0;
+      SoundMainTheme.pause();
+      document.getElementById("PlayMusic").style.opacity = 0.0;
+
       break;
     case gHomeButton:
         document.getElementById("ExitCam").style.opacity = 0.0;
@@ -1602,7 +1671,7 @@ async function RaycastClick(Obj)
     case gPauseButton:
       document.getElementById("ExitCam").style.opacity = 0.0;
       console.log("Pausing");
-      Sound1.pause();
+      SoundTransformSound.pause();
       //Sound1.currentTime = 0;
       gMidiObj.StopMidi();
       break
@@ -1627,23 +1696,24 @@ function GoHome()
       if (gActiveMainLoop == AboutMeLoop) {StopAboutMeSong();}
       gActiveMainLoop = MainLoop;
       console.log("ENTERING MAIN LOOP");
-      Sound1.pause();
-      Sound1.currentTime = 0;
+      SoundTransformSound.pause();
+      SoundTransformSound.currentTime = 0;
       if (gMidiObj != undefined) {gMidiObj.StopMidi()};
-      Sound2.pause();
-      Sound2.currentTime = 0;
-      Sound2.play();
+      SoundMainTheme.pause();
+      SoundMainTheme.currentTime = 0;
+      SoundMainTheme.play();
 }
 async function PlayTransformSong()
 {
+  //Woops I broke the animation with the loading :(
     await gMidiObj.StopMidi(); 
-    Sound1.pause();
+    SoundTransformSound.pause();
     //Sound1.currentTime = 0;
-    Sound1.play();
+    SoundTransformSound.play();
     gMidiObj.StartMidi();
     gCamera.ActiveAniClip = CamAniClips[0];
     CamAniClips[0].ConnectedCamera = gCamera;
-    gCapturer.start();
+    //gCapturer.start();
     //gIsRecording = true; //Turnon to enable recording
 
 }
@@ -1662,7 +1732,7 @@ function ClickFunc(event)
   
   if(document.activeElement == document.getElementById("Body"))
   {
-    if (gCanvas.requestPointerLock && !gIsMobile) {
+    if (gCanvas.requestPointerLock && !gIsMobile && gActiveMainLoop != FluidVisLoop) {
       gCanvas.requestPointerLock();
     } else {
       console.error("Pointer Lock API not supported");
@@ -1715,7 +1785,7 @@ const MainLoop = ()=>
 {
     gTime = new Date();
     let newTime = gTime.getTime();
-    gDeltaTime = newTime - gPreviousTime;
+    DeltaTime = newTime - gPreviousTime;
     gTimeSinceRun = newTime - gTimeStart;
     gPreviousTime = newTime;
 
@@ -1731,10 +1801,10 @@ const MainLoop = ()=>
     }
     
       //Animation
-      gSpellCircle.Rotation[1] += gDeltaTime * .002; //Spell Volume Rotate
+      gSpellCircle.Rotation[1] += DeltaTime * .002; //Spell Volume Rotate
       gSpellCircleVolume.Rotation[1] = gSpellCircle.Rotation[1];
       gSpellCircleVolume.Scale[2] = 1.0 + (4.0 * Math.sin(gTime/800.0));//Spell Volume pulse
-      gAtSign.Rotation[1] += gDeltaTime * .25;
+      gAtSign.Rotation[1] += DeltaTime * .25;
       let ViewMat = GetViewMatrix(gCamera);
       
       MainThemeObj.SetPan(ViewMat, gAudioContext.currentTime);
@@ -1816,7 +1886,8 @@ const MainLoop = ()=>
     Draw(gProgramInfoStar, gStars, gCamera, gLight1);
     gGL.depthMask(false);
     gGL.disable(gGL.DEPTH_TEST); 
-    Draw(gProgramInfoCloud, gNoiseCube, gCamera, gLight1);
+    Draw(gProgramInfoCloud, gNoiseCube, gCamera, gLight1); //set fog as deactive for now
+    //cause changing image type to float32 made it super inefficient
     gGL.enable(gGL.DEPTH_TEST);
     gGL.depthMask(true);
     
@@ -1839,7 +1910,7 @@ const MainLoop = ()=>
     Draw(gProgramInfoFlat, gCharHead, gCamera, gLight1);
     Draw(gProgramInfoFlat, gCharHair, gCamera, gLight1);
     Draw(gProgramInfoDef, gAtSign, gCamera, gLight1);
-    Draw(gProgramInfoDef, gMusicNote, gCamera, gLight1);
+    Draw(gProgramInfoColor, gMusicNote, gCamera, gLight1);
     gGL.disable(gGL.DEPTH_TEST);
     
     gScreenSpaceQuad.Texture = gGlassRendText;
@@ -1850,11 +1921,12 @@ const MainLoop = ()=>
     {
       Draw(gProgramInfoScreenImage, gCrossHair, gCamera, gLight1);
     }
-   // Draw(gProgramInfoElenco, gElencoVis, gCamera, gLight1);
+   
     
   
     gFrameCount++;
     gCycleNum++;
+    
     if (gActiveMainLoop != MainLoop) {gInitLoad = true;}
     else {gInitLoad = false;}
     requestAnimationFrame(gActiveMainLoop);
@@ -1867,10 +1939,10 @@ const TransformationLoop = ()=>
 {
   gTime = new Date();
   let newTime = gTime.getTime();
-  gDeltaTime = newTime - gPreviousTime;
+  DeltaTime = newTime - gPreviousTime;
   gTimeSinceRun = newTime - gTimeStart;
   gPreviousTime = newTime;
-  if (gIsRecording) {gCaptureTime += gDeltaTime * .001}
+  if (gIsRecording) {gCaptureTime += DeltaTime * .001}
   
 
   Input();
@@ -1886,7 +1958,7 @@ const TransformationLoop = ()=>
   gFleshGroundL.lightness = gMidiObj.ccVals[1];
   gFleshGroundR.lightness = gMidiObj.ccVals[1];
   gFleshParticles.Position[1] = -300.0 + (Math.abs(gSinView[Math.floor(gTimeSinceRun * .24) % WAVE_BUFFER_SIZE]) + gCharTrans.Position[1]) * 50.0;
-  console.log(" Elapsed Time " + Sound1.currentTime);
+  //console.log(" Elapsed Time " + SoundTransformSound.currentTime);
   if (gCamera.ActiveAniClip != null) //Camera Animation
       {
         if (gCamera.ActiveAniClip.Running == false)
@@ -1904,6 +1976,7 @@ const TransformationLoop = ()=>
   ClearFBO(gRaycastFBO, gGL);
   ClearFBO(gGlassFBO, gGL);
   ClearFBO(gBloomFBO, gGL);
+  
 
   gGL.bindFramebuffer(gGL.FRAMEBUFFER, gRaycastFBO);
   gGL.viewport(0, 0, gCanvasWidth, gCanvasHeight);
@@ -2101,15 +2174,9 @@ const AboutMeLoop = async ()=>
 {
   gTime = new Date();
     let newTime = gTime.getTime();
-    gDeltaTime = newTime - gPreviousTime;
+    DeltaTime = newTime - gPreviousTime;
     gTimeSinceRun = newTime - gTimeStart;
     gPreviousTime = newTime;
-    if (gFrameCount % 2 == 0)
-    {
-      WaveUpdateMesh(gSimpleWave, .5);
-      CalculateNormals(gSimpleWave);
-      CalculateBoatRot();
-    }
 
     Input();
     gMouseMoved = Math.abs(gDeltaMouse[0]) + Math.abs(gDeltaMouse[1]) >= .001 ? true : false;
@@ -2126,7 +2193,7 @@ const AboutMeLoop = async ()=>
         gVisualsText.Rotation[0] = initRot + .2 * gSinView[Math.floor((gTimeSinceRun * 1.0)%WAVE_BUFFER_SIZE)];
       gVisualsText.Scale[1] = 30.0 + initSize + 40.0 * gSinView[Math.floor((gTimeSinceRun)%WAVE_BUFFER_SIZE)];
       //({Dict: gCharMeDict} = await UpdateModel(gSceneAboutMe, gCharMeDict)); //sets skeleton as undefined
-      gCharMeAniMixer.update(gDeltaTime * .001);
+      gCharMeAniMixer.update(DeltaTime * .001);
       gSceneAboutMe.updateMatrix();         
       gSceneAboutMe.updateMatrixWorld(); 
       //Update Music pan pos
@@ -2256,6 +2323,149 @@ const AboutMeLoop = async ()=>
     else {gInitLoad = false;}
     requestAnimationFrame(gActiveMainLoop);
 }
+//=======================FLUID VIS=======================================
+//=======================FLUID VIS=======================================
+//=======================FLUID VIS=======================================
+const FluidVisLoop = ()=> 
+{
+  //Next Step- Set up mouse influence on fluid sim
+  //Save Mouse Position and mouse velocity to shader
+  //Take v number of tiles behind and turn their velocity into Mouse Direction
+  //Place this before UnDiverge in Mouse Fluid Shader
+  gGL.disable(gGL.BLEND);
+  gTime = new Date();
+    let newTime = gTime.getTime();
+    DeltaTime = newTime - gPreviousTime;
+    gTimeSinceRun = newTime - gTimeStart;
+    gPreviousTime = newTime;
+    
+    DrawCallSetup();
+    gGL.disable(gGL.CULL_FACE);
+    Input();
+    ClearFBO(null, gGL);
+    ClearFBO(gMainFBO, gGL);
+    ClearFBO(gRaycastFBO, gGL);
+    ClearFBO(gGlassFBO, gGL);
+    ClearFBO(gFluidFBO, gGL);
+
+   
+    gGL.bindFramebuffer(gGL.FRAMEBUFFER, gFluidFBO);
+    gGL.viewport(0, 0, gFluidSimObj.Dimensions[0], gFluidSimObj.Dimensions[1]);
+    gCamera.Width = gFluidSimObj.Dimensions[0]; //Changing to temp scaled down for fluid sim
+    gCamera.Height = gFluidSimObj.Dimensions[1];
+    let ResRatio = [gCamera.Width / gCanvasWidth, gCamera.Height / gCanvasHeight];
+    gScaledMousePos = [(gCurrentMousePos[0] * ResRatio[0]) / gCamera.Width, (gCurrentMousePos[1] * ResRatio[1]) / gCamera.Height];
+    gScaledDeltaMouse = [(gDeltaMouse[0] * ResRatio[0]) / gCamera.Width, (gDeltaMouse[1] * ResRatio[1]) / gCamera.Height];
+    // ===========Fluid Density Pass===========
+    for (let iter = 0; iter < gFluidSimObj.IterNum; iter++)
+    {
+      Draw(gProgramInfoScreenFluidDisp, gFluidSimObj.ScreenQuad, gCamera, gLight1);
+
+      gGL.activeTexture(gGL.TEXTURE9);
+      gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
+
+      gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0], gFluidSimObj.Dimensions[1]);
+      gFluidSimObj.UpdateIter();
+      gFluidSimObj.SwapText();
+    }
+    gFluidSimObj.UpdateText(); 
+    // =============BORDER UPD===================
+    Draw(gProgramInfoScreenFluidBorder, gFluidSimObj.ScreenQuad, gCamera, gLight1);
+    //Save to readText
+    gGL.activeTexture(gGL.TEXTURE9); 
+    gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0], gFluidSimObj.Dimensions[1]);
+
+    gFluidSimObj.SwapText();
+    gFluidSimObj.UpdateText(); 
+    //=============ADVECT===================
+    //Apply velocity field to densitys 
+    
+    Draw(gProgramInfoScreenFluidAdvect, gFluidSimObj.ScreenQuad, gCamera, gLight1);
+    //Save to readText
+    gGL.activeTexture(gGL.TEXTURE9); 
+    gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0], gFluidSimObj.Dimensions[1]);
+
+    gFluidSimObj.SwapText();
+    gFluidSimObj.UpdateText(); 
+    //=============BORDER UPD===================
+    Draw(gProgramInfoScreenFluidBorder, gFluidSimObj.ScreenQuad, gCamera, gLight1);
+    //Save to readText
+    gGL.activeTexture(gGL.TEXTURE9); 
+    gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0], gFluidSimObj.Dimensions[1]);
+
+    gFluidSimObj.SwapText();
+    gFluidSimObj.UpdateText(); 
+
+    //============ MOUSE MOVEMENT===================
+    Draw(gProgramInfoScreenFluidMouseMove, gFluidSimObj.ScreenQuad, gCamera, gLight1);
+    //Save to readText
+    gGL.activeTexture(gGL.TEXTURE9); 
+    gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0], gFluidSimObj.Dimensions[1]);
+
+    gFluidSimObj.SwapText();
+    gFluidSimObj.UpdateText(); 
+
+    //=============UnDiverge===================
+  
+    // //Gen Divergence
+    Draw(gProgramInfoScreenFluidFindDivergence, gFluidSimObj.ScreenQuad, gCamera, gLight1);
+
+    gGL.activeTexture(gGL.TEXTURE9);
+    gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.DivergeText);
+
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0], gFluidSimObj.Dimensions[1]);
+
+    gFluidSimObj.ScreenQuad.TextureBN = gFluidSimObj.DivergeText; // set to texturebn just to not have an extra member for the struct
+    [gFluidSimObj.ReadText, gFluidSimObj.HoldText] = gFluidSimObj.SwapText2(gFluidSimObj.ReadText, gFluidSimObj.HoldText); //save Dense and velo text in Hold
+    // //Pressure Solve
+    for (let iter = 0; iter < gFluidSimObj.IterNum; iter++)
+    {
+        Draw(gProgramInfoScreenFluidPressureSolver, gFluidSimObj.ScreenQuad, gCamera, gLight1);
+
+        gGL.activeTexture(gGL.TEXTURE9);
+        gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
+
+        gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0], gFluidSimObj.Dimensions[1]);
+        gFluidSimObj.UpdateIter();
+        gFluidSimObj.SwapText();
+
+    }
+
+    // //Velocity Correction
+    [gFluidSimObj.PressureText, gFluidSimObj.ReadText] = gFluidSimObj.SwapText2(gFluidSimObj.PressureText, gFluidSimObj.ReadText); // Steal last value from iter loop to use for pressure text
+    gFluidSimObj.ScreenQuad.TextureBN = gFluidSimObj.PressureText; // For use in next shader compute
+    [gFluidSimObj.ReadText, gFluidSimObj.HoldText] = gFluidSimObj.SwapText2(gFluidSimObj.ReadText, gFluidSimObj.HoldText); //Bring Density and velo back to Main txt
+    gFluidSimObj.UpdateText(); //update screenquad values //
+
+    Draw(gProgramInfoScreenFluidPressureCorrect, gFluidSimObj.ScreenQuad, gCamera, gLight1);
+    
+    gGL.activeTexture(gGL.TEXTURE9);
+    gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
+
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0], gFluidSimObj.Dimensions[1]);
+    gFluidSimObj.SwapText();
+    gFluidSimObj.UpdateText(); 
+
+    //============Render Normal Pass========================
+    gGL.viewport(0, 0, gCanvasWidth, gCanvasHeight);
+    gGL.bindFramebuffer(gGL.FRAMEBUFFER, null);
+    gCamera.Width = gCanvasWidth;
+    gCamera.Height = gCanvasHeight;
+    Draw(gProgramInfoScreenFlatFluid, gFluidSimObj.ScreenQuad, gCamera, gLight3);
+    gFrameCount++;
+    gCycleNum++;
+    if (gActiveMainLoop != FluidVisLoop) {gInitLoad = true;}
+    else {gInitLoad = false;}
+    requestAnimationFrame(gActiveMainLoop);
+
+}
+//=======================LOAD LOOP=======================================
+//=======================LOAD LOOP=======================================
+//=======================LOAD LOOP=======================================
 const LoadLoop = ()=>
 {
   //Clear screen to solid color
@@ -2266,7 +2476,7 @@ const LoadLoop = ()=>
     document.getElementById("Gif").style.opacity = 0.0;
     document.getElementById("LoadTxt").style.opacity = 0.0;
     gGL.clearColor(0.0, 0.0, 0.0, 0.0); //Pink
-  gGL.clear(gGL.COLOR_BUFFER_BIT); //Command to clear buffer bit and fill with clear color
+    gGL.clear(gGL.COLOR_BUFFER_BIT | gGL.DEPTH_BUFFER_BIT); //Command to clear buffer bit and fill with clear color
   }
   requestAnimationFrame(gActiveMainLoop);
 }
@@ -2350,7 +2560,11 @@ async function main() {
     );
     return;
   }
-
+  gGL.getExtension('EXT_color_buffer_float');
+  const extLinearFloat = gGL.getExtension("OES_texture_float_linear");
+if (!extLinearFloat) {
+    console.error("Your browser/hardware does not support linear filtering for 32-bit float textures!");
+}
   //Clear screen to solid color
   gGL.clearColor(.8, .5, .65, 1.0); //Pink
   gGL.clear(gGL.COLOR_BUFFER_BIT); //Command to clear buffer bit and fill with clear color
@@ -2366,6 +2580,7 @@ async function main() {
   gVertMorph = await loadShaderFiles(gVertMorph, './Shaders/MorphVert.glsl');
   gVertTreeMorph = await loadShaderFiles(gVertTreeMorph, './Shaders/TreeMorphVert.glsl');
   gVertGLTFDef = await loadShaderFiles(gVertGLTFDef, './Shaders/GLTFDefaultVert.glsl');
+  gVertSkyboxHigh = await loadShaderFiles(gVertGLTFDef, './Shaders/SkyboxHighVert.glsl');
   //Frag
   gFragSourceWave = await loadShaderFiles(gFragSourceWave, './Shaders/WaveFrag.glsl');
   gFragSourceFlat = await loadShaderFiles(gFragSourceFlat, './Shaders/FlatFrag.glsl');
@@ -2381,7 +2596,6 @@ async function main() {
   gFragScreenFlat = await loadShaderFiles(gFragScreenFlat, './Shaders/ScreenFlatFrag.glsl');
   gFragTransFlat = await loadShaderFiles(gFragTransFlat,'./Shaders/TransFlatFrag.glsl');
   gFragFlesh = await loadShaderFiles(gFragFlesh, './Shaders/FleshFrag.glsl');
-  gFragElenco = await loadShaderFiles(gFragElenco, './Shaders/ElencoScreenFrag.glsl');
   gFragMorph = await loadShaderFiles(gFragMorph, './Shaders/MorphFrag.glsl');
   gFragTreeMorph = await loadShaderFiles(gFragTreeMorph, './Shaders/TreeMorphFrag.glsl');
   gFragScreenBGTrans = await loadShaderFiles(gFragScreenBGTrans, './Shaders/ScreenBGFrag.glsl');
@@ -2389,14 +2603,20 @@ async function main() {
   gFragPostProcessingAndrew = await loadShaderFiles(gFragPostProcessingAndrew, './Shaders/PostProcessingAndrewFrag.glsl');
   gFragToon = await loadShaderFiles(gFragToon, './Shaders/ToonFrag.glsl');//unused
   gFragPostProcessing = await loadShaderFiles(gFragPostProcessing, './Shaders/PostProcessingFrag.glsl');
-
-
+  gFragScreenFluidDisp = await loadShaderFiles(gFragScreenFluidDisp, './Shaders/ScreenFluidDispFrag.glsl');
+  gFragScreenFluidAdvect = await loadShaderFiles(gFragScreenFluidAdvect, './Shaders/ScreenFluidAdvectFrag.glsl');
+  gFragScreenFlatFluid = await loadShaderFiles(gFragScreenFlatFluid, './Shaders/ScreenFlatFluid.glsl');
+  gFragScreenFluidFindDivergence = await loadShaderFiles(gFragScreenFluidFindDivergence, './Shaders/ScreenFluidFindDivergenceFrag.glsl');
+  gFragScreenFluidPressureSolver = await loadShaderFiles(gFragScreenFluidPressureSolver, './Shaders/ScreenFluidPressureSolverFrag.glsl');
+  gFragScreenFluidBorder = await loadShaderFiles(gFragScreenFluidBorder, './Shaders/ScreenFluidBorderFrag.glsl');
+  gFragScreenFluidPressureCorrect = await loadShaderFiles (gFragScreenFluidPressureCorrect, './Shaders/ScreenFluidPressureCorrectFrag.glsl');
+  gFragScreenFluidMouseMove = await loadShaderFiles (gFragScreenFluidMouseMove, './Shaders/ScreenFluidMouseMoveFrag.glsl');
 
   gShaderProgramWave = initShader(gGL, gVertSourceDef,gFragSourceWave);
   gShaderProgramFlat = initShader(gGL, gVertSourceDef,gFragSourceFlat);
   gShaderProgramCloud = initShader(gGL, gVertSourceDef,gFragSourceCloud);
   gShaderProgramSkybox = initShader(gGL, gVertSkybox,gFragSkybox);
-  gShaderProgramColor = initShader(gGL, gVertSkybox, gFragColor);
+  gShaderProgramColor = initShader(gGL, gVertSourceDef, gFragColor);
   gShaderProgramStar = initShader(gGL, gVertStar, gFragStar);
   gShaderProgramFleshPart = initShader(gGL, gVertStar, gFragFleshPart);
   gShaderProgramVolGlow = initShader(gGL, gVertSourceDef, gFragVolGlow);
@@ -2407,7 +2627,6 @@ async function main() {
   gShaderProgramScreenImage = initShader(gGL, gVertSkybox, gFragSourceFlat);
   gShaderProgramTrans = initShader(gGL, gVertTrans, gFragTransFlat);
   gShaderProgramFlesh = initShader(gGL, gVertFlesh, gFragFlesh);
-  gShaderProgramElenco = initShader(gGL, gVertSkybox, gFragElenco);
   gShaderProgramMorph = initShader(gGL, gVertMorph, gFragMorph);
   gShaderProgramTreeMorph = initShader(gGL, gVertTreeMorph, gFragTreeMorph);
   gShaderProgramScreenBGTrans = initShader(gGL, gVertSkybox, gFragScreenBGTrans);
@@ -2416,6 +2635,14 @@ async function main() {
   gShaderProgramPostProcessingAndrew = initShader(gGL, gVertSkybox, gFragPostProcessingAndrew);
   gShaderProgramToon = initShader(gGL, gVertSourceDef, gFragToon);
   gShaderProgramPostProcessing = initShader(gGL, gVertSkybox, gFragPostProcessing);
+  gShaderProgramScreenFluidDisp = initShader(gGL, gVertSkyboxHigh, gFragScreenFluidDisp);
+  gShaderProgramScreenFluidAdvect = initShader(gGL, gVertSkyboxHigh, gFragScreenFluidAdvect);
+  gShaderProgramScreenFlatFluid = initShader(gGL, gVertSkybox, gFragScreenFlatFluid);
+  gShaderProgramScreenFluidFindDivergence = initShader(gGL, gVertSkyboxHigh, gFragScreenFluidFindDivergence);
+  gShaderProgramScreenFluidPressureSolver = initShader(gGL, gVertSkyboxHigh, gFragScreenFluidPressureSolver);
+  gShaderProgramScreenFluidBorder = initShader(gGL, gVertSkyboxHigh, gFragScreenFluidBorder);
+  gShaderProgramScreenFluidPressureCorrect = initShader(gGL, gVertSkyboxHigh, gFragScreenFluidPressureCorrect);
+  gShaderProgramScreenFluidMouseMove = initShader(gGL, gVertSkyboxHigh, gFragScreenFluidMouseMove);
   //Shaders done
   LoadTxt.style.color = '#ff0000'; 
   
@@ -2436,7 +2663,6 @@ async function main() {
      gProgramInfoScreenImage, gShaderProgramScreenImage,
      gProgramInfoTrans, gShaderProgramTrans,
      gProgramInfoFlesh, gShaderProgramFlesh,
-     gProgramInfoElenco, gShaderProgramElenco,
      gProgramInfoFleshPart, gShaderProgramFleshPart,
      gProgramInfoMorph, gShaderProgramMorph,
      gProgramInfoTreeMorph, gShaderProgramTreeMorph,
@@ -2446,6 +2672,14 @@ async function main() {
      gProgramInfoPostProcessingAndrew, gShaderProgramPostProcessingAndrew,
      gProgramInfoToon, gShaderProgramToon,
      gProgramInfoPostProcessing, gShaderProgramPostProcessing,
+     gProgramInfoScreenFluidDisp, gShaderProgramScreenFluidDisp,
+     gProgramInfoScreenFluidAdvect, gShaderProgramScreenFluidAdvect,
+     gProgramInfoScreenFlatFluid, gShaderProgramScreenFlatFluid,
+     gProgramInfoScreenFluidFindDivergence, gShaderProgramScreenFluidFindDivergence,
+     gProgramInfoScreenFluidBorder, gShaderProgramScreenFluidBorder,
+     gProgramInfoScreenFluidPressureSolver, gShaderProgramScreenFluidPressureSolver,
+     gProgramInfoScreenFluidPressureCorrect, gShaderProgramScreenFluidPressureCorrect,
+     gProgramInfoScreenFluidMouseMove, gShaderProgramScreenFluidMouseMove,
      );
   
     SinPreComp(gSinView,WAVE_BUFFER_SIZE);
@@ -2456,52 +2690,32 @@ async function main() {
     //Precomps set
     LoadTxt.style.color = '#ff2f00'; 
 
- 
-    const Wave = makeStruct("ShaderProgram, vertexBuffer, indexBuffer, VertexCount, normalBuffer, \
-    textureBuffer, PosOffset, RowNum, ColNum, PositionsArray, IndicesArray, Color, \
-    Position, Rotation, Scale, \
-    ParentTrans, ParentScale\
-    Texture");
-    const Quad = makeStruct("ShaderProgram, vertexBuffer, indexBuffer, VertexCount, normalBuffer, \
-    textureBuffer, PositionsArray, IndicesArray, Color, \
-    Position, Rotation, Scale, \
-    ParentTrans, ParentScale\
-    Texture3D, Texture, DepthTexture, TextureBN");
-    const QuadStar = makeStruct("ShaderPrrogram, vertexBuffer, indexBuffer, VertexCount, normalBuffer, \
-    textureBuffer, QuadPosBuffer, PositionsArray, IndicesArray, Color, LocalPosArray, QuadPosArray, \
-    ParentTrans, ParentScale \
-    DepthTexture");
     
     //=====Main Scene======
     gSkybox = new Quad(gShaderProgramSkybox, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
-    [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null);
+    [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null, null);
     let SkyboxOrigin = [0.0,0.0,0.0];
     GenerateQuad(gSkybox,1.0,SkyboxOrigin);  
 
     gScreenSpaceQuad = new Quad(gShaderProgramSkybox, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
-      [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null);
+      [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null, null);
     let ScreenSpaceOrigin = [0.0,0.0,0.0];
     GenerateQuad(gScreenSpaceQuad,1.0,ScreenSpaceOrigin);  
 
 
     //=========Trans=============
     gScreenSpaceQuadTrans = new Quad(gShaderProgramSkybox, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
-      [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null);
+      [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null, null);
       GenerateQuad(gScreenSpaceQuadTrans,1.0,ScreenSpaceOrigin);  
 
     gPostProcessingQuad = new Quad(gShaderProgramSkybox, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
-      [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null);
+      [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null, null);
     GenerateQuad(gPostProcessingQuad,1.0,ScreenSpaceOrigin);  
 
     gCrossHair = new Quad(gShaderProgramSkybox, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
-      [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null);
+      [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null, null);
     let CrossHairOrigin = [0.0,0.0,0.0];
     GenerateQuad(gCrossHair,.02,CrossHairOrigin);  
-
-    gElencoVis = new Quad(gShaderProgramElenco, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
-      [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null);
-    let ElencoOrigion = [0.0,0.0,0.0];
-    GenerateQuad(gElencoVis, 1.0, ElencoOrigion);
     
 
     gSimpleWave = new Wave(gShaderProgramWave, 0,0,0,[], [],[0.0,0.0,0.0],0,0,[], [], 
@@ -2575,12 +2789,16 @@ async function main() {
     gBloomDepthMap = genDepthMap(gGL, gCanvasWidth, gCanvasHeight);
     gBloomRendText = genEmptyTex(gGL, gCanvasWidth, gCanvasHeight);
     gBloomFBO = genFBO(gGL, gBloomDepthMap, gBloomRendText);
+    gFluidDepthMap = genDepthMap(gGL, gCanvasWidth, gCanvasHeight);
+    gFluidRendText = genEmptyTex(gGL, gCanvasWidth, gCanvasHeight, true);
+    gFluidFBO = genFBO(gGL, gFluidDepthMap, gFluidRendText);
+    
     //FBO set
     LoadTxt.style.color = '#ed7300'; 
 
     gTime = new Date();
     let newTime = gTime.getTime();
-    gDeltaTime = newTime- gPreviousTime;
+    DeltaTime = newTime- gPreviousTime;
     gTimeSinceRun = newTime - gTimeStart;
     gPreviousTime = newTime;
     await LoadMainScene();
@@ -2592,6 +2810,9 @@ async function main() {
     BoatWaveIndexFind();
     gActiveMainLoop = MainLoop;
     gIsLoading = false;
+
+
+
     gActiveMainLoop();
     document.getElementById("Gif").style.opacity = 0.0;
     document.getElementById("GoHome").style.opacity = 0.0;

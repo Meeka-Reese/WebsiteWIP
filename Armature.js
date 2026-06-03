@@ -1,6 +1,6 @@
 import { mat4,vec3,vec4,quat } from './Externals/esm/index.js';
 import { loadTexture, LoadImage } from  './ShaderFunc.js';
-import { gGL, gTimeSinceRun } from './webgl-demo.js';
+import { gTimeSinceRun } from './webgl-demo.js';
 import { CreateImageArray } from './ShaderFunc.js';
 import { Keyframe, Timeline, AnimationClip, CharClips, gInitTransClip} from './Animation.js';
 import { lerp, Vec3ArrLerp} from './Utils.js';
@@ -187,7 +187,7 @@ export class Armature{
             if ((keyframe.Time + keyframe.StartTime) < DeltaTime) {continue;} // if end time is less than dela time continue
             if ((keyframe.StartTime) > DeltaTime) {continue;} // if start is in the future continue
             let Alpha = keyframe.Time != 0 ? Math.min((DeltaTime - keyframe.StartTime) / (keyframe.Time - keyframe.StartTime), 1) : 1; // Alpha working
-            console.log(Alpha);
+           // console.log(Alpha);
             
             let ActiveBoneIndex = this.BoneStringColec.indexOf(keyframe.BoneName); //ind of bone in keyframe
             ActiveBone = this.BoneColec[ActiveBoneIndex]; //bone in keyframe
@@ -211,7 +211,7 @@ export class Armature{
             if (keyframe.PreviousRot == null)
             {
                 keyframe.PreviousRot = RecentKeyframe == null ? ActiveBone.Rotation : RecentKeyframe.Rotation;
-                console.log("Previous Rot set at " + keyframe.PreviousRot);
+                //console.log("Previous Rot set at " + keyframe.PreviousRot);
             }
             if (keyframe.PreviousScale == null)
             {

@@ -38,9 +38,16 @@
         <script src="./Externals/src_CC/Whammy.js"></script> 
         <script src="./Externals/src_CC/webm-writer-0.2.0.js"></script> 
         <script>window.gCapturer = new CCapture({ format: 'webm', framerate: 60});
+            //============ Global Vars ============
                 window.gIsRecording = false;
                 window.gCaptureTime = 0.0;
                 window.gIsMobile = false;
+                window.gGL = null;
+                window.DeltaTime = 0.0;
+                window.gCurrentMousePos = [0.0,0.0];
+                window.gDeltaMouse = [0.0,0.0];
+                window.gScaledMousePos = [0.0,0.0];
+                window.gScaledDeltaMouse = [0.0,0.0];
         </script>
         <!-- Audio Files -->
         <audio id="TransformSong" preload="auto" src="./AudioFiles/Transform24BitMasterNew.wav"></audio>
