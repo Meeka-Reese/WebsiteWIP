@@ -13,7 +13,7 @@
 
     bool BorderCheck(vec2 UV)
         {
-            if (UV.x - UnitSize.x < 0.0 || UV.x + UnitSize.x > 1.0 ||
+            if (UV.x - UnitSize.x < 0.0 || UV.x + UnitSize.x > .5 ||
             UV.y - UnitSize.y < 0.0 || UV.y + UnitSize.y > 1.0)
             {
                 return true;
@@ -61,16 +61,18 @@
     }
     void main()
     {
-        float DiffAm = 0.1;
-        float Ratio = (uResolution.x * .5) / uResolution.y;
+        float DiffAm = 0.0;
         vec2 NewCord = gl_FragCoord.xy;
         vec2 screenSpace = vec2(((NewCord.x)/(uResolution.x)), 
         (NewCord.y/(uResolution.y)));
+        vec2 UVR = vec2(screenSpace.x - .5, screenSpace.y);
+        vec2 UVL = vec2((screenSpace.x * .5), screenSpace.y);
         UnitSize = vec2(1.0 / (uResolution.x), 1.0 / (uResolution.y));
-        float initVal = texture(uTextureScene, screenSpace).r;
-        vec2 Velo = texture(uTextureScene, screenSpace).gb;
-        vec3 Dispersed = Difuse(screenSpace, initVal, Velo, DiffAm, DeltaTime *.1);
-        //Randomly add density 
-        float Rand = rand(Velo * DeltaTime);
-        fragColor = vec4(vec3(Dispersed), 1.0);
+        float initVal = texture(uTextureScene, UVL).r;
+        vec2 Velo = texture(uTextureScene, UVL).gb;
+        vec3 Dispersed = Difuse(UVL, initVal, Velo, DiffAm, DeltaTime *.1);
+
+        vec3 Output = Dispersed;
+      
+        fragColor = vec4(vec3(Output), 1.0);
     }

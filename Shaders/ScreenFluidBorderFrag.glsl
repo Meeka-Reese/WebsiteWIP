@@ -13,15 +13,15 @@
         {
             //Corners 
             if (UV.x - UnitSize.x < 0.0 && UV.y - UnitSize.y < 0.0) {return 4;}//BottomLeft
-            else if (UV.x - UnitSize.x < 0.0 && UV.y + UnitSize.y > 1.0) {return 5;}//TopLeft
-            else if (UV.x + UnitSize.x > 1.0 && UV.y - UnitSize.y < 0.0) {return 6;}//BottomRight
-            else if (UV.x + UnitSize.x > 1.0 && UV.y + UnitSize.y > 1.0) {return 7;}//TopRight
+            else if (UV.x - UnitSize.x < 0.0 && UV.y + UnitSize.y > .5) {return 5;}//TopLeft
+            else if (UV.x + UnitSize.x > .5 && UV.y - UnitSize.y < 0.0) {return 6;}//BottomRight
+            else if (UV.x + UnitSize.x > .5 && UV.y + UnitSize.y > 1.0) {return 7;}//TopRight
             
             if (UV.x - UnitSize.x < 0.0)
             {
                 return 0;
             }
-            else if (UV.x + UnitSize.x > 1.0)
+            else if (UV.x + UnitSize.x > .5)
             {
                 return 1;
             }
@@ -105,9 +105,14 @@
         vec2 NewCord = gl_FragCoord.xy;
         vec2 screenSpace = vec2(((NewCord.x)/(uResolution.x)), 
         (NewCord.y/(uResolution.y)));
+        vec2 UVL = vec2((screenSpace.x * .5), screenSpace.y);
         UnitSize = vec2(1.0 / uResolution.x, 1.0 / uResolution.y);
-        float InitalDensity = texture(uTextureScene, screenSpace).r;
-        vec2 InitalVelocities = texture(uTextureScene, screenSpace).gb;
-        vec3 NewBorder = UpdateBorder(InitalDensity,InitalVelocities, screenSpace);
-        fragColor = vec4(vec3(NewBorder), 1.0);
+        float InitalDensity = texture(uTextureScene, UVL).r;
+        vec2 InitalVelocities = texture(uTextureScene, UVL).gb;
+        vec3 Output = vec3(InitalDensity, InitalVelocities);
+        if (UVL.x < .5)
+        {
+            Output = UpdateBorder(InitalDensity,InitalVelocities, UVL);
+        }
+        fragColor = vec4(vec3(Output), 1.0);
     }

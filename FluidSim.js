@@ -1,4 +1,4 @@
-import { createTexture2DFromBuffer} from './ShaderFunc.js';
+import { createTexture2DFromBuffer, mergeTwoBuffers, loadTexture, loadImageToDataArray} from './ShaderFunc.js';
 import { CreateWorley2D } from './GenerateNoise.js';
 export class FluidSim2D
 {
@@ -12,8 +12,6 @@ export class FluidSim2D
         this.HoldText = null;
         this.DivergeText = null;
         this.PressureText = null;
-        this.ColorReadText = null;
-        this.ColorWriteText = null;
         this.DoubleText = null;
         this.IterNum = IterNum;
     }
@@ -25,6 +23,7 @@ export class FluidSim2D
         let NoiseBuffer = CreateWorley2D(20, this.Dimensions[0]); //breaks if dimensions x != y
         let NoiseBuffer2 = CreateWorley2D(10, this.Dimensions[0]); //breaks if dimensions x != y
         let DoubleEmptyBuffer = new Float32Array(this.Dimensions[0] * 2 * this.Dimensions[1] * 4);
+        let ColAndNoise = new Float32Array(this.Dimensions[0] * 2 * this.Dimensions[1] * 4);
 
         for (let h = 0; h < this.Dimensions[1]; h++)
         {
@@ -45,16 +44,21 @@ export class FluidSim2D
                 EmptyImgBuffer[i+3] = 0.0;
             }
         }
-        let DirCol = './Textures/WaterColor.webp';  
-        this.ReadText = await createTexture2DFromBuffer(gGL, ImgBuffer, this.Dimensions[0], this.Dimensions[1], true);
-        this.HoldText = await createTexture2DFromBuffer(gGL, DoubleEmptyBuffer, this.Dimensions[0], this.Dimensions[1], true);
-        this.WriteText = await createTexture2DFromBuffer(gGL, ImgBuffer, this.Dimensions[0], this.Dimensions[1], true);
-        this.DivergeText = await createTexture2DFromBuffer(gGL, EmptyImgBuffer, this.Dimensions[0], this.Dimensions[1], true); 
-        this.PressureText = await createTexture2DFromBuffer(gGL, EmptyImgBuffer, this.Dimensions[0], this.Dimensions[1], true); 
+        let DirCol = './Textures/GlassNoiseNorm.png';  
+        let ImageObj = await loadImageToDataArray(DirCol, 0, 0, this.Dimensions[0], this.Dimensions[1]);
+        let ColAr = ImageObj.data;
+
+        let BuffAChNum = 4;
+        let BuffBChNum = 4;
+        ColAndNoise = mergeTwoBuffers(ImgBuffer, ColAr, this.Dimensions[0], this.Dimensions[1], BuffAChNum, BuffBChNum); //Converts all to 4 channel rgba
+        //Merge Function setup currently for when both buffers are same size
+        this.ReadText = await createTexture2DFromBuffer(gGL, ColAndNoise, this.Dimensions[0] * 2.0, this.Dimensions[1], true);
+        this.HoldText = await createTexture2DFromBuffer(gGL, DoubleEmptyBuffer, this.Dimensions[0] * 2.0, this.Dimensions[1], true);
+        this.WriteText = await createTexture2DFromBuffer(gGL, ColAndNoise, this.Dimensions[0] * 2.0, this.Dimensions[1], true);
+        this.DivergeText = await createTexture2DFromBuffer(gGL, DoubleEmptyBuffer, this.Dimensions[0] * 2.0, this.Dimensions[1], true); 
+        this.PressureText = await createTexture2DFromBuffer(gGL, DoubleEmptyBuffer, this.Dimensions[0] * 2.0, this.Dimensions[1], true); 
         this.ColorText = await loadTexture(gGL, DirCol, 4);
         this.DoubleText = await createTexture2DFromBuffer(gGL, DoubleEmptyBuffer, this.Dimensions[0] * 2.0, this.Dimensions[1], true);
-        this.ColorWriteText =  await createTexture2DFromBuffer(gGL, EmptyImgBuffer, this.Dimensions[0], this.Dimensions[1], true); 
-        this.ColorReadText =  await createTexture2DFromBuffer(gGL, EmptyImgBuffer, this.Dimensions[0], this.Dimensions[1], true); 
     }
     UpdateIter()
     {
@@ -63,7 +67,6 @@ export class FluidSim2D
     }
     async UpdateText()
     {
-        this.ScreenQuad.DepthTexture = this.ColorWriteText; //Name of screenquad variable needs to be changed to be more multipurpose
         this.ScreenQuad.Texture = this.ReadText; // Current
         this.ScreenQuad.PrevTexture = this.WriteText; //Past text after swap
     }
@@ -72,9 +75,6 @@ export class FluidSim2D
         let temp = this.ReadText;
         this.ReadText = this.WriteText;
         this.WriteText = temp;
-        temp = this.ColorReadText;
-        this.ColorReadText = this.ColorWriteText;
-        this.ColorWriteText = temp;
     }
     SwapText2(a, b)
     {
@@ -88,7 +88,7 @@ Okay bye and Goodmorning
 
 Change of plan, no splitting. Render everything into write buffers that are 2x length 
 and split for logic in each shader
--Merge Image Buffer function that sets buffers side by side Row A(0), Row B(0), Row A(1), Row (B1) ect...
+-Merge Image Buffer function that sets buffers side by side Row A(0), Row B(0), Row A(1), Row (B1) ect... √
 -Apply fluid shader logic to color texture
     -Disp maybe simple averaging but I think nothing for now
     -Border Leave alone. We'll crop out the border on final render

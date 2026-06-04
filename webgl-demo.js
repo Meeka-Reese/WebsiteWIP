@@ -1173,7 +1173,7 @@ async function LoadFluidSim()
   let FluidSimQuad = new Quad(gShaderProgramSkybox, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
     [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null, null);
   GenerateQuad(FluidSimQuad,1.0,ScreenSpaceOrigin); 
-  let SimDim = [512, 512];
+  let SimDim = [950, 512];
   let StartVals = [255, 255, 255, 255];
   let IterNum = 20;
   gFluidSimObj = new FluidSim2D(FluidSimQuad, SimDim, StartVals, IterNum);
@@ -2352,6 +2352,7 @@ const FluidVisLoop = ()=>
     ClearFBO(gFluidFBO, gGL);
 
    
+    //Commented out for debug
     gGL.bindFramebuffer(gGL.FRAMEBUFFER, gFluidFBO);
     gGL.viewport(0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
     gCamera.Width = gFluidSimObj.Dimensions[0]; //Changing to temp scaled down for fluid sim
@@ -2359,6 +2360,9 @@ const FluidVisLoop = ()=>
     let ResRatio = [(gCamera.Width) / gCanvasWidth, gCamera.Height / gCanvasHeight];
     gScaledMousePos = [(gCurrentMousePos[0] * ResRatio[0]) / gCamera.Width, (gCurrentMousePos[1] * ResRatio[1]) / gCamera.Height];
     gScaledDeltaMouse = [(gDeltaMouse[0] * ResRatio[0]) / gCamera.Width, (gDeltaMouse[1] * ResRatio[1]) / gCamera.Height];
+
+    
+
     // ===========Fluid Density Pass===========
     for (let iter = 0; iter < gFluidSimObj.IterNum; iter++)
     {
@@ -2367,7 +2371,7 @@ const FluidVisLoop = ()=>
       gGL.activeTexture(gGL.TEXTURE9);
       gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
 
-      gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0], gFluidSimObj.Dimensions[1]);
+      gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
       gFluidSimObj.UpdateIter();
       gFluidSimObj.SwapText();
     }
@@ -2377,7 +2381,7 @@ const FluidVisLoop = ()=>
     //Save to readText
     gGL.activeTexture(gGL.TEXTURE9); 
     gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
-    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0], gFluidSimObj.Dimensions[1]);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
 
     gFluidSimObj.SwapText();
     gFluidSimObj.UpdateText(); 
@@ -2388,7 +2392,7 @@ const FluidVisLoop = ()=>
     //Save to readText
     gGL.activeTexture(gGL.TEXTURE9); 
     gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
-    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0], gFluidSimObj.Dimensions[1]);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
 
     gFluidSimObj.SwapText();
     gFluidSimObj.UpdateText(); 
@@ -2397,7 +2401,7 @@ const FluidVisLoop = ()=>
     //Save to readText
     gGL.activeTexture(gGL.TEXTURE9); 
     gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
-    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0], gFluidSimObj.Dimensions[1]);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
 
     gFluidSimObj.SwapText();
     gFluidSimObj.UpdateText(); 
@@ -2407,7 +2411,7 @@ const FluidVisLoop = ()=>
     //Save to readText
     gGL.activeTexture(gGL.TEXTURE9); 
     gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
-    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0], gFluidSimObj.Dimensions[1]);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
 
     gFluidSimObj.SwapText();
     gFluidSimObj.UpdateText(); 
@@ -2420,7 +2424,7 @@ const FluidVisLoop = ()=>
     gGL.activeTexture(gGL.TEXTURE9);
     gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.DivergeText);
 
-    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0], gFluidSimObj.Dimensions[1]);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
 
     gFluidSimObj.ScreenQuad.TextureBN = gFluidSimObj.DivergeText; // set to texturebn just to not have an extra member for the struct
     [gFluidSimObj.ReadText, gFluidSimObj.HoldText] = gFluidSimObj.SwapText2(gFluidSimObj.ReadText, gFluidSimObj.HoldText); //save Dense and velo text in Hold
@@ -2432,7 +2436,7 @@ const FluidVisLoop = ()=>
         gGL.activeTexture(gGL.TEXTURE9);
         gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
 
-        gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0], gFluidSimObj.Dimensions[1]);
+        gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
         gFluidSimObj.UpdateIter();
         gFluidSimObj.SwapText();
 
@@ -2449,11 +2453,11 @@ const FluidVisLoop = ()=>
     gGL.activeTexture(gGL.TEXTURE9);
     gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
 
-    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0], gFluidSimObj.Dimensions[1]);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
     gFluidSimObj.SwapText();
     gFluidSimObj.UpdateText(); 
 
-    //============Render Normal Pass========================
+   // ============Render Normal Pass========================
     gGL.viewport(0, 0, gCanvasWidth, gCanvasHeight);
     gGL.bindFramebuffer(gGL.FRAMEBUFFER, null);
     gCamera.Width = gCanvasWidth;

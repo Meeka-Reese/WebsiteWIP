@@ -1,5 +1,5 @@
 #version 300 es
-    precision mediump float;    
+    precision highp float;    
     in vec3 FragPos;
     in vec2 UVCord;
     out vec4 fragColor;

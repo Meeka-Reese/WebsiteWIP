@@ -47,9 +47,10 @@
         vec2 NewCord = gl_FragCoord.xy;
         vec2 screenSpace = vec2(((NewCord.x)/(uResolution.x)), 
         (NewCord.y/(uResolution.y)));
+        vec2 UVL = vec2((screenSpace.x * .5), screenSpace.y);
         UnitSize = vec2(1.0 / (uResolution.x), 1.0 / (uResolution.y));
-        float InitalDensity = texture(uTextureScene, screenSpace).r;
-        vec2 InitalVelocities = texture(uTextureScene, screenSpace).gb;
-        float Divergence = FindDivergence(InitalVelocities, screenSpace);
+        float InitalDensity = texture(uTextureScene, UVL).r;
+        vec2 InitalVelocities = texture(uTextureScene, UVL).gb;
+        float Divergence = FindDivergence(InitalVelocities, UVL);
         fragColor = vec4(vec3(Divergence, Divergence, Divergence), 1.0);
     }

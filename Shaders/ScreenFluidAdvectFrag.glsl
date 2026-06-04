@@ -12,6 +12,7 @@
     
     vec3 FindAdvectVal(vec2 screenSpace, float InitDense, vec2 InitVel, float DiffAm, float Time)
     {
+
         vec2 velocityInUV = (InitVel * Time * DiffAm) / uResolution;
         
         vec2 backtrackedUV = screenSpace - velocityInUV;
@@ -31,9 +32,11 @@
         vec2 NewCord = gl_FragCoord.xy;
         vec2 screenSpace = vec2(((NewCord.x)/(uResolution.x)), 
         (NewCord.y/(uResolution.y)));
+        vec2 UVL = vec2((screenSpace.x * .5), screenSpace.y);
+        vec2 UVTiled = vec2(mod(UVL.x, .5), UVL.y);
         UnitSize = vec2(1.0 / (uResolution.x), 1.0 / (uResolution.y));
-        float InitalDensity = texture(uTextureScene, screenSpace).r;
-        vec2 InitalVelocities = texture(uTextureScene, screenSpace).gb;
-        vec3 Advected = FindAdvectVal(screenSpace, InitalDensity, InitalVelocities, DiffAm, DeltaTime * TimeScale);
+        float InitalDensity = texture(uTextureScene, UVTiled).r;
+        vec2 InitalVelocities = texture(uTextureScene, UVTiled).gb;
+        vec3 Advected = FindAdvectVal(UVL, InitalDensity, InitalVelocities, DiffAm, DeltaTime * TimeScale);
         fragColor = vec4(vec3(Advected.rgb), 1.0);
     }

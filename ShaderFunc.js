@@ -1235,6 +1235,64 @@ export function loadTexture(gl, url, numChans = 4, flip = true) {
     
 }
 
+export function mergeTwoBuffers(BuffA, BuffB, width, height, AChNum, BChNum)
+{
+    let NewBuff = new Float32Array(width * 2.0 * height * 4.0);
+    for (let h = 0; h < height; h++)
+    {
+        for (let w = 0; w < width * 2.0; w ++)
+        {
+            let iA = ((w % width) + (h * width)) * AChNum;
+            let iB = ((w % width) + (h * width)) * BChNum;
+            let iFull = (w + (h * (width * 2.0))) * 4.0;
+            if (w < width) 
+            {
+                NewBuff[iFull] = BuffA[iA];
+                NewBuff[iFull+1] = AChNum >= 2 ? BuffA[iA+1] : 0.0;
+                NewBuff[iFull+2] = AChNum >= 3 ? BuffA[iA+2] : 0.0;
+                NewBuff[iFull+3] = AChNum >= 4 ? BuffA[iA+3] : 0.0;
+            }
+            else
+            {
+                NewBuff[iFull] = BuffB[iB];
+                NewBuff[iFull+1] = BChNum >= 2 ? BuffB[iB+1] : 0.0;
+                NewBuff[iFull+2] = BChNum >= 3 ? BuffB[iB+2] : 0.0;
+                NewBuff[iFull+3] = BChNum >= 4 ? BuffB[iB+3] : 0.0;
+            }
+        }
+    }
+    return NewBuff;
+}
+
+export async function loadImageToDataArray(Dir, CropX, CropY, targetWidth, targetHeight) {
+    try {
+      const response = await fetch(Dir);
+      if (!response.ok) {
+        throw new Error(`Response status: ${response.status}`);
+      }
+  
+      const blob = await response.blob();
+      const bitmap = await createImageBitmap(blob);
+  
+      const width = targetWidth;
+      const height = targetHeight;
+  
+      const canvas = new OffscreenCanvas(width, height);
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(bitmap, 0, 0);
+      const imageData = ctx.getImageData(0, 0, width, height, { colorSpace: "srgb" });
+      const dividedNum = num => num/255.0;
+      const ScaledData = new Float32Array(imageData.data).map(dividedNum);
+      bitmap.close(); 
+  
+      console.log("Dimensions, W : " + width + " H : " + height);
+      return { data: ScaledData, width: width, height: height };
+    } catch (error) {
+      console.error(error.message);
+    }
+  }
+
+
 export async function createTexture2DFromBuffer(gl, ImgBuffer, width, height)
 {
     const texture = gl.createTexture();

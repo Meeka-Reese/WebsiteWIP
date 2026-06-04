@@ -10,11 +10,12 @@
     {
         float Ratio = (uResolution.x * .5) / uResolution.y;
         vec2 NewCord = gl_FragCoord.xy;
-        vec2 screenSpace = vec2(((NewCord.x)/(uResolution.x)), 
+        vec2 screenSpace = vec2(((NewCord.x * 1.0)/(uResolution.x)), 
         (NewCord.y/(uResolution.y)));
-
-        vec4 DVeloText = texture(uTextureScene, screenSpace);
-        vec4 ColorText = vec4(0.0); 
-        vec3 Col = vec3(DVeloText.r * .75, DVeloText.r * .25, DVeloText.r * .5);
-        fragColor = vec4(vec3(abs(Col)), 1.0);
+        vec2 UVL = vec2((screenSpace.x * .5), screenSpace.y);
+        vec2 UVR = vec2((screenSpace.x * .5) + .5, screenSpace.y);
+        vec4 DVeloText = texture(uTextureScene, UVL);
+        vec4 ColText = texture(uTextureScene, UVR);
+        ColText *= DVeloText.r;
+        fragColor = vec4(vec3(abs(ColText)), 1.0);
     }

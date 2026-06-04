@@ -37,9 +37,10 @@
     {
        // Calculate normalized texture coordinates
     vec2 screenSpace = gl_FragCoord.xy / uResolution;
+    vec2 UVL = vec2((screenSpace.x * .5), screenSpace.y);
     vec2 UnitSize = 1.0 / uResolution;
     
-    float Pressure = PressureSolver(screenSpace, UnitSize);
+    float Pressure = PressureSolver(UVL, UnitSize);
     
     // Output pressure into the red channel
     fragColor = vec4(Pressure, 0.0, 0.0, 1.0);
