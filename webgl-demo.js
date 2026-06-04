@@ -12,7 +12,7 @@ let gFragSourceWave, gFragSourceFlat, gFragSourceCloud, gFragSkybox, gFragStar, 
 gFragVolGlow, gFragDef, gFragRaycast, gFragGlass, gFragScreenFlat, gFragTransFlat, gFragFlesh, gFragElenco,
 gFragFleshPart, gFragMorph, gFragTreeMorph, gFragScreenBGTrans, gFragPostProcessingFlesh, gFragPostProcessingAndrew, 
 gFragToon, gFragPostProcessing, gFragScreenFluidDisp, gFragScreenFluidAdvect, gFragScreenFlatFluid, gFragScreenFluidFindDivergence, gFragScreenFluidPressureSolver,
-gFragScreenFluidBorder, gFragScreenFluidPressureCorrect, gFragScreenFluidMouseMove;
+gFragScreenFluidBorder, gFragScreenFluidPressureCorrect, gFragScreenFluidMouseMove, gFragScreenSplitL, gFragScreenSplitR;
 
 
 let gShaderProgramDef, gShaderProgramWave, gShaderProgramFlat, gShaderProgramCloud,
@@ -21,7 +21,8 @@ gShaderProgramRaycast, gShaderProgramGlass, gShaderProgramScreenRender, gShaderP
 gShaderProgramTrans, gShaderProgramFlesh, gShaderProgramElenco, gShaderProgramMorph, gShaderProgramTreeMorph, gShaderProgramScreenBGTrans, gShaderProgramPostProcessingFlesh, gShaderProgramGLTFDef,
 gShaderProgramPostProcessingAndrew, gShaderProgramToon, gShaderProgramPostProcessing, 
 gShaderProgramScreenFluidDisp, gShaderProgramScreenFluidAdvect, gShaderProgramScreenFlatFluid, gShaderProgramScreenFluidFindDivergence, gShaderProgramScreenFluidPressureSolver,
-gShaderProgramScreenFluidBorder, gShaderProgramScreenFluidPressureCorrect, gShaderProgramScreenFluidMouseMove;
+gShaderProgramScreenFluidBorder, gShaderProgramScreenFluidPressureCorrect, gShaderProgramScreenFluidMouseMove, 
+gShaderProgramScreenSplitL, gShaderProgramScreenSplitR;
 
 let gProgramInfoDef = {};
 let gProgramInfoWave = {};
@@ -55,6 +56,8 @@ let gProgramInfoScreenFluidBorder = {};
 let gProgramInfoScreenFluidPressureSolver = {};
 let gProgramInfoScreenFluidPressureCorrect = {};
 let gProgramInfoScreenFluidMouseMove = {};
+let gProgramInfoScreenSplitL = {};
+let gProgramInfoScreenSplitR = {};
 
 //Depth
 let gDepthFBO;
@@ -2350,10 +2353,10 @@ const FluidVisLoop = ()=>
 
    
     gGL.bindFramebuffer(gGL.FRAMEBUFFER, gFluidFBO);
-    gGL.viewport(0, 0, gFluidSimObj.Dimensions[0], gFluidSimObj.Dimensions[1]);
+    gGL.viewport(0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
     gCamera.Width = gFluidSimObj.Dimensions[0]; //Changing to temp scaled down for fluid sim
     gCamera.Height = gFluidSimObj.Dimensions[1];
-    let ResRatio = [gCamera.Width / gCanvasWidth, gCamera.Height / gCanvasHeight];
+    let ResRatio = [(gCamera.Width) / gCanvasWidth, gCamera.Height / gCanvasHeight];
     gScaledMousePos = [(gCurrentMousePos[0] * ResRatio[0]) / gCamera.Width, (gCurrentMousePos[1] * ResRatio[1]) / gCamera.Height];
     gScaledDeltaMouse = [(gDeltaMouse[0] * ResRatio[0]) / gCamera.Width, (gDeltaMouse[1] * ResRatio[1]) / gCamera.Height];
     // ===========Fluid Density Pass===========
@@ -2611,6 +2614,8 @@ if (!extLinearFloat) {
   gFragScreenFluidBorder = await loadShaderFiles(gFragScreenFluidBorder, './Shaders/ScreenFluidBorderFrag.glsl');
   gFragScreenFluidPressureCorrect = await loadShaderFiles (gFragScreenFluidPressureCorrect, './Shaders/ScreenFluidPressureCorrectFrag.glsl');
   gFragScreenFluidMouseMove = await loadShaderFiles (gFragScreenFluidMouseMove, './Shaders/ScreenFluidMouseMoveFrag.glsl');
+  gFragScreenSplitL = await loadShaderFiles(gFragScreenSplitL, './Shaders/ScreenSplitLFrag.glsl');
+  gFragScreenSplitR = await loadShaderFiles(gFragScreenSplitR, './Shaders/ScreenSplitRFrag.glsl');
 
   gShaderProgramWave = initShader(gGL, gVertSourceDef,gFragSourceWave);
   gShaderProgramFlat = initShader(gGL, gVertSourceDef,gFragSourceFlat);
@@ -2643,6 +2648,8 @@ if (!extLinearFloat) {
   gShaderProgramScreenFluidBorder = initShader(gGL, gVertSkyboxHigh, gFragScreenFluidBorder);
   gShaderProgramScreenFluidPressureCorrect = initShader(gGL, gVertSkyboxHigh, gFragScreenFluidPressureCorrect);
   gShaderProgramScreenFluidMouseMove = initShader(gGL, gVertSkyboxHigh, gFragScreenFluidMouseMove);
+  gShaderProgramScreenSplitL = initShader(gGL, gVertSkyboxHigh, gFragScreenSplitL);
+  gShaderProgramScreenSplitR = initShader(gGL, gVertSkyboxHigh, gFragScreenSplitR);
   //Shaders done
   LoadTxt.style.color = '#ff0000'; 
   
@@ -2680,6 +2687,8 @@ if (!extLinearFloat) {
      gProgramInfoScreenFluidPressureSolver, gShaderProgramScreenFluidPressureSolver,
      gProgramInfoScreenFluidPressureCorrect, gShaderProgramScreenFluidPressureCorrect,
      gProgramInfoScreenFluidMouseMove, gShaderProgramScreenFluidMouseMove,
+     gProgramInfoScreenSplitL, gShaderProgramScreenSplitL,
+     gProgramInfoScreenSplitR, gShaderProgramScreenSplitR,
      );
   
     SinPreComp(gSinView,WAVE_BUFFER_SIZE);

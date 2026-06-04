@@ -28,6 +28,8 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
     ProgramInfoScreenFluidPressureSolver, ShaderProgramScreenFluidPressureSolver,
     ProgramInfoScreenFluidPressureCorrect, ShaderProgramScreenFluidPressureCorrect,
     ProgramInfoScreenFluidMouseMove, ShaderProgramScreenFluidMouseMove,
+    ProgramInfoScreenSplitL, ShaderProgramScreenSplitL,
+    ProgramInfoScreenSplitR, ShaderProgramScreenSplitR,
     ) {
         //SOON TO DO - REORGANIZE TEXTURES SO THEY USE MULTIPLE TEXTURE SLOTS WITH GENERIC NAMES INSTEAD OF "TEXTUREBN"
     ProgramInfoDef.program = ShaderProgramDef;
@@ -575,6 +577,34 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         deltaTime: GL.getUniformLocation(ShaderProgramScreenFluidMouseMove, "DeltaTime"),
         mousePos: GL.getUniformLocation(ShaderProgramScreenFluidMouseMove, "MousePos"),
         mouseVel: GL.getUniformLocation(ShaderProgramScreenFluidMouseMove, "MouseVel"),
+    }
+
+    ProgramInfoScreenSplitL.program = ShaderProgramScreenSplitL;
+    ProgramInfoScreenSplitL.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramScreenSplitL, "aVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramScreenSplitL, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramScreenSplitL, "aUVCord"),
+    }
+    ProgramInfoScreenSplitL.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramScreenSplitL, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramScreenSplitL, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramScreenSplitL, "uModelMatrix"),
+        resolution: GL.getUniformLocation(ShaderProgramScreenSplitL, "uResolution"),
+        textureScene: GL.getUniformLocation(ShaderProgramScreenSplitL, "uTextureScene"),
+    }
+
+    ProgramInfoScreenSplitR.program = ShaderProgramScreenSplitR;
+    ProgramInfoScreenSplitR.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramScreenSplitR, "aVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramScreenSplitR, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramScreenSplitR, "aUVCord"),
+    }
+    ProgramInfoScreenSplitR.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramScreenSplitR, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramScreenSplitR, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramScreenSplitR, "uModelMatrix"),
+        resolution: GL.getUniformLocation(ShaderProgramScreenSplitR, "uResolution"),
+        textureScene: GL.getUniformLocation(ShaderProgramScreenSplitR, "uTextureScene"),
     }
 
 }

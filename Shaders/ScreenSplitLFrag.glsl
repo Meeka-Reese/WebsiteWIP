@@ -1,6 +1,5 @@
 #version 300 es
     precision mediump float;    
-    in vec3 Normals;
     in vec3 FragPos;
     in vec2 UVCord;
     out vec4 fragColor;
@@ -10,11 +9,9 @@
     {
         float Ratio = (uResolution.x * .5) / uResolution.y;
         vec2 NewCord = gl_FragCoord.xy;
-        vec2 screenSpace = vec2(((NewCord.x)/(uResolution.x)), 
+        vec2 screenSpace = vec2(((NewCord.x * 2.0)/(uResolution.x)), 
         (NewCord.y/(uResolution.y)));
+        vec4 texColor = texture(uTextureScene, screenSpace);
 
-        vec4 DVeloText = texture(uTextureScene, screenSpace);
-        vec4 ColorText = vec4(0.0); 
-        vec3 Col = vec3(DVeloText.r * .75, DVeloText.r * .25, DVeloText.r * .5);
-        fragColor = vec4(vec3(abs(Col)), 1.0);
+        fragColor = vec4(texColor);
     }
