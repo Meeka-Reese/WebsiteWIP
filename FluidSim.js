@@ -13,6 +13,8 @@ export class FluidSim2D
         this.DivergeText = null;
         this.PressureText = null;
         this.DoubleText = null;
+        this.LastDispGuess = null;
+        this.LastPressGuess = null;
         this.IterNum = IterNum;
     }
     async SetUpText()
@@ -59,6 +61,8 @@ export class FluidSim2D
         this.PressureText = await createTexture2DFromBuffer(gGL, DoubleEmptyBuffer, this.Dimensions[0] * 2.0, this.Dimensions[1], true); 
         this.ColorText = await loadTexture(gGL, DirCol, 4);
         this.DoubleText = await createTexture2DFromBuffer(gGL, DoubleEmptyBuffer, this.Dimensions[0] * 2.0, this.Dimensions[1], true);
+        this.LastDispGuess = await createTexture2DFromBuffer(gGL, DoubleEmptyBuffer, this.Dimensions[0] * 2.0, this.Dimensions[1], true);
+        this.LastPressGuess = await createTexture2DFromBuffer(gGL, DoubleEmptyBuffer, this.Dimensions[0] * 2.0, this.Dimensions[1], true);
     }
     UpdateIter()
     {

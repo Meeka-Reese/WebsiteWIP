@@ -21,7 +21,7 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
     ProgramInfoToon, ShaderProgramToon,
     ProgramInfoPostProcessing, ShaderProgramPostProcessing,
     ProgramInfoScreenFluidDisp, ShaderProgramScreenFluidDisp,
-    ProgramInfoScreenFluidAdvect, ShaderProgramScreenFluidAdvect,
+    ProgramInfoScreenFluidAdvectForward, ShaderProgramScreenFluidAdvectForward,
     ProgramInfoScreenFlatFluid, ShaderProgramScreenFlatFluid,
     ProgramInfoFluidFindDivergence, ShaderProgramScreenFluidFindDivergence,
     ProgramInfoScreenFluidBorder, ShaderProgramScreenFluidBorder,
@@ -30,6 +30,9 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
     ProgramInfoScreenFluidMouseMove, ShaderProgramScreenFluidMouseMove,
     ProgramInfoScreenSplitL, ShaderProgramScreenSplitL,
     ProgramInfoScreenSplitR, ShaderProgramScreenSplitR,
+    ProgramInfoScreenFluidFriction, ShaderProgramScreenFluidFriction,
+    ProgramInfoScreenFluidAdvectBackward, ShaderProgramScreenFluidAdvectBackward,
+    ProgramInfoScreenFluidAdvectCorrect, ShaderProgramScreenFluidAdvectCorrect,
     ) {
         //SOON TO DO - REORGANIZE TEXTURES SO THEY USE MULTIPLE TEXTURE SLOTS WITH GENERIC NAMES INSTEAD OF "TEXTUREBN"
     ProgramInfoDef.program = ShaderProgramDef;
@@ -474,19 +477,50 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         deltaTime: GL.getUniformLocation(ShaderProgramScreenFluidDisp, "DeltaTime"),
     }
 
-    ProgramInfoScreenFluidAdvect.program = ShaderProgramScreenFluidAdvect;
-    ProgramInfoScreenFluidAdvect.attribLocations = {
-        vertexPosition: GL.getAttribLocation(ShaderProgramScreenFluidAdvect, "aVertPos"),
-        normalPosition: GL.getAttribLocation(ShaderProgramScreenFluidAdvect, "aNorm"),
-        UVPosition: GL.getAttribLocation(ShaderProgramScreenFluidAdvect, "aUVCord"),
+    ProgramInfoScreenFluidAdvectForward.program = ShaderProgramScreenFluidAdvectForward;
+    ProgramInfoScreenFluidAdvectForward.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramScreenFluidAdvectForward, "aVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramScreenFluidAdvectForward, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramScreenFluidAdvectForward, "aUVCord"),
     }
-    ProgramInfoScreenFluidAdvect.uniformLocations = {
-        projectionMatrix: GL.getUniformLocation(ShaderProgramScreenFluidAdvect, "uProjMatrix"),
-        ViewMatrix: GL.getUniformLocation(ShaderProgramScreenFluidAdvect, "uViewMatrix"),
-        modelMatrix: GL.getUniformLocation(ShaderProgramScreenFluidAdvect, "uModelMatrix"),
-        textureScene: GL.getUniformLocation(ShaderProgramScreenFluidAdvect, "uTextureScene"),
-        resolution: GL.getUniformLocation(ShaderProgramScreenFluidAdvect, "uResolution"),
-        deltaTime: GL.getUniformLocation(ShaderProgramScreenFluidAdvect, "DeltaTime"),
+    ProgramInfoScreenFluidAdvectForward.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramScreenFluidAdvectForward, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramScreenFluidAdvectForward, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramScreenFluidAdvectForward, "uModelMatrix"),
+        textureScene: GL.getUniformLocation(ShaderProgramScreenFluidAdvectForward, "uTextureScene"),
+        resolution: GL.getUniformLocation(ShaderProgramScreenFluidAdvectForward, "uResolution"),
+        deltaTime: GL.getUniformLocation(ShaderProgramScreenFluidAdvectForward, "DeltaTime"),
+    }
+
+    ProgramInfoScreenFluidAdvectBackward.program = ShaderProgramScreenFluidAdvectBackward;
+    ProgramInfoScreenFluidAdvectBackward.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramScreenFluidAdvectBackward, "aVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramScreenFluidAdvectBackward, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramScreenFluidAdvectBackward, "aUVCord"),
+    }
+    ProgramInfoScreenFluidAdvectBackward.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramScreenFluidAdvectBackward, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramScreenFluidAdvectBackward, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramScreenFluidAdvectBackward, "uModelMatrix"),
+        textureScene: GL.getUniformLocation(ShaderProgramScreenFluidAdvectBackward, "uTextureScene"),
+        resolution: GL.getUniformLocation(ShaderProgramScreenFluidAdvectBackward, "uResolution"),
+        deltaTime: GL.getUniformLocation(ShaderProgramScreenFluidAdvectBackward, "DeltaTime"),
+    }
+
+    ProgramInfoScreenFluidAdvectCorrect.program = ShaderProgramScreenFluidAdvectCorrect;
+    ProgramInfoScreenFluidAdvectCorrect.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramScreenFluidAdvectCorrect, "aVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramScreenFluidAdvectCorrect, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramScreenFluidAdvectCorrect, "aUVCord"),
+    }
+    ProgramInfoScreenFluidAdvectCorrect.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramScreenFluidAdvectCorrect, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramScreenFluidAdvectCorrect, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramScreenFluidAdvectCorrect, "uModelMatrix"),
+        textureScene: GL.getUniformLocation(ShaderProgramScreenFluidAdvectCorrect, "uTextureScene"),
+        textureForward: GL.getUniformLocation(ShaderProgramScreenFluidAdvectCorrect, "uTextureForward"),
+        textureBackward: GL.getUniformLocation(ShaderProgramScreenFluidAdvectCorrect, "uTextureBackward"),
+        resolution: GL.getUniformLocation(ShaderProgramScreenFluidAdvectCorrect, "uResolution"),
     }
 
     ProgramInfoScreenFlatFluid.program = ShaderProgramScreenFlatFluid;
@@ -605,6 +639,20 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         modelMatrix: GL.getUniformLocation(ShaderProgramScreenSplitR, "uModelMatrix"),
         resolution: GL.getUniformLocation(ShaderProgramScreenSplitR, "uResolution"),
         textureScene: GL.getUniformLocation(ShaderProgramScreenSplitR, "uTextureScene"),
+    }
+
+    ProgramInfoScreenFluidFriction.program = ShaderProgramScreenFluidFriction;
+    ProgramInfoScreenFluidFriction.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramScreenFluidFriction, "aVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramScreenFluidFriction, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramScreenFluidFriction, "aUVCord"),
+    }
+    ProgramInfoScreenFluidFriction.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramScreenFluidFriction, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramScreenFluidFriction, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramScreenFluidFriction, "uModelMatrix"),
+        textureScene: GL.getUniformLocation(ShaderProgramScreenFluidFriction, "uTextureScene"),
+        resolution: GL.getUniformLocation(ShaderProgramScreenFluidFriction, "uResolution"),
     }
 
 }
@@ -959,6 +1007,24 @@ export function loadTexture(gl, url, numChans = 4, flip = true) {
     }
     else if (("textureScene" in programInfo))
     {console.log("textureScene Uniform Could Not Be Found!")};
+
+    if (programInfo.uniformLocations.textureForward != null && Model.DepthTexture != null)
+    {
+      gl.activeTexture(gl.TEXTURE6);
+      gl.bindTexture(gl.TEXTURE_2D, Model.DepthTexture);
+      gl.uniform1i(programInfo.uniformLocations.textureForward, 6); 
+    }
+    else if (("textureForward" in programInfo))
+    {console.log("textureForward Uniform Could Not Be Found!")};
+
+    if (programInfo.uniformLocations.textureBackward != null && Model.TextureBN != null)
+    {
+        gl.activeTexture(gl.TEXTURE2);
+        gl.bindTexture(gl.TEXTURE_2D, Model.TextureBN);
+        gl.uniform1i(programInfo.uniformLocations.textureBackward,2);
+    }
+    else if(("textureBackward" in programInfo))
+    {console.log("textureBackward Uniform Could Not Be Found!")}
 
     if (programInfo.uniformLocations.prevTexture != null && Model.PrevTexture != null)
     {

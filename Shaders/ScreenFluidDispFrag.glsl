@@ -61,7 +61,7 @@
     }
     void main()
     {
-        float DiffAm = 0.0;
+        float DiffAm = 0.1;
         vec2 NewCord = gl_FragCoord.xy;
         vec2 screenSpace = vec2(((NewCord.x)/(uResolution.x)), 
         (NewCord.y/(uResolution.y)));

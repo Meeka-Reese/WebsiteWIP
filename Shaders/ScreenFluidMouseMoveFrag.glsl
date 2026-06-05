@@ -12,7 +12,17 @@
     vec2 UnitSize;
     const float eps = 0.001;
 
-
+bool BorderCheck(vec2 UV)
+    {
+        if (UV.x - UnitSize.x < 0.0 || UV.x + UnitSize.x > 1.0 ||
+        UV.y - UnitSize.y < 0.0 || UV.y + UnitSize.y > 1.0)
+        {
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
     vec3 RGB2HSL (vec3 RGB)
     {
         //using this for hsl https://www.niwa.nu/2013/05/math-behind-colorspace-conversions-rgb-hsl/
@@ -153,9 +163,14 @@
         vec2 screenSpace = vec2(((NewCord.x)/(uResolution.x)), 
         (NewCord.y/(uResolution.y)));
         vec2 UVL = vec2((screenSpace.x * .5), screenSpace.y);
+        
         UnitSize = vec2(1.0 / (uResolution.x), 1.0 / (uResolution.y));
         float Density = texture(uTextureScene, UVL).r;
         vec2 Velo = texture(uTextureScene, UVL).gb;
+        if (BorderCheck(UVL)){fragColor = vec4(Density, Velo, 1.0);}
+        else
+        {
+        
 
         //y = ((x - xc) * -slope) + yc
         float Y = ((screenSpace.x - MousePos.x) * -(MouseVel.y/MouseVel.x)) + MousePos.y;
@@ -168,7 +183,7 @@
             float Dist = distance(screenSpace, MousePos); 
             if (Dist < abs(MouseVel.x + MouseVel.y))
                 {
-                    Velo = vec2(MouseVel.x, -MouseVel.y) * uResolution;
+                    Velo = vec2(-MouseVel.x, MouseVel.y) * uResolution;
                     Velo = vec2(clamp(Velo.x, -10.0, 10.0), clamp(Velo.y, -10.0, 10.0));
                     Density += .1;
                     Density = clamp(Density, 0.0, 1.0);
@@ -176,16 +191,16 @@
 
         }
         else if (abs(MouseVel.x + MouseVel.y) > MinVelo && 
-        (abs(Y-screenSpace.y) <= MarginOfError) || abs(X-mod(screenSpace.x, .5)) <= MarginOfError)
+        (abs(Y-screenSpace.y) <= MarginOfError) || abs((mod(X-screenSpace.x, .5))) <= MarginOfError ||  abs((mod(screenSpace.x-X, .5))) <= MarginOfError)
         {
             float Dist = distance(screenSpace - vec2(1.0, 0.0), MousePos); 
             if (Dist < abs(MouseVel.x + MouseVel.y))
                 {
                     vec3 Col = vec3(Density, Velo);
                     vec3 HSLCol = RGB2HSL(Col);
-                    HSLCol.r = abs(sin(HSLCol.r + 100.0)) * 57.3; //hue
+                    HSLCol.r = abs(sin(HSLCol.r * 1.5)) * 50.0;
                     HSLCol.g = 1.0; //saturation
-                    HSLCol.b = abs(sin(HSLCol.b + 1.0)); //luminance
+                    HSLCol.b = min(HSLCol.b + .1, 1.0); //luminance
                     Col = HSL2RGB(HSLCol);
                     Density = Col.r;
                     Velo = Col.gb;
@@ -194,4 +209,5 @@
         }
         
         fragColor = vec4(vec3(Density, Velo), 1.0);
+        }
     }

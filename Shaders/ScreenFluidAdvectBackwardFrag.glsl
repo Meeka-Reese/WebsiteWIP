@@ -7,7 +7,7 @@
     uniform vec2 uResolution;  
     uniform float DeltaTime; 
     out vec4 fragColor;
-    vec2 UnitSize = vec2(0.0,0.0);
+    vec2 UnitSize;
 
     
     vec3 FindAdvectVal(vec2 screenSpace, float InitDense, vec2 InitVel, float DiffAm, float Time)
@@ -18,7 +18,7 @@
         vec2 backtrackedUV = screenSpace - velocityInUV;
         
         vec2 halfPixel = 0.5 / uResolution;
-        backtrackedUV = clamp(backtrackedUV, 0.0, 1.0);
+        backtrackedUV = vec2(clamp(backtrackedUV.x, 0.0, 1.0),clamp(backtrackedUV.y, 0.0, 1.0));
 
         vec3 NewVals= texture(uTextureScene, backtrackedUV).rgb;
         
@@ -26,7 +26,7 @@
     }
     void main()
     {
-        float TimeScale = 100.0;  
+        float TimeScale = 10.0;  
         float DiffAm = 1.0;
         float Ratio = (uResolution.x * .5) / uResolution.y;
         vec2 NewCord = gl_FragCoord.xy;

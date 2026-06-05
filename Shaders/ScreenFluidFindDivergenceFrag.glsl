@@ -11,7 +11,7 @@
 
    bool BorderCheck(vec2 UV)
     {
-        if (UV.x - UnitSize.x < 0.0 || UV.x + UnitSize.x > 1.0 ||
+        if (UV.x - UnitSize.x < 0.0 || UV.x + UnitSize.x > .5 ||
         UV.y - UnitSize.y < 0.0 || UV.y + UnitSize.y > 1.0)
         {
             return true;

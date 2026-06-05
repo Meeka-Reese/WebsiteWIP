@@ -11,8 +11,9 @@ let gVertSourceDef, gVertSkybox, gVertStar, gVertRaycast, gVertTrans, gVertFlesh
 let gFragSourceWave, gFragSourceFlat, gFragSourceCloud, gFragSkybox, gFragStar, gFragColor,
 gFragVolGlow, gFragDef, gFragRaycast, gFragGlass, gFragScreenFlat, gFragTransFlat, gFragFlesh, gFragElenco,
 gFragFleshPart, gFragMorph, gFragTreeMorph, gFragScreenBGTrans, gFragPostProcessingFlesh, gFragPostProcessingAndrew, 
-gFragToon, gFragPostProcessing, gFragScreenFluidDisp, gFragScreenFluidAdvect, gFragScreenFlatFluid, gFragScreenFluidFindDivergence, gFragScreenFluidPressureSolver,
-gFragScreenFluidBorder, gFragScreenFluidPressureCorrect, gFragScreenFluidMouseMove, gFragScreenSplitL, gFragScreenSplitR;
+gFragToon, gFragPostProcessing, gFragScreenFluidDisp, gFragScreenFluidAdvectForward, gFragScreenFlatFluid, gFragScreenFluidFindDivergence, gFragScreenFluidPressureSolver,
+gFragScreenFluidBorder, gFragScreenFluidPressureCorrect, gFragScreenFluidMouseMove, gFragScreenSplitL, gFragScreenSplitR,
+gFragScreenFluidFriction, gFragScreenFluidAdvectBackward, gFragScreenFluidAdvectCorrect;
 
 
 let gShaderProgramDef, gShaderProgramWave, gShaderProgramFlat, gShaderProgramCloud,
@@ -20,9 +21,10 @@ gShaderProgramSkybox, gShaderProgramStar, gShaderProgramFleshPart, gShaderProgra
 gShaderProgramRaycast, gShaderProgramGlass, gShaderProgramScreenRender, gShaderProgramScreenImage,
 gShaderProgramTrans, gShaderProgramFlesh, gShaderProgramElenco, gShaderProgramMorph, gShaderProgramTreeMorph, gShaderProgramScreenBGTrans, gShaderProgramPostProcessingFlesh, gShaderProgramGLTFDef,
 gShaderProgramPostProcessingAndrew, gShaderProgramToon, gShaderProgramPostProcessing, 
-gShaderProgramScreenFluidDisp, gShaderProgramScreenFluidAdvect, gShaderProgramScreenFlatFluid, gShaderProgramScreenFluidFindDivergence, gShaderProgramScreenFluidPressureSolver,
+gShaderProgramScreenFluidDisp, gShaderProgramScreenFluidAdvectForward, gShaderProgramScreenFlatFluid, gShaderProgramScreenFluidFindDivergence, gShaderProgramScreenFluidPressureSolver,
 gShaderProgramScreenFluidBorder, gShaderProgramScreenFluidPressureCorrect, gShaderProgramScreenFluidMouseMove, 
-gShaderProgramScreenSplitL, gShaderProgramScreenSplitR;
+gShaderProgramScreenSplitL, gShaderProgramScreenSplitR, gShaderProgramScreenFluidFriction, gShaderProgramScreenFluidAdvectBackward,
+gShaderProgramScreenFluidAdvectCorrect;
 
 let gProgramInfoDef = {};
 let gProgramInfoWave = {};
@@ -49,7 +51,7 @@ let gProgramInfoPostProcessingAndrew = {};
 let gProgramInfoToon = {};
 let gProgramInfoPostProcessing = {};
 let gProgramInfoScreenFluidDisp = {};
-let gProgramInfoScreenFluidAdvect = {};
+let gProgramInfoScreenFluidAdvectForward = {};
 let gProgramInfoScreenFlatFluid = {};
 let gProgramInfoScreenFluidFindDivergence = {};
 let gProgramInfoScreenFluidBorder = {};
@@ -58,6 +60,9 @@ let gProgramInfoScreenFluidPressureCorrect = {};
 let gProgramInfoScreenFluidMouseMove = {};
 let gProgramInfoScreenSplitL = {};
 let gProgramInfoScreenSplitR = {};
+let gProgramInfoScreenFluidFriction = {};
+let gProgramInfoScreenFluidAdvectBackward = {};
+let gProgramInfoScreenFluidAdvectCorrect = {};
 
 //Depth
 let gDepthFBO;
@@ -1173,9 +1178,9 @@ async function LoadFluidSim()
   let FluidSimQuad = new Quad(gShaderProgramSkybox, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
     [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null, null);
   GenerateQuad(FluidSimQuad,1.0,ScreenSpaceOrigin); 
-  let SimDim = [950, 512];
+  let SimDim = [800, 500];
   let StartVals = [255, 255, 255, 255];
-  let IterNum = 20;
+  let IterNum = 5;
   gFluidSimObj = new FluidSim2D(FluidSimQuad, SimDim, StartVals, IterNum);
   await gFluidSimObj.SetUpText();
   await gFluidSimObj.UpdateText();
@@ -2331,6 +2336,8 @@ const AboutMeLoop = async ()=>
 //=======================FLUID VIS=======================================
 const FluidVisLoop = ()=> 
 {
+  //https://github.com/indutny/fft.js/ use for fft
+
   //Next Step- Set up mouse influence on fluid sim
   //Save Mouse Position and mouse velocity to shader
   //Take v number of tiles behind and turn their velocity into Mouse Direction
@@ -2361,10 +2368,28 @@ const FluidVisLoop = ()=>
     gScaledMousePos = [(gCurrentMousePos[0] * ResRatio[0]) / gCamera.Width, (gCurrentMousePos[1] * ResRatio[1]) / gCamera.Height];
     gScaledDeltaMouse = [(gDeltaMouse[0] * ResRatio[0]) / gCamera.Width, (gDeltaMouse[1] * ResRatio[1]) / gCamera.Height];
 
-    
 
-    // ===========Fluid Density Pass===========
-    for (let iter = 0; iter < gFluidSimObj.IterNum; iter++)
+    //============ MOUSE MOVEMENT===================
+    Draw(gProgramInfoScreenFluidMouseMove, gFluidSimObj.ScreenQuad, gCamera, gLight1);
+    //Save to readText
+    gGL.activeTexture(gGL.TEXTURE9); 
+    gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+
+    gFluidSimObj.SwapText();
+    gFluidSimObj.UpdateText(); 
+    // ===========FRICTION===========
+    Draw(gProgramInfoScreenFluidFriction, gFluidSimObj.ScreenQuad, gCamera, gLight1);
+    gGL.activeTexture(gGL.TEXTURE9); 
+    gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+
+    gFluidSimObj.SwapText();
+    gFluidSimObj.UpdateText(); 
+    // ===========Fluid Disp Pass===========
+    [gFluidSimObj.WriteText, gFluidSimObj.LastDispGuess] = gFluidSimObj.SwapText2(gFluidSimObj.WriteText, gFluidSimObj.LastDispGuess); 
+    gFluidSimObj.UpdateIter();
+    for (let iter = 0; iter < 5.0; iter++)
     {
       Draw(gProgramInfoScreenFluidDisp, gFluidSimObj.ScreenQuad, gCamera, gLight1);
 
@@ -2372,6 +2397,12 @@ const FluidVisLoop = ()=>
       gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
 
       gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+      if (iter + 1 == 5.0) 
+        {
+          gGL.activeTexture(gGL.TEXTURE9);
+          gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.LastDispGuess);
+          gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+        }
       gFluidSimObj.UpdateIter();
       gFluidSimObj.SwapText();
     }
@@ -2387,8 +2418,29 @@ const FluidVisLoop = ()=>
     gFluidSimObj.UpdateText(); 
     //=============ADVECT===================
     //Apply velocity field to densitys 
-    
-    Draw(gProgramInfoScreenFluidAdvect, gFluidSimObj.ScreenQuad, gCamera, gLight1);
+
+     // ==== FORWARD ======
+     Draw(gProgramInfoScreenFluidAdvectForward, gFluidSimObj.ScreenQuad, gCamera, gLight1);
+
+     gGL.activeTexture(gGL.TEXTURE9); 
+     gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.HoldText);
+     gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+
+     gFluidSimObj.ScreenQuad.DepthTexture = gFluidSimObj.HoldText; //Saves Forward to Depth
+     gFluidSimObj.ScreenQuad.Texture = gFluidSimObj.HoldText;
+
+    // ==== BACKWARD ======
+    Draw(gProgramInfoScreenFluidAdvectBackward, gFluidSimObj.ScreenQuad, gCamera, gLight1);
+    //Save to readText
+    gGL.activeTexture(gGL.TEXTURE9); 
+    gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.DoubleText);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+
+    gFluidSimObj.ScreenQuad.TextureBN = gFluidSimObj.DoubleText; //Backward text saved
+    gFluidSimObj.ScreenQuad.Texture = gFluidSimObj.ReadText; // Set back to use original values
+
+    // ==== ERROR CORRECT ======
+    Draw(gProgramInfoScreenFluidAdvectCorrect, gFluidSimObj.ScreenQuad, gCamera, gLight1);
     //Save to readText
     gGL.activeTexture(gGL.TEXTURE9); 
     gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
@@ -2396,18 +2448,10 @@ const FluidVisLoop = ()=>
 
     gFluidSimObj.SwapText();
     gFluidSimObj.UpdateText(); 
+
+
     //=============BORDER UPD===================
     Draw(gProgramInfoScreenFluidBorder, gFluidSimObj.ScreenQuad, gCamera, gLight1);
-    //Save to readText
-    gGL.activeTexture(gGL.TEXTURE9); 
-    gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
-    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
-
-    gFluidSimObj.SwapText();
-    gFluidSimObj.UpdateText(); 
-
-    //============ MOUSE MOVEMENT===================
-    Draw(gProgramInfoScreenFluidMouseMove, gFluidSimObj.ScreenQuad, gCamera, gLight1);
     //Save to readText
     gGL.activeTexture(gGL.TEXTURE9); 
     gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
@@ -2429,6 +2473,9 @@ const FluidVisLoop = ()=>
     gFluidSimObj.ScreenQuad.TextureBN = gFluidSimObj.DivergeText; // set to texturebn just to not have an extra member for the struct
     [gFluidSimObj.ReadText, gFluidSimObj.HoldText] = gFluidSimObj.SwapText2(gFluidSimObj.ReadText, gFluidSimObj.HoldText); //save Dense and velo text in Hold
     // //Pressure Solve
+    [gFluidSimObj.WriteText, gFluidSimObj.LastPressGuess] = gFluidSimObj.SwapText2(gFluidSimObj.WriteText, gFluidSimObj.LastPressGuess); 
+    gFluidSimObj.UpdateIter(); //Use old PressGuess for new values
+
     for (let iter = 0; iter < gFluidSimObj.IterNum; iter++)
     {
         Draw(gProgramInfoScreenFluidPressureSolver, gFluidSimObj.ScreenQuad, gCamera, gLight1);
@@ -2437,9 +2484,14 @@ const FluidVisLoop = ()=>
         gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
 
         gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+        if (iter + 1 == gFluidSimObj.IterNum) 
+        {
+          gGL.activeTexture(gGL.TEXTURE9);
+          gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.LastPressGuess);
+          gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+        }
         gFluidSimObj.UpdateIter();
         gFluidSimObj.SwapText();
-
     }
 
     // //Velocity Correction
@@ -2611,7 +2663,7 @@ if (!extLinearFloat) {
   gFragToon = await loadShaderFiles(gFragToon, './Shaders/ToonFrag.glsl');//unused
   gFragPostProcessing = await loadShaderFiles(gFragPostProcessing, './Shaders/PostProcessingFrag.glsl');
   gFragScreenFluidDisp = await loadShaderFiles(gFragScreenFluidDisp, './Shaders/ScreenFluidDispFrag.glsl');
-  gFragScreenFluidAdvect = await loadShaderFiles(gFragScreenFluidAdvect, './Shaders/ScreenFluidAdvectFrag.glsl');
+  gFragScreenFluidAdvectForward = await loadShaderFiles(gFragScreenFluidAdvectForward, './Shaders/ScreenFluidAdvectForwardFrag.glsl');
   gFragScreenFlatFluid = await loadShaderFiles(gFragScreenFlatFluid, './Shaders/ScreenFlatFluid.glsl');
   gFragScreenFluidFindDivergence = await loadShaderFiles(gFragScreenFluidFindDivergence, './Shaders/ScreenFluidFindDivergenceFrag.glsl');
   gFragScreenFluidPressureSolver = await loadShaderFiles(gFragScreenFluidPressureSolver, './Shaders/ScreenFluidPressureSolverFrag.glsl');
@@ -2620,6 +2672,9 @@ if (!extLinearFloat) {
   gFragScreenFluidMouseMove = await loadShaderFiles (gFragScreenFluidMouseMove, './Shaders/ScreenFluidMouseMoveFrag.glsl');
   gFragScreenSplitL = await loadShaderFiles(gFragScreenSplitL, './Shaders/ScreenSplitLFrag.glsl');
   gFragScreenSplitR = await loadShaderFiles(gFragScreenSplitR, './Shaders/ScreenSplitRFrag.glsl');
+  gFragScreenFluidFriction = await loadShaderFiles(gFragScreenFluidFriction, './Shaders/ScreenFluidFrictionFrag.glsl');
+  gFragScreenFluidAdvectBackward = await loadShaderFiles(gFragScreenFluidAdvectBackward, './Shaders/ScreenFluidAdvectBackwardFrag.glsl');
+  gFragScreenFluidAdvectCorrect = await loadShaderFiles(gFragScreenFluidAdvectCorrect, './Shaders/ScreenFluidAdvectCorrectFrag.glsl');
 
   gShaderProgramWave = initShader(gGL, gVertSourceDef,gFragSourceWave);
   gShaderProgramFlat = initShader(gGL, gVertSourceDef,gFragSourceFlat);
@@ -2645,7 +2700,7 @@ if (!extLinearFloat) {
   gShaderProgramToon = initShader(gGL, gVertSourceDef, gFragToon);
   gShaderProgramPostProcessing = initShader(gGL, gVertSkybox, gFragPostProcessing);
   gShaderProgramScreenFluidDisp = initShader(gGL, gVertSkyboxHigh, gFragScreenFluidDisp);
-  gShaderProgramScreenFluidAdvect = initShader(gGL, gVertSkyboxHigh, gFragScreenFluidAdvect);
+  gShaderProgramScreenFluidAdvectForward = initShader(gGL, gVertSkyboxHigh, gFragScreenFluidAdvectForward);
   gShaderProgramScreenFlatFluid = initShader(gGL, gVertSkybox, gFragScreenFlatFluid);
   gShaderProgramScreenFluidFindDivergence = initShader(gGL, gVertSkyboxHigh, gFragScreenFluidFindDivergence);
   gShaderProgramScreenFluidPressureSolver = initShader(gGL, gVertSkyboxHigh, gFragScreenFluidPressureSolver);
@@ -2654,6 +2709,9 @@ if (!extLinearFloat) {
   gShaderProgramScreenFluidMouseMove = initShader(gGL, gVertSkyboxHigh, gFragScreenFluidMouseMove);
   gShaderProgramScreenSplitL = initShader(gGL, gVertSkyboxHigh, gFragScreenSplitL);
   gShaderProgramScreenSplitR = initShader(gGL, gVertSkyboxHigh, gFragScreenSplitR);
+  gShaderProgramScreenFluidFriction = initShader(gGL, gVertSkyboxHigh, gFragScreenFluidFriction);
+  gShaderProgramScreenFluidAdvectBackward = initShader(gGL, gVertSkyboxHigh, gFragScreenFluidAdvectBackward);
+  gShaderProgramScreenFluidAdvectCorrect = initShader(gGL, gVertSkyboxHigh, gFragScreenFluidAdvectCorrect);
   //Shaders done
   LoadTxt.style.color = '#ff0000'; 
   
@@ -2684,7 +2742,7 @@ if (!extLinearFloat) {
      gProgramInfoToon, gShaderProgramToon,
      gProgramInfoPostProcessing, gShaderProgramPostProcessing,
      gProgramInfoScreenFluidDisp, gShaderProgramScreenFluidDisp,
-     gProgramInfoScreenFluidAdvect, gShaderProgramScreenFluidAdvect,
+     gProgramInfoScreenFluidAdvectForward, gShaderProgramScreenFluidAdvectForward,
      gProgramInfoScreenFlatFluid, gShaderProgramScreenFlatFluid,
      gProgramInfoScreenFluidFindDivergence, gShaderProgramScreenFluidFindDivergence,
      gProgramInfoScreenFluidBorder, gShaderProgramScreenFluidBorder,
@@ -2693,6 +2751,9 @@ if (!extLinearFloat) {
      gProgramInfoScreenFluidMouseMove, gShaderProgramScreenFluidMouseMove,
      gProgramInfoScreenSplitL, gShaderProgramScreenSplitL,
      gProgramInfoScreenSplitR, gShaderProgramScreenSplitR,
+     gProgramInfoScreenFluidFriction, gShaderProgramScreenFluidFriction,
+     gProgramInfoScreenFluidAdvectBackward, gShaderProgramScreenFluidAdvectBackward,
+     gProgramInfoScreenFluidAdvectCorrect, gShaderProgramScreenFluidAdvectCorrect,
      );
   
     SinPreComp(gSinView,WAVE_BUFFER_SIZE);
