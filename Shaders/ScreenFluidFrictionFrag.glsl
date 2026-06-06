@@ -15,9 +15,12 @@
         (NewCord.y/(uResolution.y)));
         vec2 UVL = vec2((screenSpace.x * .5), screenSpace.y);
         vec3 DVeloText = texture(uTextureScene, UVL).rgb;
-        float DnsFriction = 1.0005;
-        float VelFriction = 1.0001;
-        
-        vec3 Output = vec3(DVeloText.r / DnsFriction, DVeloText.gb / VelFriction);
+        float DnsFriction = 1.010;
+        float VelFriction = 1.001;
+        vec3 Output = DVeloText;
+        if (screenSpace.x < .5)
+        {
+            Output = vec3(DVeloText.r / DnsFriction, DVeloText.gb / VelFriction);
+        }
         fragColor = vec4(vec3(Output), 1.0);
     }

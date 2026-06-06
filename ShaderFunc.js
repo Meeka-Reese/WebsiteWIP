@@ -33,6 +33,8 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
     ProgramInfoScreenFluidFriction, ShaderProgramScreenFluidFriction,
     ProgramInfoScreenFluidAdvectBackward, ShaderProgramScreenFluidAdvectBackward,
     ProgramInfoScreenFluidAdvectCorrect, ShaderProgramScreenFluidAdvectCorrect,
+    ProgramInfoFlatNorm, ShaderProgramFlatNorm,
+    ProgramInfoScreenFluidTextAdd, ShaderProgramScreenFluidTextAdd,
     ) {
         //SOON TO DO - REORGANIZE TEXTURES SO THEY USE MULTIPLE TEXTURE SLOTS WITH GENERIC NAMES INSTEAD OF "TEXTUREBN"
     ProgramInfoDef.program = ShaderProgramDef;
@@ -655,6 +657,36 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         resolution: GL.getUniformLocation(ShaderProgramScreenFluidFriction, "uResolution"),
     }
 
+    ProgramInfoFlatNorm.program = ShaderProgramFlatNorm;
+    ProgramInfoFlatNorm.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramFlatNorm, "aVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramFlatNorm, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramFlatNorm, "aUVCord"),
+    };
+    ProgramInfoFlatNorm.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramFlatNorm, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramFlatNorm, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramFlatNorm, "uModelMatrix"),
+        texture: GL.getUniformLocation(ShaderProgramFlatNorm, "uTexture"),
+        alpha: GL.getUniformLocation(ShaderProgramFlatNorm, "Alpha"),
+    };
+
+    ProgramInfoScreenFluidTextAdd.program = ShaderProgramScreenFluidTextAdd;
+    ProgramInfoScreenFluidTextAdd.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramScreenFluidTextAdd, "aVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramScreenFluidTextAdd, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramScreenFluidTextAdd, "aUVCord"),
+    }
+    ProgramInfoScreenFluidTextAdd.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramScreenFluidTextAdd, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramScreenFluidTextAdd, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramScreenFluidTextAdd, "uModelMatrix"),
+        textureScene: GL.getUniformLocation(ShaderProgramScreenFluidTextAdd, "uTextureScene"),
+        textureModel: GL.getUniformLocation(ShaderProgramScreenFluidTextAdd, "uTextureModel"),
+        resolution: GL.getUniformLocation(ShaderProgramScreenFluidTextAdd, "uResolution"),
+        deltaTime: GL.getUniformLocation(ShaderProgramScreenFluidTextAdd, "DeltaTime"),
+    }
+
 }
 //
 // Initialize a texture and load an image.
@@ -1068,6 +1100,16 @@ export function loadTexture(gl, url, numChans = 4, flip = true) {
     }
     else if(("texturePressure" in programInfo))
     {console.log("texturePressure Uniform Could Not Be Found!")}
+
+    if (programInfo.uniformLocations.textureModel != null && Model.TextureBN != null)
+    {
+        gl.activeTexture(gl.TEXTURE2);
+        gl.bindTexture(gl.TEXTURE_2D, Model.TextureBN);
+        gl.uniform1i(programInfo.uniformLocations.textureModel,2);
+    }
+    else if(("textureModel" in programInfo))
+    {console.log("textureModel Uniform Could Not Be Found!")}
+
 
     if (programInfo.uniformLocations.texture3D != null && Model.Texture3D != null)
     {

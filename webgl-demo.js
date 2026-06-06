@@ -6,14 +6,15 @@ Create FBO for Raycast with Object ID. Have definition of all raycast
 objects and make the rendered texture value be the index of the object
 */
 //=======================SHADERS=============================
-let gVertSourceDef, gVertSkybox, gVertStar, gVertRaycast, gVertTrans, gVertFlesh, gVertMorph, gVertTreeMorph, gVertGLTFDef, gVertSkyboxHigh;
+let gVertSourceDef, gVertSkybox, gVertStar, gVertRaycast, gVertTrans, gVertFlesh, gVertMorph, gVertTreeMorph, gVertGLTFDef, gVertSkyboxHigh,
+gVertSourceDefHigh;
 
 let gFragSourceWave, gFragSourceFlat, gFragSourceCloud, gFragSkybox, gFragStar, gFragColor,
 gFragVolGlow, gFragDef, gFragRaycast, gFragGlass, gFragScreenFlat, gFragTransFlat, gFragFlesh, gFragElenco,
 gFragFleshPart, gFragMorph, gFragTreeMorph, gFragScreenBGTrans, gFragPostProcessingFlesh, gFragPostProcessingAndrew, 
 gFragToon, gFragPostProcessing, gFragScreenFluidDisp, gFragScreenFluidAdvectForward, gFragScreenFlatFluid, gFragScreenFluidFindDivergence, gFragScreenFluidPressureSolver,
 gFragScreenFluidBorder, gFragScreenFluidPressureCorrect, gFragScreenFluidMouseMove, gFragScreenSplitL, gFragScreenSplitR,
-gFragScreenFluidFriction, gFragScreenFluidAdvectBackward, gFragScreenFluidAdvectCorrect;
+gFragScreenFluidFriction, gFragScreenFluidAdvectBackward, gFragScreenFluidAdvectCorrect, gFragFlatNorm, gFragScreenFluidTextAdd;
 
 
 let gShaderProgramDef, gShaderProgramWave, gShaderProgramFlat, gShaderProgramCloud,
@@ -24,7 +25,7 @@ gShaderProgramPostProcessingAndrew, gShaderProgramToon, gShaderProgramPostProces
 gShaderProgramScreenFluidDisp, gShaderProgramScreenFluidAdvectForward, gShaderProgramScreenFlatFluid, gShaderProgramScreenFluidFindDivergence, gShaderProgramScreenFluidPressureSolver,
 gShaderProgramScreenFluidBorder, gShaderProgramScreenFluidPressureCorrect, gShaderProgramScreenFluidMouseMove, 
 gShaderProgramScreenSplitL, gShaderProgramScreenSplitR, gShaderProgramScreenFluidFriction, gShaderProgramScreenFluidAdvectBackward,
-gShaderProgramScreenFluidAdvectCorrect;
+gShaderProgramScreenFluidAdvectCorrect, gShaderProgramFlatNorm, gShaderProgramScreenFluidTextAdd;
 
 let gProgramInfoDef = {};
 let gProgramInfoWave = {};
@@ -63,6 +64,8 @@ let gProgramInfoScreenSplitR = {};
 let gProgramInfoScreenFluidFriction = {};
 let gProgramInfoScreenFluidAdvectBackward = {};
 let gProgramInfoScreenFluidAdvectCorrect = {};
+let gProgramInfoFlatNorm = {};
+let gProgramInfoScreenFluidTextAdd = {};
 
 //Depth
 let gDepthFBO;
@@ -183,7 +186,7 @@ let gStarTransforms = [];
 let gCommissionsText, gGameAudioText, gSoundDesignText, gVisualsText, gContactText;
 
 //Fluid Sim Scene
-let gFluidSimObj;
+let gFluidSimObj, gEmptyCube;
 let gFluidFBO;
 let gFluidRendText;
 let gFluidDepthMap;
@@ -1173,7 +1176,17 @@ async function LoadFluidSim()
   gTime = new Date();
   let initTime = gTime.getTime() * .001;
   let LoadTxt = document.getElementById("LoadTxt");
+  const assets = [
+    {key: 'EmptyCube', path: './models/EmptyCube.obj'},
+  ];
+  const results = await Promise.all(
+    assets.map(a => LoadOBJ(gGL, a.path))
+);
+const [EmptyCube] = results;
+
   LoadTxt.style.color = 'ffb700';
+  //Load Obj
+  gEmptyCube = Object.assign({}, EmptyCube);
   let ScreenSpaceOrigin = [0.0,0.0,0.0];
   let FluidSimQuad = new Quad(gShaderProgramSkybox, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
     [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null, null);
@@ -1182,9 +1195,15 @@ async function LoadFluidSim()
   let StartVals = [255, 255, 255, 255];
   let IterNum = 5;
   gFluidSimObj = new FluidSim2D(FluidSimQuad, SimDim, StartVals, IterNum);
-  await gFluidSimObj.SetUpText();
+  await gFluidSimObj.SetUpText(gCanvasWidth, gCanvasHeight);
   await gFluidSimObj.UpdateText();
-  console.log(gFluidSimObj);
+
+  //Set Pos
+  let ECSize = 5.0;
+  gEmptyCube.Position = [0.0,0.0,0.0];
+  gEmptyCube.Rotation = [0.0,0.0,0.0];
+  gEmptyCube.Scale = [ECSize, ECSize, ECSize];
+  gEmptyCube.Color = [1.0, 1.0, 1.0, 1.0];
 
   //Make sure load is cleared if not caught in load loop
   document.getElementById("Gif").style.opacity = 0.0;
@@ -1417,7 +1436,7 @@ function DrawCallSetup()
       
     gGL.clear(gGL.COLOR_BUFFER_BIT | gGL.DEPTH_BUFFER_BIT);
 }
-function Draw(programInfo, Object, Camera, Light, Armature = null, MidiObject = null)
+function Draw(programInfo, Object, Camera, Light, Armature = null, MidiObject = null, WireFrame = false)
 {
       
         // Create a perspective matrix, a special matrix that is
@@ -1666,7 +1685,9 @@ async function RaycastClick(Obj)
       if (gSceneLoadState.LiquidSim == false) {await LoadFluidSim();}
       document.exitPointerLock();
       gActiveMainLoop = FluidVisLoop;
-      gCamera.Eye = [0.0,0.0,0.0];
+      gCamera.Eye = [0.0,0.0,40.0];
+      gCamera.UpDir = [0.0,1.0,0.0];
+      gCamera.ViewDir = [0.0,0.0,-1.0];
       SoundMainTheme.currentTime = 0;
       SoundMainTheme.pause();
       document.getElementById("PlayMusic").style.opacity = 0.0;
@@ -2338,16 +2359,17 @@ const FluidVisLoop = ()=>
 {
   //https://github.com/indutny/fft.js/ use for fft
 
-  //Next Step- Set up mouse influence on fluid sim
-  //Save Mouse Position and mouse velocity to shader
-  //Take v number of tiles behind and turn their velocity into Mouse Direction
-  //Place this before UnDiverge in Mouse Fluid Shader
+  //Add Text Add shader and implement it prob before diffuse or something idk
   gGL.disable(gGL.BLEND);
   gTime = new Date();
     let newTime = gTime.getTime();
     DeltaTime = newTime - gPreviousTime;
     gTimeSinceRun = newTime - gTimeStart;
     gPreviousTime = newTime;
+    // Animation Step
+    let CSpinSpeed = .1;
+    gEmptyCube.Rotation[1] += DeltaTime * CSpinSpeed;
+    gEmptyCube.Rotation[0] += DeltaTime * CSpinSpeed;
     
     DrawCallSetup();
     gGL.disable(gGL.CULL_FACE);
@@ -2358,17 +2380,21 @@ const FluidVisLoop = ()=>
     ClearFBO(gGlassFBO, gGL);
     ClearFBO(gFluidFBO, gGL);
 
-   
-    //Commented out for debug
     gGL.bindFramebuffer(gGL.FRAMEBUFFER, gFluidFBO);
+     //============ 3D TEXT SAVE===================
+    Draw(gProgramInfoDef, gEmptyCube, gCamera, gLight1);
+    gGL.activeTexture(gGL.TEXTURE9); 
+    gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.ModelRendText);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gCanvasWidth, gCanvasHeight);
+    gFluidSimObj.ScreenQuad.TextureBN = gFluidSimObj.ModelRendText;
+
+    //============ Screen Resize for Fluid===================
     gGL.viewport(0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
     gCamera.Width = gFluidSimObj.Dimensions[0]; //Changing to temp scaled down for fluid sim
     gCamera.Height = gFluidSimObj.Dimensions[1];
     let ResRatio = [(gCamera.Width) / gCanvasWidth, gCamera.Height / gCanvasHeight];
     gScaledMousePos = [(gCurrentMousePos[0] * ResRatio[0]) / gCamera.Width, (gCurrentMousePos[1] * ResRatio[1]) / gCamera.Height];
     gScaledDeltaMouse = [(gDeltaMouse[0] * ResRatio[0]) / gCamera.Width, (gDeltaMouse[1] * ResRatio[1]) / gCamera.Height];
-
-
     //============ MOUSE MOVEMENT===================
     Draw(gProgramInfoScreenFluidMouseMove, gFluidSimObj.ScreenQuad, gCamera, gLight1);
     //Save to readText
@@ -2376,6 +2402,14 @@ const FluidVisLoop = ()=>
     gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
     gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
 
+    gFluidSimObj.SwapText();
+    gFluidSimObj.UpdateText(); 
+    //============ MODEL TEXT ADD===================
+    Draw(gProgramInfoScreenFluidTextAdd, gFluidSimObj.ScreenQuad, gCamera, gLight1);
+    //Save to readText
+    gGL.activeTexture(gGL.TEXTURE9); 
+    gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
     gFluidSimObj.SwapText();
     gFluidSimObj.UpdateText(); 
     // ===========FRICTION===========
@@ -2515,6 +2549,8 @@ const FluidVisLoop = ()=>
     gCamera.Width = gCanvasWidth;
     gCamera.Height = gCanvasHeight;
     Draw(gProgramInfoScreenFlatFluid, gFluidSimObj.ScreenQuad, gCamera, gLight3);
+    gGL.clear(gGL.DEPTH_BUFFER_BIT);
+    
     gFrameCount++;
     gCycleNum++;
     if (gActiveMainLoop != FluidVisLoop) {gInitLoad = true;}
@@ -2640,6 +2676,7 @@ if (!extLinearFloat) {
   gVertTreeMorph = await loadShaderFiles(gVertTreeMorph, './Shaders/TreeMorphVert.glsl');
   gVertGLTFDef = await loadShaderFiles(gVertGLTFDef, './Shaders/GLTFDefaultVert.glsl');
   gVertSkyboxHigh = await loadShaderFiles(gVertGLTFDef, './Shaders/SkyboxHighVert.glsl');
+  gVertSourceDefHigh = await loadShaderFiles(gVertSourceDefHigh, './Shaders/HighDefaultVert.glsl');
   //Frag
   gFragSourceWave = await loadShaderFiles(gFragSourceWave, './Shaders/WaveFrag.glsl');
   gFragSourceFlat = await loadShaderFiles(gFragSourceFlat, './Shaders/FlatFrag.glsl');
@@ -2675,6 +2712,8 @@ if (!extLinearFloat) {
   gFragScreenFluidFriction = await loadShaderFiles(gFragScreenFluidFriction, './Shaders/ScreenFluidFrictionFrag.glsl');
   gFragScreenFluidAdvectBackward = await loadShaderFiles(gFragScreenFluidAdvectBackward, './Shaders/ScreenFluidAdvectBackwardFrag.glsl');
   gFragScreenFluidAdvectCorrect = await loadShaderFiles(gFragScreenFluidAdvectCorrect, './Shaders/ScreenFluidAdvectCorrectFrag.glsl');
+  gFragFlatNorm = await loadShaderFiles(gFragFlatNorm, './Shaders/FlatNormFrag.glsl');
+  gFragScreenFluidTextAdd = await loadShaderFiles(gFragScreenFluidTextAdd, './Shaders/ScreenFluidTextAdd.glsl');
 
   gShaderProgramWave = initShader(gGL, gVertSourceDef,gFragSourceWave);
   gShaderProgramFlat = initShader(gGL, gVertSourceDef,gFragSourceFlat);
@@ -2712,6 +2751,8 @@ if (!extLinearFloat) {
   gShaderProgramScreenFluidFriction = initShader(gGL, gVertSkyboxHigh, gFragScreenFluidFriction);
   gShaderProgramScreenFluidAdvectBackward = initShader(gGL, gVertSkyboxHigh, gFragScreenFluidAdvectBackward);
   gShaderProgramScreenFluidAdvectCorrect = initShader(gGL, gVertSkyboxHigh, gFragScreenFluidAdvectCorrect);
+  gShaderProgramFlatNorm = initShader(gGL, gVertSourceDef, gFragFlatNorm);
+  gShaderProgramScreenFluidTextAdd = initShader(gGL, gVertSkyboxHigh, gFragScreenFluidTextAdd);
   //Shaders done
   LoadTxt.style.color = '#ff0000'; 
   
@@ -2754,6 +2795,8 @@ if (!extLinearFloat) {
      gProgramInfoScreenFluidFriction, gShaderProgramScreenFluidFriction,
      gProgramInfoScreenFluidAdvectBackward, gShaderProgramScreenFluidAdvectBackward,
      gProgramInfoScreenFluidAdvectCorrect, gShaderProgramScreenFluidAdvectCorrect,
+     gProgramInfoFlatNorm, gShaderProgramFlatNorm,
+     gProgramInfoScreenFluidTextAdd, gShaderProgramScreenFluidTextAdd,
      );
   
     SinPreComp(gSinView,WAVE_BUFFER_SIZE);

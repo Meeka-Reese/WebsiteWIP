@@ -15,9 +15,10 @@ export class FluidSim2D
         this.DoubleText = null;
         this.LastDispGuess = null;
         this.LastPressGuess = null;
+        this.ModelRendText = null;
         this.IterNum = IterNum;
     }
-    async SetUpText()
+    async SetUpText(CanvasWidth, CanvasHeight)
     {
         console.log(this.Dimensions);
         let ImgBuffer = new Float32Array(this.Dimensions[0] * this.Dimensions[1] * 4);
@@ -26,6 +27,7 @@ export class FluidSim2D
         let NoiseBuffer2 = CreateWorley2D(10, this.Dimensions[0]); //breaks if dimensions x != y
         let DoubleEmptyBuffer = new Float32Array(this.Dimensions[0] * 2 * this.Dimensions[1] * 4);
         let ColAndNoise = new Float32Array(this.Dimensions[0] * 2 * this.Dimensions[1] * 4);
+        let EmptyModelTextBuff = new Float32Array(CanvasWidth * CanvasHeight * 4);
 
         for (let h = 0; h < this.Dimensions[1]; h++)
         {
@@ -63,6 +65,7 @@ export class FluidSim2D
         this.DoubleText = await createTexture2DFromBuffer(gGL, DoubleEmptyBuffer, this.Dimensions[0] * 2.0, this.Dimensions[1], true);
         this.LastDispGuess = await createTexture2DFromBuffer(gGL, DoubleEmptyBuffer, this.Dimensions[0] * 2.0, this.Dimensions[1], true);
         this.LastPressGuess = await createTexture2DFromBuffer(gGL, DoubleEmptyBuffer, this.Dimensions[0] * 2.0, this.Dimensions[1], true);
+        this.ModelRendText = await createTexture2DFromBuffer(gGL, EmptyModelTextBuff, CanvasWidth, CanvasHeight, true);
     }
     UpdateIter()
     {
