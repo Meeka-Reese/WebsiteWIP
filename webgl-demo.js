@@ -2383,6 +2383,15 @@ const FluidVisLoop = ()=>
     gGL.bindFramebuffer(gGL.FRAMEBUFFER, gFluidFBO);
      //============ 3D TEXT SAVE===================
     Draw(gProgramInfoDef, gEmptyCube, gCamera, gLight1);
+    gEmptyCube.Position[0] = 20.0;
+    gEmptyCube.Rotation[1] *= .7;
+    gEmptyCube.Rotation[0] *= .7;
+    Draw(gProgramInfoDef, gEmptyCube, gCamera, gLight1);
+    gEmptyCube.Position[0] = -20.0;
+    Draw(gProgramInfoDef, gEmptyCube, gCamera, gLight1);
+    gEmptyCube.Position[0] = 0.0;
+    gEmptyCube.Rotation[1] /= .7;
+    gEmptyCube.Rotation[0] /= .7;
     gGL.activeTexture(gGL.TEXTURE9); 
     gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.ModelRendText);
     gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gCanvasWidth, gCanvasHeight);

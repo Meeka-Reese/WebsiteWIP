@@ -7,6 +7,7 @@
     uniform sampler2D uTextureModel;
     uniform vec2 uResolution;  
     uniform float DeltaTime; 
+    uniform float Time;
     out vec4 fragColor;
     vec2 UnitSize = vec2(0.0,0.0);
 
@@ -24,7 +25,7 @@
         }
     void main()
     {
-        float TimeScale = 5.0;
+        float TimeScale = 2.0;
         vec2 NewCord = gl_FragCoord.xy;
         vec2 screenSpace = vec2(((NewCord.x)/(uResolution.x)), 
         (NewCord.y/(uResolution.y)));
@@ -34,11 +35,12 @@
         float Den = texture(uTextureScene, UVL).r;
         vec2 Velo = texture(uTextureScene, UVL).gb;
         vec4 Model = texture(uTextureModel, vec2(screenSpace.x, screenSpace.y));
-        Model.gb = (Model.gb - .5) * 10.0;
+        Model.gb = clamp((((Model.gb * 2.0) - 1.9) * 100.0),-10.0, 10.0);
+        
         
         float AddAmDen = 20.0 * DeltaTime * TimeScale;
         float AddAmVelo = 10.0 * DeltaTime * TimeScale;
         vec3 Output = vec3(Den, Velo) + vec3(Model.r * AddAmDen, Model  .gb * AddAmVelo);
-        if (Model.a == 0.0) {Output = vec3(Den, Velo);}
+        if (abs(Model.a) < .01) {Output = vec3(Den, Velo) * (1.0 - abs(sin(Time * .0002) * .05));}
         fragColor = vec4(vec3(Output), 1.0);
     }

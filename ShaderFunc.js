@@ -685,6 +685,7 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         textureModel: GL.getUniformLocation(ShaderProgramScreenFluidTextAdd, "uTextureModel"),
         resolution: GL.getUniformLocation(ShaderProgramScreenFluidTextAdd, "uResolution"),
         deltaTime: GL.getUniformLocation(ShaderProgramScreenFluidTextAdd, "DeltaTime"),
+        time: GL.getUniformLocation(ShaderProgramScreenFluidTextAdd, "Time"),
     }
 
 }
