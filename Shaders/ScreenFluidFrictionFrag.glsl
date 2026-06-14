@@ -9,18 +9,19 @@
 
     void main()
     {
+        float GravityAm = 0.0;
         float Ratio = (uResolution.x * .5) / uResolution.y;
         vec2 NewCord = gl_FragCoord.xy;
         vec2 screenSpace = vec2(((NewCord.x * 1.0)/(uResolution.x)), 
         (NewCord.y/(uResolution.y)));
         vec2 UVL = vec2((screenSpace.x * .5), screenSpace.y);
         vec3 DVeloText = texture(uTextureScene, UVL).rgb;
-        float DnsFriction = 1.010;
-        float VelFriction = 1.001;
+        float DnsFriction = 1.000;
+        float VelFriction = 1.000;
         vec3 Output = DVeloText;
-        if (screenSpace.x < .5)
-        {
+
             Output = vec3(DVeloText.r / DnsFriction, DVeloText.gb / VelFriction);
-        }
+        
+        Output.b = clamp(Output.b + GravityAm, -10.0, 10.0);
         fragColor = vec4(vec3(Output), 1.0);
     }

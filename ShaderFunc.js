@@ -35,6 +35,7 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
     ProgramInfoScreenFluidAdvectCorrect, ShaderProgramScreenFluidAdvectCorrect,
     ProgramInfoFlatNorm, ShaderProgramFlatNorm,
     ProgramInfoScreenFluidTextAdd, ShaderProgramScreenFluidTextAdd,
+    ProgramInfoMergeMarch, ShaderProgramMergeMarch,
     ) {
         //SOON TO DO - REORGANIZE TEXTURES SO THEY USE MULTIPLE TEXTURE SLOTS WITH GENERIC NAMES INSTEAD OF "TEXTUREBN"
     ProgramInfoDef.program = ShaderProgramDef;
@@ -687,6 +688,25 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         deltaTime: GL.getUniformLocation(ShaderProgramScreenFluidTextAdd, "DeltaTime"),
         time: GL.getUniformLocation(ShaderProgramScreenFluidTextAdd, "Time"),
     }
+
+    ProgramInfoMergeMarch.program = ShaderProgramMergeMarch;
+    ProgramInfoMergeMarch.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramMergeMarch, "aVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramMergeMarch, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramMergeMarch, "aUVCord"),
+    };
+    ProgramInfoMergeMarch.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramMergeMarch, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramMergeMarch, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramMergeMarch, "uModelMatrix"),
+        texture: GL.getUniformLocation(ShaderProgramMergeMarch, "uDist1"),
+        textureBN: GL.getUniformLocation(ShaderProgramMergeMarch, "uDist2"),
+        time: GL.getUniformLocation(ShaderProgramMergeMarch, "Time"),
+        cameraViewDir: GL.getUniformLocation(ShaderProgramMergeMarch, "CameraViewDir"),
+        viewPosition: GL.getUniformLocation(ShaderProgramMergeMarch, "viewPos"),
+        resolution: GL.getUniformLocation(ShaderProgramMergeMarch, "uResolution"),
+    };
+    
 
 }
 //

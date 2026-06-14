@@ -41,6 +41,6 @@
         float AddAmDen = 20.0 * DeltaTime * TimeScale;
         float AddAmVelo = 10.0 * DeltaTime * TimeScale;
         vec3 Output = vec3(Den, Velo) + vec3(Model.r * AddAmDen, Model  .gb * AddAmVelo);
-        if (abs(Model.a) < .01) {Output = vec3(Den, Velo) * (1.0 - abs(sin(Time * .0002) * .05));}
+        if (abs(Model.a) < .01) {Output = vec3(Den, Velo) * (1.0 - abs(sin(Time * .0002) * .08));}
         fragColor = vec4(vec3(Output), 1.0);
     }

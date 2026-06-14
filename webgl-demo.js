@@ -14,7 +14,8 @@ gFragVolGlow, gFragDef, gFragRaycast, gFragGlass, gFragScreenFlat, gFragTransFla
 gFragFleshPart, gFragMorph, gFragTreeMorph, gFragScreenBGTrans, gFragPostProcessingFlesh, gFragPostProcessingAndrew, 
 gFragToon, gFragPostProcessing, gFragScreenFluidDisp, gFragScreenFluidAdvectForward, gFragScreenFlatFluid, gFragScreenFluidFindDivergence, gFragScreenFluidPressureSolver,
 gFragScreenFluidBorder, gFragScreenFluidPressureCorrect, gFragScreenFluidMouseMove, gFragScreenSplitL, gFragScreenSplitR,
-gFragScreenFluidFriction, gFragScreenFluidAdvectBackward, gFragScreenFluidAdvectCorrect, gFragFlatNorm, gFragScreenFluidTextAdd;
+gFragScreenFluidFriction, gFragScreenFluidAdvectBackward, gFragScreenFluidAdvectCorrect, gFragFlatNorm, gFragScreenFluidTextAdd,
+gFragMergeMarch;
 
 
 let gShaderProgramDef, gShaderProgramWave, gShaderProgramFlat, gShaderProgramCloud,
@@ -25,7 +26,7 @@ gShaderProgramPostProcessingAndrew, gShaderProgramToon, gShaderProgramPostProces
 gShaderProgramScreenFluidDisp, gShaderProgramScreenFluidAdvectForward, gShaderProgramScreenFlatFluid, gShaderProgramScreenFluidFindDivergence, gShaderProgramScreenFluidPressureSolver,
 gShaderProgramScreenFluidBorder, gShaderProgramScreenFluidPressureCorrect, gShaderProgramScreenFluidMouseMove, 
 gShaderProgramScreenSplitL, gShaderProgramScreenSplitR, gShaderProgramScreenFluidFriction, gShaderProgramScreenFluidAdvectBackward,
-gShaderProgramScreenFluidAdvectCorrect, gShaderProgramFlatNorm, gShaderProgramScreenFluidTextAdd;
+gShaderProgramScreenFluidAdvectCorrect, gShaderProgramFlatNorm, gShaderProgramScreenFluidTextAdd, gShaderProgramMergeMarch;
 
 let gProgramInfoDef = {};
 let gProgramInfoWave = {};
@@ -66,6 +67,7 @@ let gProgramInfoScreenFluidAdvectBackward = {};
 let gProgramInfoScreenFluidAdvectCorrect = {};
 let gProgramInfoFlatNorm = {};
 let gProgramInfoScreenFluidTextAdd = {};
+let gProgramInfoMergeMarch = {};
 
 //Depth
 let gDepthFBO;
@@ -186,7 +188,7 @@ let gStarTransforms = [];
 let gCommissionsText, gGameAudioText, gSoundDesignText, gVisualsText, gContactText;
 
 //Fluid Sim Scene
-let gFluidSimObj, gEmptyCube;
+let gFluidSimObj, gEmptyCube, gViolin, gFlute, gDistMerge;
 let gFluidFBO;
 let gFluidRendText;
 let gFluidDepthMap;
@@ -446,7 +448,7 @@ export function makeStruct(keys) {
     Position, Rotation, Scale, \
     ParentTrans, ParentScale\
     Texture");
-    const Quad = makeStruct("ShaderProgram, vertexBuffer, indexBuffer, VertexCount, normalBuffer, \
+    const Quad = makeStruct("vertexBuffer, indexBuffer, VertexCount, normalBuffer, \
     textureBuffer, PositionsArray, IndicesArray, Color, \
     Position, Rotation, Scale, \
     ParentTrans, ParentScale\
@@ -1178,17 +1180,21 @@ async function LoadFluidSim()
   let LoadTxt = document.getElementById("LoadTxt");
   const assets = [
     {key: 'EmptyCube', path: './models/EmptyCube.obj'},
+    {key: 'Flute', path: './models/Flute.obj'},
+    {key: 'Violin', path: './models/Violin.obj'},
   ];
   const results = await Promise.all(
     assets.map(a => LoadOBJ(gGL, a.path))
 );
-const [EmptyCube] = results;
+const [EmptyCube, Flute, Violin] = results;
 
   LoadTxt.style.color = 'ffb700';
   //Load Obj
   gEmptyCube = Object.assign({}, EmptyCube);
+  gFlute = Object.assign({}, Flute);
+  gViolin = Object.assign({}, Violin); //if Violin gives problems. Look at obj to delete text inbetween f and vn I think
   let ScreenSpaceOrigin = [0.0,0.0,0.0];
-  let FluidSimQuad = new Quad(gShaderProgramSkybox, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
+  let FluidSimQuad = new Quad(null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
     [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null, null);
   GenerateQuad(FluidSimQuad,1.0,ScreenSpaceOrigin); 
   let SimDim = [800, 500];
@@ -1198,12 +1204,26 @@ const [EmptyCube] = results;
   await gFluidSimObj.SetUpText(gCanvasWidth, gCanvasHeight);
   await gFluidSimObj.UpdateText();
 
+  gDistMerge = new Quad(null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
+    [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null, null);
+  GenerateQuad(gDistMerge,1.0,ScreenSpaceOrigin);
   //Set Pos
   let ECSize = 5.0;
   gEmptyCube.Position = [0.0,0.0,0.0];
   gEmptyCube.Rotation = [0.0,0.0,0.0];
   gEmptyCube.Scale = [ECSize, ECSize, ECSize];
   gEmptyCube.Color = [1.0, 1.0, 1.0, 1.0];
+  let FluteSize = 5.0;
+  gFlute.Position = [0.0,0.0,0.0];
+  gFlute.Rotation = [0.0,0.0,0.0];
+  gFlute.Scale = [FluteSize, FluteSize, FluteSize];
+  gFlute.Color = [1.0, 1.0, 1.0, 1.0];
+  let ViolinSize = 5.0;
+  gViolin.Position = [0.0,0.0,0.0];
+  gViolin.Rotation = [0.0,0.0,0.0];
+  gViolin.Scale = [ViolinSize, ViolinSize, ViolinSize];
+  gViolin.Color = [1.0, 1.0, 1.0, 1.0];
+
 
   //Make sure load is cleared if not caught in load loop
   document.getElementById("Gif").style.opacity = 0.0;
@@ -2368,8 +2388,10 @@ const FluidVisLoop = ()=>
     gPreviousTime = newTime;
     // Animation Step
     let CSpinSpeed = .1;
-    gEmptyCube.Rotation[1] += DeltaTime * CSpinSpeed;
-    gEmptyCube.Rotation[0] += DeltaTime * CSpinSpeed;
+    gFlute.Rotation[1] += DeltaTime * CSpinSpeed;
+    gFlute.Rotation[0] += DeltaTime * CSpinSpeed;
+    gViolin.Rotation[1] += DeltaTime * CSpinSpeed;
+    gViolin.Rotation[0] += DeltaTime * CSpinSpeed;
     
     DrawCallSetup();
     gGL.disable(gGL.CULL_FACE);
@@ -2380,23 +2402,19 @@ const FluidVisLoop = ()=>
     ClearFBO(gGlassFBO, gGL);
     ClearFBO(gFluidFBO, gGL);
 
-    gGL.bindFramebuffer(gGL.FRAMEBUFFER, gFluidFBO);
+   gGL.bindFramebuffer(gGL.FRAMEBUFFER, gMainFBO);
      //============ 3D TEXT SAVE===================
-    Draw(gProgramInfoDef, gEmptyCube, gCamera, gLight1);
-    gEmptyCube.Position[0] = 20.0;
-    gEmptyCube.Rotation[1] *= .7;
-    gEmptyCube.Rotation[0] *= .7;
-    Draw(gProgramInfoDef, gEmptyCube, gCamera, gLight1);
-    gEmptyCube.Position[0] = -20.0;
-    Draw(gProgramInfoDef, gEmptyCube, gCamera, gLight1);
-    gEmptyCube.Position[0] = 0.0;
-    gEmptyCube.Rotation[1] /= .7;
-    gEmptyCube.Rotation[0] /= .7;
-    gGL.activeTexture(gGL.TEXTURE9); 
-    gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.ModelRendText);
-    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gCanvasWidth, gCanvasHeight);
-    gFluidSimObj.ScreenQuad.TextureBN = gFluidSimObj.ModelRendText;
+    Draw(gProgramInfoDef, gFlute, gCamera, gLight1);
+    gDistMerge.Texture = gMainDepthMap;
 
+    gGL.bindFramebuffer(gGL.FRAMEBUFFER, gGlassFBO);
+    Draw(gProgramInfoDef, gViolin, gCamera, gLight1);
+    gDistMerge.TextureBN = gGlassDepthMap;
+
+    gGL.bindFramebuffer(gGL.FRAMEBUFFER, gBloomFBO);
+    Draw(gProgramInfoMergeMarch, gDistMerge, gCamera, gLight1);
+    gFluidSimObj.ScreenQuad.TextureBN = gBloomRendText;
+  
     //============ Screen Resize for Fluid===================
     gGL.viewport(0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
     gCamera.Width = gFluidSimObj.Dimensions[0]; //Changing to temp scaled down for fluid sim
@@ -2404,6 +2422,7 @@ const FluidVisLoop = ()=>
     let ResRatio = [(gCamera.Width) / gCanvasWidth, gCamera.Height / gCanvasHeight];
     gScaledMousePos = [(gCurrentMousePos[0] * ResRatio[0]) / gCamera.Width, (gCurrentMousePos[1] * ResRatio[1]) / gCamera.Height];
     gScaledDeltaMouse = [(gDeltaMouse[0] * ResRatio[0]) / gCamera.Width, (gDeltaMouse[1] * ResRatio[1]) / gCamera.Height];
+    gGL.bindFramebuffer(gGL.FRAMEBUFFER, gFluidFBO);
     //============ MOUSE MOVEMENT===================
     Draw(gProgramInfoScreenFluidMouseMove, gFluidSimObj.ScreenQuad, gCamera, gLight1);
     //Save to readText
@@ -2421,7 +2440,7 @@ const FluidVisLoop = ()=>
     gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
     gFluidSimObj.SwapText();
     gFluidSimObj.UpdateText(); 
-    // ===========FRICTION===========
+    // ===========FRICTION and GRAVITY===========
     Draw(gProgramInfoScreenFluidFriction, gFluidSimObj.ScreenQuad, gCamera, gLight1);
     gGL.activeTexture(gGL.TEXTURE9); 
     gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
@@ -2557,9 +2576,10 @@ const FluidVisLoop = ()=>
     gGL.bindFramebuffer(gGL.FRAMEBUFFER, null);
     gCamera.Width = gCanvasWidth;
     gCamera.Height = gCanvasHeight;
+    gGL.disable(gGL.DEPTH_TEST);
+    gGL.disable(gGL.CULL_FACE);
     Draw(gProgramInfoScreenFlatFluid, gFluidSimObj.ScreenQuad, gCamera, gLight3);
-    gGL.clear(gGL.DEPTH_BUFFER_BIT);
-    
+    Draw(gProgramInfoMergeMarch, gDistMerge, gCamera, gLight1);
     gFrameCount++;
     gCycleNum++;
     if (gActiveMainLoop != FluidVisLoop) {gInitLoad = true;}
@@ -2723,6 +2743,7 @@ if (!extLinearFloat) {
   gFragScreenFluidAdvectCorrect = await loadShaderFiles(gFragScreenFluidAdvectCorrect, './Shaders/ScreenFluidAdvectCorrectFrag.glsl');
   gFragFlatNorm = await loadShaderFiles(gFragFlatNorm, './Shaders/FlatNormFrag.glsl');
   gFragScreenFluidTextAdd = await loadShaderFiles(gFragScreenFluidTextAdd, './Shaders/ScreenFluidTextAdd.glsl');
+  gFragMergeMarch = await loadShaderFiles(gFragMergeMarch, './Shaders/MergeMarchFrag.glsl');
 
   gShaderProgramWave = initShader(gGL, gVertSourceDef,gFragSourceWave);
   gShaderProgramFlat = initShader(gGL, gVertSourceDef,gFragSourceFlat);
@@ -2762,6 +2783,7 @@ if (!extLinearFloat) {
   gShaderProgramScreenFluidAdvectCorrect = initShader(gGL, gVertSkyboxHigh, gFragScreenFluidAdvectCorrect);
   gShaderProgramFlatNorm = initShader(gGL, gVertSourceDef, gFragFlatNorm);
   gShaderProgramScreenFluidTextAdd = initShader(gGL, gVertSkyboxHigh, gFragScreenFluidTextAdd);
+  gShaderProgramMergeMarch = initShader(gGL, gVertSkyboxHigh, gFragMergeMarch);
   //Shaders done
   LoadTxt.style.color = '#ff0000'; 
   
@@ -2806,6 +2828,7 @@ if (!extLinearFloat) {
      gProgramInfoScreenFluidAdvectCorrect, gShaderProgramScreenFluidAdvectCorrect,
      gProgramInfoFlatNorm, gShaderProgramFlatNorm,
      gProgramInfoScreenFluidTextAdd, gShaderProgramScreenFluidTextAdd,
+     gProgramInfoMergeMarch, gShaderProgramMergeMarch,
      );
   
     SinPreComp(gSinView,WAVE_BUFFER_SIZE);
@@ -2818,27 +2841,27 @@ if (!extLinearFloat) {
 
     
     //=====Main Scene======
-    gSkybox = new Quad(gShaderProgramSkybox, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
+    gSkybox = new Quad(null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
     [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null, null);
     let SkyboxOrigin = [0.0,0.0,0.0];
     GenerateQuad(gSkybox,1.0,SkyboxOrigin);  
 
-    gScreenSpaceQuad = new Quad(gShaderProgramSkybox, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
+    gScreenSpaceQuad = new Quad(null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
       [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null, null);
     let ScreenSpaceOrigin = [0.0,0.0,0.0];
     GenerateQuad(gScreenSpaceQuad,1.0,ScreenSpaceOrigin);  
 
 
     //=========Trans=============
-    gScreenSpaceQuadTrans = new Quad(gShaderProgramSkybox, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
+    gScreenSpaceQuadTrans = new Quad(null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
       [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null, null);
       GenerateQuad(gScreenSpaceQuadTrans,1.0,ScreenSpaceOrigin);  
 
-    gPostProcessingQuad = new Quad(gShaderProgramSkybox, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
+    gPostProcessingQuad = new Quad(null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
       [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null, null);
     GenerateQuad(gPostProcessingQuad,1.0,ScreenSpaceOrigin);  
 
-    gCrossHair = new Quad(gShaderProgramSkybox, null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
+    gCrossHair = new Quad(null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
       [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null, null);
     let CrossHairOrigin = [0.0,0.0,0.0];
     GenerateQuad(gCrossHair,.02,CrossHairOrigin);  
