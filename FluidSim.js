@@ -49,7 +49,7 @@ export class FluidSim2D
                 EmptyImgBuffer[i+3] = 0.0;
             }
         }
-        let DirCol = './Textures/WhiteNoise2K.webp';  
+        let DirCol = './Textures/GlassNoiseNorm.png';  
         let ImageObj = await loadImageToDataArray(DirCol, 0, 0, this.Dimensions[0], this.Dimensions[1]);
         let ColAr = ImageObj.data;
 
