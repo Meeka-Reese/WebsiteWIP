@@ -36,6 +36,7 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
     ProgramInfoFlatNorm, ShaderProgramFlatNorm,
     ProgramInfoScreenFluidTextAdd, ShaderProgramScreenFluidTextAdd,
     ProgramInfoMergeMarch, ShaderProgramMergeMarch,
+    ProgramInfoCubicSplineFilter, ShaderProgramCubicSplineFilter,
     ) {
         //SOON TO DO - REORGANIZE TEXTURES SO THEY USE MULTIPLE TEXTURE SLOTS WITH GENERIC NAMES INSTEAD OF "TEXTUREBN"
     ProgramInfoDef.program = ShaderProgramDef;
@@ -524,6 +525,7 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         textureForward: GL.getUniformLocation(ShaderProgramScreenFluidAdvectCorrect, "uTextureForward"),
         textureBackward: GL.getUniformLocation(ShaderProgramScreenFluidAdvectCorrect, "uTextureBackward"),
         resolution: GL.getUniformLocation(ShaderProgramScreenFluidAdvectCorrect, "uResolution"),
+        time: GL.getUniformLocation(ShaderProgramScreenFluidAdvectCorrect, "Time"),
     }
 
     ProgramInfoScreenFlatFluid.program = ShaderProgramScreenFlatFluid;
@@ -706,6 +708,20 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         viewPosition: GL.getUniformLocation(ShaderProgramMergeMarch, "viewPos"),
         resolution: GL.getUniformLocation(ShaderProgramMergeMarch, "uResolution"),
     };
+
+    ProgramInfoCubicSplineFilter.program = ShaderProgramCubicSplineFilter;
+    ProgramInfoCubicSplineFilter.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramCubicSplineFilter, "aVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramCubicSplineFilter, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramCubicSplineFilter, "aUVCord"),
+    }
+    ProgramInfoCubicSplineFilter.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramCubicSplineFilter, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramCubicSplineFilter, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramCubicSplineFilter, "uModelMatrix"),
+        textureScene: GL.getUniformLocation(ShaderProgramCubicSplineFilter, "uTextureScene"),
+        resolution: GL.getUniformLocation(ShaderProgramCubicSplineFilter, "uResolution"),
+    }
     
 
 }

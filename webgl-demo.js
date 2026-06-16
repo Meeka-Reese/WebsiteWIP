@@ -15,7 +15,7 @@ gFragFleshPart, gFragMorph, gFragTreeMorph, gFragScreenBGTrans, gFragPostProcess
 gFragToon, gFragPostProcessing, gFragScreenFluidDisp, gFragScreenFluidAdvectForward, gFragScreenFlatFluid, gFragScreenFluidFindDivergence, gFragScreenFluidPressureSolver,
 gFragScreenFluidBorder, gFragScreenFluidPressureCorrect, gFragScreenFluidMouseMove, gFragScreenSplitL, gFragScreenSplitR,
 gFragScreenFluidFriction, gFragScreenFluidAdvectBackward, gFragScreenFluidAdvectCorrect, gFragFlatNorm, gFragScreenFluidTextAdd,
-gFragMergeMarch;
+gFragMergeMarch, gFragCubicSplineFilter;
 
 
 let gShaderProgramDef, gShaderProgramWave, gShaderProgramFlat, gShaderProgramCloud,
@@ -26,7 +26,8 @@ gShaderProgramPostProcessingAndrew, gShaderProgramToon, gShaderProgramPostProces
 gShaderProgramScreenFluidDisp, gShaderProgramScreenFluidAdvectForward, gShaderProgramScreenFlatFluid, gShaderProgramScreenFluidFindDivergence, gShaderProgramScreenFluidPressureSolver,
 gShaderProgramScreenFluidBorder, gShaderProgramScreenFluidPressureCorrect, gShaderProgramScreenFluidMouseMove, 
 gShaderProgramScreenSplitL, gShaderProgramScreenSplitR, gShaderProgramScreenFluidFriction, gShaderProgramScreenFluidAdvectBackward,
-gShaderProgramScreenFluidAdvectCorrect, gShaderProgramFlatNorm, gShaderProgramScreenFluidTextAdd, gShaderProgramMergeMarch;
+gShaderProgramScreenFluidAdvectCorrect, gShaderProgramFlatNorm, gShaderProgramScreenFluidTextAdd, gShaderProgramMergeMarch,
+gShaderProgramCubicSplineFilter;
 
 let gProgramInfoDef = {};
 let gProgramInfoWave = {};
@@ -68,6 +69,7 @@ let gProgramInfoScreenFluidAdvectCorrect = {};
 let gProgramInfoFlatNorm = {};
 let gProgramInfoScreenFluidTextAdd = {};
 let gProgramInfoMergeMarch = {};
+let gProgramInfoCubicSplineFilter = {};
 
 //Depth
 let gDepthFBO;
@@ -1197,7 +1199,7 @@ const [EmptyCube, Flute, Violin] = results;
   let FluidSimQuad = new Quad(null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
     [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null, null);
   GenerateQuad(FluidSimQuad,1.0,ScreenSpaceOrigin); 
-  let SimDim = [800, 500];
+  let SimDim = [900, 450];
   let StartVals = [255, 255, 255, 255];
   let IterNum = 5;
   gFluidSimObj = new FluidSim2D(FluidSimQuad, SimDim, StartVals, IterNum);
@@ -1209,7 +1211,7 @@ const [EmptyCube, Flute, Violin] = results;
   GenerateQuad(gDistMerge,1.0,ScreenSpaceOrigin);
   //Set Pos
   let ECSize = 5.0;
-  gEmptyCube.Position = [0.0,0.0,0.0];
+  gEmptyCube.Position = [-20.0,0.0,0.0];
   gEmptyCube.Rotation = [0.0,0.0,0.0];
   gEmptyCube.Scale = [ECSize, ECSize, ECSize];
   gEmptyCube.Color = [1.0, 1.0, 1.0, 1.0];
@@ -1703,7 +1705,7 @@ async function RaycastClick(Obj)
       break;
     case gOpt3:
       if (gSceneLoadState.LiquidSim == false) {await LoadFluidSim();}
-      document.exitPointerLock();
+      //document.exitPointerLock();
       gActiveMainLoop = FluidVisLoop;
       gCamera.Eye = [0.0,0.0,40.0];
       gCamera.UpDir = [0.0,1.0,0.0];
@@ -2386,16 +2388,22 @@ const FluidVisLoop = ()=>
     DeltaTime = newTime - gPreviousTime;
     gTimeSinceRun = newTime - gTimeStart;
     gPreviousTime = newTime;
+    
     // Animation Step
     let CSpinSpeed = .1;
     gFlute.Rotation[1] += DeltaTime * CSpinSpeed;
     gFlute.Rotation[0] += DeltaTime * CSpinSpeed;
     gViolin.Rotation[1] += DeltaTime * CSpinSpeed;
     gViolin.Rotation[0] += DeltaTime * CSpinSpeed;
+    gEmptyCube.Rotation[1] += DeltaTime * CSpinSpeed;
+    gEmptyCube.Rotation[0] += DeltaTime * CSpinSpeed;
     
     DrawCallSetup();
     gGL.disable(gGL.CULL_FACE);
     Input();
+    gMouseMoved = Math.abs(gDeltaMouse[0]) + Math.abs(gDeltaMouse[1]) >= .001 ? true : false;
+    let LocDeltMouse = gIsMobile ? gTouchDelta : gDeltaMouse; //Mobile touch not set up yet 
+    MouseLook(gCamera, LocDeltMouse);
     ClearFBO(null, gGL);
     ClearFBO(gMainFBO, gGL);
     ClearFBO(gRaycastFBO, gGL);
@@ -2407,13 +2415,13 @@ const FluidVisLoop = ()=>
     Draw(gProgramInfoDef, gFlute, gCamera, gLight1);
     gDistMerge.Texture = gMainDepthMap;
 
-    gGL.bindFramebuffer(gGL.FRAMEBUFFER, gGlassFBO);
+    //gGL.bindFramebuffer(gGL.FRAMEBUFFER, gGlassFBO);
     Draw(gProgramInfoDef, gViolin, gCamera, gLight1);
-    gDistMerge.TextureBN = gGlassDepthMap;
+    gDistMerge.TextureBN = gMainDepthMap;
 
-    gGL.bindFramebuffer(gGL.FRAMEBUFFER, gBloomFBO);
+    gGL.bindFramebuffer(gGL.FRAMEBUFFER, gGlassFBO);
     Draw(gProgramInfoMergeMarch, gDistMerge, gCamera, gLight1);
-    gFluidSimObj.ScreenQuad.TextureBN = gBloomRendText;
+    gFluidSimObj.ScreenQuad.TextureBN = gGlassRendText;
   
     //============ Screen Resize for Fluid===================
     gGL.viewport(0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
@@ -2429,7 +2437,6 @@ const FluidVisLoop = ()=>
     gGL.activeTexture(gGL.TEXTURE9); 
     gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
     gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
-
     gFluidSimObj.SwapText();
     gFluidSimObj.UpdateText(); 
     //============ MODEL TEXT ADD===================
@@ -2477,8 +2484,101 @@ const FluidVisLoop = ()=>
     gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
 
     gFluidSimObj.SwapText();
-    gFluidSimObj.UpdateText(); 
+    gFluidSimObj.UpdateText();
+
     //=============ADVECT===================
+    //Apply velocity field to densitys 
+
+     // ==== FORWARD ======
+     Draw(gProgramInfoScreenFluidAdvectForward, gFluidSimObj.ScreenQuad, gCamera, gLight1);
+
+     gGL.activeTexture(gGL.TEXTURE9); 
+     gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.HoldText);
+     gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+
+     gFluidSimObj.ScreenQuad.DepthTexture = gFluidSimObj.HoldText; //Saves Forward to Depth
+     gFluidSimObj.ScreenQuad.Texture = gFluidSimObj.HoldText;
+
+    // ==== BACKWARD ======
+    Draw(gProgramInfoScreenFluidAdvectBackward, gFluidSimObj.ScreenQuad, gCamera, gLight1);
+    //Save to readText
+    gGL.activeTexture(gGL.TEXTURE9); 
+    gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.DoubleText);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+
+    gFluidSimObj.ScreenQuad.TextureBN = gFluidSimObj.DoubleText; //Backward text saved
+    gFluidSimObj.ScreenQuad.Texture = gFluidSimObj.ReadText; // Set back to use original values
+
+    // ==== ERROR CORRECT ======
+    Draw(gProgramInfoScreenFluidAdvectCorrect, gFluidSimObj.ScreenQuad, gCamera, gLight1);
+    //Save to readText
+    gGL.activeTexture(gGL.TEXTURE9); 
+    gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+
+    gFluidSimObj.SwapText();
+    gFluidSimObj.UpdateText(); 
+
+
+    //=============BORDER UPD===================
+    Draw(gProgramInfoScreenFluidBorder, gFluidSimObj.ScreenQuad, gCamera, gLight1);
+    //Save to readText
+    gGL.activeTexture(gGL.TEXTURE9); 
+    gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+
+    gFluidSimObj.SwapText();
+    gFluidSimObj.UpdateText(); 
+
+    //=============UnDiverge===================
+  
+    // //Gen Divergence
+    Draw(gProgramInfoScreenFluidFindDivergence, gFluidSimObj.ScreenQuad, gCamera, gLight1);
+
+    gGL.activeTexture(gGL.TEXTURE9);
+    gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.DivergeText);
+
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+
+    gFluidSimObj.ScreenQuad.TextureBN = gFluidSimObj.DivergeText; // set to texturebn just to not have an extra member for the struct
+    [gFluidSimObj.ReadText, gFluidSimObj.HoldText] = gFluidSimObj.SwapText2(gFluidSimObj.ReadText, gFluidSimObj.HoldText); //save Dense and velo text in Hold
+    // //Pressure Solve
+    [gFluidSimObj.WriteText, gFluidSimObj.LastPressGuess] = gFluidSimObj.SwapText2(gFluidSimObj.WriteText, gFluidSimObj.LastPressGuess); 
+    gFluidSimObj.UpdateIter(); //Use old PressGuess for new values
+
+    for (let iter = 0; iter < gFluidSimObj.IterNum; iter++)
+    {
+        Draw(gProgramInfoScreenFluidPressureSolver, gFluidSimObj.ScreenQuad, gCamera, gLight1);
+
+        gGL.activeTexture(gGL.TEXTURE9);
+        gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
+
+        gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+        if (iter + 1 == gFluidSimObj.IterNum) 
+        {
+          gGL.activeTexture(gGL.TEXTURE9);
+          gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.LastPressGuess);
+          gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+        }
+        gFluidSimObj.UpdateIter();
+        gFluidSimObj.SwapText();
+    }
+
+    // //Velocity Correction
+    [gFluidSimObj.PressureText, gFluidSimObj.ReadText] = gFluidSimObj.SwapText2(gFluidSimObj.PressureText, gFluidSimObj.ReadText); // Steal last value from iter loop to use for pressure text
+    gFluidSimObj.ScreenQuad.TextureBN = gFluidSimObj.PressureText; // For use in next shader compute
+    [gFluidSimObj.ReadText, gFluidSimObj.HoldText] = gFluidSimObj.SwapText2(gFluidSimObj.ReadText, gFluidSimObj.HoldText); //Bring Density and velo back to Main txt
+    gFluidSimObj.UpdateText(); //update screenquad values //
+
+    Draw(gProgramInfoScreenFluidPressureCorrect, gFluidSimObj.ScreenQuad, gCamera, gLight1);
+    
+    gGL.activeTexture(gGL.TEXTURE9);
+    gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
+
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+    gFluidSimObj.SwapText();
+    gFluidSimObj.UpdateText(); 
+     //=============ADVECT===================
     //Apply velocity field to densitys 
 
      // ==== FORWARD ======
@@ -2576,10 +2676,12 @@ const FluidVisLoop = ()=>
     gGL.bindFramebuffer(gGL.FRAMEBUFFER, null);
     gCamera.Width = gCanvasWidth;
     gCamera.Height = gCanvasHeight;
-    gGL.disable(gGL.DEPTH_TEST);
-    gGL.disable(gGL.CULL_FACE);
+  
+
     Draw(gProgramInfoScreenFlatFluid, gFluidSimObj.ScreenQuad, gCamera, gLight3);
-    Draw(gProgramInfoMergeMarch, gDistMerge, gCamera, gLight1);
+    gGL.clear(gGL.DEPTH_BUFFER_BIT);
+    Draw(gProgramInfoDef, gEmptyCube, gCamera, gLight3);
+   // Draw(gProgramInfoMergeMarch, gDistMerge, gCamera, gLight1);
     gFrameCount++;
     gCycleNum++;
     if (gActiveMainLoop != FluidVisLoop) {gInitLoad = true;}
@@ -2744,6 +2846,7 @@ if (!extLinearFloat) {
   gFragFlatNorm = await loadShaderFiles(gFragFlatNorm, './Shaders/FlatNormFrag.glsl');
   gFragScreenFluidTextAdd = await loadShaderFiles(gFragScreenFluidTextAdd, './Shaders/ScreenFluidTextAdd.glsl');
   gFragMergeMarch = await loadShaderFiles(gFragMergeMarch, './Shaders/MergeMarchFrag.glsl');
+  gFragCubicSplineFilter = await loadShaderFiles(gFragCubicSplineFilter, './Shaders/CubicSplineFilterFrag.glsl');
 
   gShaderProgramWave = initShader(gGL, gVertSourceDef,gFragSourceWave);
   gShaderProgramFlat = initShader(gGL, gVertSourceDef,gFragSourceFlat);
@@ -2784,6 +2887,7 @@ if (!extLinearFloat) {
   gShaderProgramFlatNorm = initShader(gGL, gVertSourceDef, gFragFlatNorm);
   gShaderProgramScreenFluidTextAdd = initShader(gGL, gVertSkyboxHigh, gFragScreenFluidTextAdd);
   gShaderProgramMergeMarch = initShader(gGL, gVertSkyboxHigh, gFragMergeMarch);
+  gShaderProgramCubicSplineFilter = initShader(gGL, gVertSkyboxHigh, gFragCubicSplineFilter);
   //Shaders done
   LoadTxt.style.color = '#ff0000'; 
   
@@ -2829,6 +2933,7 @@ if (!extLinearFloat) {
      gProgramInfoFlatNorm, gShaderProgramFlatNorm,
      gProgramInfoScreenFluidTextAdd, gShaderProgramScreenFluidTextAdd,
      gProgramInfoMergeMarch, gShaderProgramMergeMarch,
+     gProgramInfoCubicSplineFilter, gShaderProgramCubicSplineFilter,
      );
   
     SinPreComp(gSinView,WAVE_BUFFER_SIZE);

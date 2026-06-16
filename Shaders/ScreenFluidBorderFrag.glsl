@@ -113,7 +113,7 @@
         if (UVL.x < .5)
         {
             Output = UpdateBorder(InitalDensity,InitalVelocities, UVL);
-            Output = vec3(clamp(Output.r, 0.0, 1.0), clamp(Output.gb, -10.0, 10.0));
+            Output = vec3(clamp(Output.r, 0.0, 1.0), clamp(Output.gb, -1.0, 1.0));
         }
         fragColor = vec4(vec3(Output), 1.0);
     }

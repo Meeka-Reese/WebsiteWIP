@@ -13,7 +13,8 @@
     vec3 FindAdvectVal(vec2 screenSpace, float InitDense, vec2 InitVel, float DiffAm, float Time)
     {
 
-        vec2 velocityInUV = (InitVel * Time * DiffAm) / uResolution;
+        vec2 Scaler = vec2(UnitSize.x * .45, UnitSize.y*.7);
+        vec2 velocityInUV = clamp(((InitVel * Time * DiffAm) / uResolution), -Scaler, Scaler);
         
         vec2 ForwardUV = screenSpace + velocityInUV;
         
@@ -26,7 +27,8 @@
     }
     void main()
     {
-        float TimeScale = 20.0;  
+        float Noise = 1.0 + abs(sin(DeltaTime * 2.0));
+        float TimeScale = 100.3 * Noise;  
         float DiffAm = 1.0;
         float Ratio = (uResolution.x * .5) / uResolution.y;
         vec2 NewCord = gl_FragCoord.xy;

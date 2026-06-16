@@ -12,6 +12,7 @@ export class FluidSim2D
         this.HoldText = null;
         this.DivergeText = null;
         this.PressureText = null;
+        this.BorderObjText = null;
         this.DoubleText = null;
         this.LastDispGuess = null;
         this.LastPressGuess = null;
@@ -48,7 +49,7 @@ export class FluidSim2D
                 EmptyImgBuffer[i+3] = 0.0;
             }
         }
-        let DirCol = './Textures/GlassNoiseNorm.png';  
+        let DirCol = './Textures/WhiteNoise2K.webp';  
         let ImageObj = await loadImageToDataArray(DirCol, 0, 0, this.Dimensions[0], this.Dimensions[1]);
         let ColAr = ImageObj.data;
 
@@ -66,6 +67,7 @@ export class FluidSim2D
         this.LastDispGuess = await createTexture2DFromBuffer(gGL, DoubleEmptyBuffer, this.Dimensions[0] * 2.0, this.Dimensions[1], true);
         this.LastPressGuess = await createTexture2DFromBuffer(gGL, DoubleEmptyBuffer, this.Dimensions[0] * 2.0, this.Dimensions[1], true);
         this.ModelRendText = await createTexture2DFromBuffer(gGL, EmptyModelTextBuff, CanvasWidth, CanvasHeight, true);
+        this.BorderObjText = await createTexture2DFromBuffer(gGL, DoubleEmptyBuffer, this.Dimensions[0] * 2.0, this.Dimensions[1], true);
     }
     UpdateIter()
     {

@@ -184,7 +184,7 @@ bool BorderCheck(vec2 UV)
             if (Dist < abs(MouseVel.x + MouseVel.y))
                 {
                     Velo = vec2(-MouseVel.x, MouseVel.y) * uResolution;
-                    Velo = vec2(clamp(Velo.x, -10.0, 10.0), clamp(Velo.y, -10.0, 10.0));
+                    Velo = vec2(clamp(Velo.x, -1.0, 1.0), clamp(Velo.y, -1.0, 1.0));
                     Density += .1;
                     Density = clamp(Density, 0.0, 1.0);
                 }
@@ -198,7 +198,7 @@ bool BorderCheck(vec2 UV)
                 {
                     vec3 Col = vec3(Density, Velo);
                     vec3 HSLCol = RGB2HSL(Col);
-                    HSLCol.r = abs(sin(HSLCol.r * 1.5)) * 50.0;
+                    HSLCol.r = abs(sin(HSLCol.r * 1.5)) * 1.0;
                     HSLCol.g = 1.0; //saturation
                     HSLCol.b = min(HSLCol.b + .1, 1.0); //luminance
                     Col = HSL2RGB(HSLCol);

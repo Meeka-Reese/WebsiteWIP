@@ -35,12 +35,21 @@
         float Den = texture(uTextureScene, UVL).r;
         vec2 Velo = texture(uTextureScene, UVL).gb;
         vec4 Model = texture(uTextureModel, vec2(screenSpace.x, screenSpace.y));
-        Model.gb = clamp((((Model.gb * 2.0) - 1.9) * 100.0),-10.0, 10.0);
+        Model.gb = clamp((((Model.gb * 2.0) - 1.9)),-1.0, 1.0);
+        if (mod(UVL.x + Model.r, .01587) > .005) {Model.g*=-1.0;}
+        if (mod(UVL.y + Model.r, .01587) > .005) {Model.b*=-1.0;}
+        Model.r = clamp(Model.r, 0.0, 1.0);
+        
         
         
         float AddAmDen = 20.0 * DeltaTime * TimeScale;
         float AddAmVelo = 10.0 * DeltaTime * TimeScale;
-        vec3 Output = vec3(Den, Velo) + vec3(Model.r * AddAmDen, Model  .gb * AddAmVelo);
-        if (abs(Model.a) < .01) {Output = vec3(Den, Velo) * (1.0 - abs(sin(Time * .0002) * .08));}
+        vec3 Output = vec3(Den, Velo) + vec3(Model.r * AddAmDen, Model.gb * AddAmVelo);
+        if (abs(Model.a) < .01 && UVL.x < .5) {Output = vec3(Den, Velo) * (1.0 - abs(sin(Time * .0002) * .005));}
+        Output.r = clamp(Output.r, 0.0, 1.0);
+        Output.gb = clamp(Output.gb, -1.0, 1.0);
+        if (UVL.x > .5) {
+            Output.b = 1.0;
+            }
         fragColor = vec4(vec3(Output), 1.0);
     }
