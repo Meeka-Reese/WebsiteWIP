@@ -164,14 +164,7 @@ vec3 RGB2HSL (vec3 RGB)
         vec3 MinVal = min(Origin, min(N, min(S, min(E, W))));
         vec3 MaxVal = max(Origin, max(N, max(S, max(E, W))));
         vec3 Clamped = clamp(NewVals, MinVal, MaxVal);
-       // if (Clamped != NewVals) {Clamped = Forward;}
-        if (UV.x > .5) {
-            vec3 CLHSL = RGB2HSL(Clamped);
-            CLHSL.r += (sin(Clamped.r) + sin(Clamped.b)) * .01;
-            CLHSL.b = .5;
-            Clamped = HSL2RGB(CLHSL);
-            Clamped = clamp(Clamped, 0.0, 1.0);
-            }
+       
         return vec3(Clamped);
     }
     void main()

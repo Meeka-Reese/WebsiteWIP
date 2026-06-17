@@ -36,8 +36,8 @@
         vec2 Velo = texture(uTextureScene, UVL).gb;
         vec4 Model = texture(uTextureModel, vec2(screenSpace.x, screenSpace.y));
         Model.gb = clamp((((Model.gb * 2.0) - 1.9)),-1.0, 1.0);
-        if (mod(UVL.x + Model.r, .01587) > .005) {Model.g*=-1.0;}
-        if (mod(UVL.y + Model.r, .01587) > .005) {Model.b*=-1.0;}
+        if (mod(Time * UVL.y, .001587) > .0005) {Model.g*=-1.0;}
+        if (mod(Time * UVL.x, .001587) > .0005) {Model.b*=-1.0;}
         Model.r = clamp(Model.r, 0.0, 1.0);
         
         
@@ -49,7 +49,8 @@
         Output.r = clamp(Output.r, 0.0, 1.0);
         Output.gb = clamp(Output.gb, -1.0, 1.0);
         if (UVL.x > .5) {
-            Output.b = 1.0;
+            Output.b = .5;
+            Output.r = .5;
             }
         fragColor = vec4(vec3(Output), 1.0);
     }

@@ -77,6 +77,18 @@ export function CameraMove(Camera, Direction, DeltaMs)
             Camera.Eye[2] += CrossProduct[2] * gSpeed * DeltaMs;
             break;
 
+            case(4)://up
+            Camera.Eye[0] += Camera.UpDir[0] * gSpeed * DeltaMs;
+            Camera.Eye[1] += Camera.UpDir[1] * gSpeed * DeltaMs;
+            Camera.Eye[2] += Camera.UpDir[2] * gSpeed * DeltaMs;
+            break;
+
+            case(5)://up
+            Camera.Eye[0] -= Camera.UpDir[0] * gSpeed * DeltaMs;
+            Camera.Eye[1] -= Camera.UpDir[1] * gSpeed * DeltaMs;
+            Camera.Eye[2] -= Camera.UpDir[2] * gSpeed * DeltaMs;
+            break;
+
             default:
                 console.error("INVALID MOVE DIRECTION : " + Direction);
             break;

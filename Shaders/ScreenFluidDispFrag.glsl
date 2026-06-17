@@ -61,7 +61,7 @@
     }
     void main()
     {
-        float DiffAm = .5;
+        float DiffAm = 1.0;
         vec2 NewCord = gl_FragCoord.xy;
         vec2 screenSpace = vec2(((NewCord.x)/(uResolution.x)), 
         (NewCord.y/(uResolution.y)));
@@ -70,7 +70,7 @@
         UnitSize = vec2(1.0 / (uResolution.x), 1.0 / (uResolution.y));
         float initVal = texture(uTextureScene, UVL).r;
         vec2 Velo = texture(uTextureScene, UVL).gb;
-        if (UVL.x > .5) {DiffAm *= 100.0;}
+        if (UVL.x > .5) {DiffAm *= 10.0;}
         vec3 Dispersed = Difuse(UVL, initVal, Velo, DiffAm, DeltaTime *.1);
 
         vec3 Output = Dispersed;

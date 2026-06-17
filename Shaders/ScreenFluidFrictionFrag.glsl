@@ -16,8 +16,8 @@
         (NewCord.y/(uResolution.y)));
         vec2 UVL = vec2((screenSpace.x * .5), screenSpace.y);
         vec3 DVeloText = texture(uTextureScene, UVL).rgb;
-        float DnsFriction = 1.001;
-        float VelFriction = 1.001;
+        float DnsFriction = 1.000;
+        float VelFriction = 1.000;
         vec3 Output = DVeloText;
 
             Output = vec3(DVeloText.r / DnsFriction, DVeloText.gb / VelFriction);

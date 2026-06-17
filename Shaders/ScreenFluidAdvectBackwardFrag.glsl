@@ -9,10 +9,13 @@
     out vec4 fragColor;
     vec2 UnitSize;
 
+    float rand(vec2 co){
+        return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+    }
     
     vec3 FindAdvectVal(vec2 screenSpace, float InitDense, vec2 InitVel, float DiffAm, float Time)
     {
-        vec2 Scaler = vec2(UnitSize.x * .45, UnitSize.y*.7);
+        vec2 Scaler = vec2(UnitSize.x * .5, UnitSize.y * 1.0);
         vec2 velocityInUV = clamp(((InitVel * Time * DiffAm) / uResolution), -Scaler, Scaler);
         
         vec2 backtrackedUV = screenSpace - velocityInUV;
@@ -26,9 +29,8 @@
     }
     void main()
     {
-        float Noise = 1.0 + abs(sin(DeltaTime * 2.0));
-        float TimeScale = 209.3 * Noise;  
-        float DiffAm = 1.0;
+        float TimeScale = 10.3;
+        float DiffAm = 7.0;
         float Ratio = (uResolution.x * .5) / uResolution.y;
         vec2 NewCord = gl_FragCoord.xy;
         vec2 screenSpace = vec2(((NewCord.x)/(uResolution.x)), 

@@ -198,9 +198,7 @@ bool BorderCheck(vec2 UV)
                 {
                     vec3 Col = vec3(Density, Velo);
                     vec3 HSLCol = RGB2HSL(Col);
-                    HSLCol.r = abs(sin(HSLCol.r * 1.5)) * 1.0;
-                    HSLCol.g = 1.0; //saturation
-                    HSLCol.b = min(HSLCol.b + .1, 1.0); //luminance
+                
                     Col = HSL2RGB(HSLCol);
                     Density = Col.r;
                     Velo = Col.gb;

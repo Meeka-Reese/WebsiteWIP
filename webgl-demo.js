@@ -1199,7 +1199,7 @@ const [EmptyCube, Flute, Violin] = results;
   let FluidSimQuad = new Quad(null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
     [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null, null);
   GenerateQuad(FluidSimQuad,1.0,ScreenSpaceOrigin); 
-  let SimDim = [900, 450];
+  let SimDim = [800, 400];
   let StartVals = [255, 255, 255, 255];
   let IterNum = 5;
   gFluidSimObj = new FluidSim2D(FluidSimQuad, SimDim, StartVals, IterNum);
@@ -1584,21 +1584,20 @@ function touchHandler(e) //For Mobile
 }
 function Input() //For Computer
 {
-    //Forward = 0
-    //Backwards = 1
-    //Left = 2
-    //Right = 3 const Camera = makeStruct("Eye, ViewDir, UpDir");
     let Direction = -1;
+    let AltKey = gKeysPressed['shift'];
     if (gKeysPressed['w']){Direction = 0; CameraMove(gCamera, Direction, DeltaTime);}
     if (gKeysPressed['s']){Direction = 1; CameraMove(gCamera, Direction, DeltaTime);}
     if (gKeysPressed['a']){Direction = 2; CameraMove(gCamera, Direction, DeltaTime);}
     if (gKeysPressed['d']){Direction = 3; CameraMove(gCamera, Direction, DeltaTime);}
+    if (gKeysPressed['x']){Direction = 4; CameraMove(gCamera, Direction, DeltaTime);}
+    if (gKeysPressed['z']){Direction = 5; CameraMove(gCamera, Direction, DeltaTime);}
     if (gKeysPressed['p'] && gActiveMainLoop == TransformationLoop){PlayTransformSong();}
     if (gKeysPressed['y'] && !gConditions.AudioInit) { document.getElementById("PlayMusic").style.opacity = 0.0; if (gAudioContext.state == "suspended" ){gAudioContext.resume();} AcceptObj.Play(0); MainThemeObj.Play(1); gConditions.AudioInit = true;}
     if (gKeysPressed['n']) { document.getElementById("PlayMusic").style.opacity = 0.0;}
     if (gKeysPressed['Tab'] && document.pointerLockElement === gCanvas){document.exitPointerLock();gKeysPressed['Tab'] = false;} // so I don't leave zoom callws :(
     if (gKeysPressed['h'] && (gActiveMainLoop == AboutMeLoop || gActiveMainLoop == FluidVisLoop)) {document.getElementById("GoHome").style.opacity = 0.0; GoHome();}
-    if (gKeysPressed['x'] && gActiveMainLoop == TransformationLoop) {document.getElementById("ExitCam").style.opacity = 0.0; gCamera.ActiveAniClip = null;} //exit camera animation
+    if (gKeysPressed[' '] && gActiveMainLoop == TransformationLoop) {document.getElementById("ExitCam").style.opacity = 0.0; gCamera.ActiveAniClip = null;} //exit camera animation
     if (gKeysPressed['i'] && gActiveMainLoop == TransformationLoop) {document.getElementById("ExitCam").style.opacity = 0.0;} //Hide Exit Message
 
 
@@ -1705,7 +1704,7 @@ async function RaycastClick(Obj)
       break;
     case gOpt3:
       if (gSceneLoadState.LiquidSim == false) {await LoadFluidSim();}
-      //document.exitPointerLock();
+      document.exitPointerLock();
       gActiveMainLoop = FluidVisLoop;
       gCamera.Eye = [0.0,0.0,40.0];
       gCamera.UpDir = [0.0,1.0,0.0];
@@ -2401,9 +2400,6 @@ const FluidVisLoop = ()=>
     DrawCallSetup();
     gGL.disable(gGL.CULL_FACE);
     Input();
-    gMouseMoved = Math.abs(gDeltaMouse[0]) + Math.abs(gDeltaMouse[1]) >= .001 ? true : false;
-    let LocDeltMouse = gIsMobile ? gTouchDelta : gDeltaMouse; //Mobile touch not set up yet 
-    MouseLook(gCamera, LocDeltMouse);
     ClearFBO(null, gGL);
     ClearFBO(gMainFBO, gGL);
     ClearFBO(gRaycastFBO, gGL);
@@ -2518,67 +2514,7 @@ const FluidVisLoop = ()=>
 
     gFluidSimObj.SwapText();
     gFluidSimObj.UpdateText(); 
-
-
-    //=============BORDER UPD===================
-    Draw(gProgramInfoScreenFluidBorder, gFluidSimObj.ScreenQuad, gCamera, gLight1);
-    //Save to readText
-    gGL.activeTexture(gGL.TEXTURE9); 
-    gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
-    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
-
-    gFluidSimObj.SwapText();
-    gFluidSimObj.UpdateText(); 
-
-    //=============UnDiverge===================
-  
-    // //Gen Divergence
-    Draw(gProgramInfoScreenFluidFindDivergence, gFluidSimObj.ScreenQuad, gCamera, gLight1);
-
-    gGL.activeTexture(gGL.TEXTURE9);
-    gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.DivergeText);
-
-    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
-
-    gFluidSimObj.ScreenQuad.TextureBN = gFluidSimObj.DivergeText; // set to texturebn just to not have an extra member for the struct
-    [gFluidSimObj.ReadText, gFluidSimObj.HoldText] = gFluidSimObj.SwapText2(gFluidSimObj.ReadText, gFluidSimObj.HoldText); //save Dense and velo text in Hold
-    // //Pressure Solve
-    [gFluidSimObj.WriteText, gFluidSimObj.LastPressGuess] = gFluidSimObj.SwapText2(gFluidSimObj.WriteText, gFluidSimObj.LastPressGuess); 
-    gFluidSimObj.UpdateIter(); //Use old PressGuess for new values
-
-    for (let iter = 0; iter < gFluidSimObj.IterNum; iter++)
-    {
-        Draw(gProgramInfoScreenFluidPressureSolver, gFluidSimObj.ScreenQuad, gCamera, gLight1);
-
-        gGL.activeTexture(gGL.TEXTURE9);
-        gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
-
-        gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
-        if (iter + 1 == gFluidSimObj.IterNum) 
-        {
-          gGL.activeTexture(gGL.TEXTURE9);
-          gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.LastPressGuess);
-          gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
-        }
-        gFluidSimObj.UpdateIter();
-        gFluidSimObj.SwapText();
-    }
-
-    // //Velocity Correction
-    [gFluidSimObj.PressureText, gFluidSimObj.ReadText] = gFluidSimObj.SwapText2(gFluidSimObj.PressureText, gFluidSimObj.ReadText); // Steal last value from iter loop to use for pressure text
-    gFluidSimObj.ScreenQuad.TextureBN = gFluidSimObj.PressureText; // For use in next shader compute
-    [gFluidSimObj.ReadText, gFluidSimObj.HoldText] = gFluidSimObj.SwapText2(gFluidSimObj.ReadText, gFluidSimObj.HoldText); //Bring Density and velo back to Main txt
-    gFluidSimObj.UpdateText(); //update screenquad values //
-
-    Draw(gProgramInfoScreenFluidPressureCorrect, gFluidSimObj.ScreenQuad, gCamera, gLight1);
-    
-    gGL.activeTexture(gGL.TEXTURE9);
-    gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
-
-    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
-    gFluidSimObj.SwapText();
-    gFluidSimObj.UpdateText(); 
-     //=============ADVECT===================
+    //=============ADVECT===================
     //Apply velocity field to densitys 
 
      // ==== FORWARD ======
@@ -2610,17 +2546,17 @@ const FluidVisLoop = ()=>
 
     gFluidSimObj.SwapText();
     gFluidSimObj.UpdateText(); 
+     //=============BORDER UPD===================
+     Draw(gProgramInfoScreenFluidBorder, gFluidSimObj.ScreenQuad, gCamera, gLight1);
+     //Save to readText
+     gGL.activeTexture(gGL.TEXTURE9); 
+     gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
+     gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+ 
+     gFluidSimObj.SwapText();
+     gFluidSimObj.UpdateText(); 
+     
 
-
-    //=============BORDER UPD===================
-    Draw(gProgramInfoScreenFluidBorder, gFluidSimObj.ScreenQuad, gCamera, gLight1);
-    //Save to readText
-    gGL.activeTexture(gGL.TEXTURE9); 
-    gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
-    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
-
-    gFluidSimObj.SwapText();
-    gFluidSimObj.UpdateText(); 
 
     //=============UnDiverge===================
   
@@ -2670,6 +2606,7 @@ const FluidVisLoop = ()=>
     gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
     gFluidSimObj.SwapText();
     gFluidSimObj.UpdateText(); 
+     
 
    // ============Render Normal Pass========================
     gGL.viewport(0, 0, gCanvasWidth, gCanvasHeight);
@@ -2680,7 +2617,7 @@ const FluidVisLoop = ()=>
 
     Draw(gProgramInfoScreenFlatFluid, gFluidSimObj.ScreenQuad, gCamera, gLight3);
     gGL.clear(gGL.DEPTH_BUFFER_BIT);
-    Draw(gProgramInfoDef, gEmptyCube, gCamera, gLight3);
+   // Draw(gProgramInfoDef, gEmptyCube, gCamera, gLight3);
    // Draw(gProgramInfoMergeMarch, gDistMerge, gCamera, gLight1);
     gFrameCount++;
     gCycleNum++;
@@ -3017,12 +2954,12 @@ if (!extLinearFloat) {
     gTimeStart = gPreviousTime;
     //Set up Input
     document.addEventListener("keydown", (e) => {
-      let lowerLet = e.key.toLowerCase(); //accept caps lock and lower case
+      let lowerLet = e.key == ' ' ? e.key : e.key.toLowerCase(); //accept caps lock and lower case
       gKeysPressed[lowerLet] = true;
     });
   
     document.addEventListener("keyup", (e) => {
-      let lowerLet = e.key.toLowerCase();
+      let lowerLet = e.key == ' ' ? e.key : e.key.toLowerCase();
       gKeysPressed[lowerLet] = false;
     });
     document.addEventListener("mousemove", CalcMouseDelta);
