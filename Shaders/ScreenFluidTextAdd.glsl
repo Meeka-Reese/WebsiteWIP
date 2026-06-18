@@ -34,7 +34,7 @@
         vec2 UVL = vec2((screenSpace.x * .5), screenSpace.y);
         float Den = texture(uTextureScene, UVL).r;
         vec2 Velo = texture(uTextureScene, UVL).gb;
-        vec4 Model = texture(uTextureModel, vec2(screenSpace.x, screenSpace.y));
+        vec4 Model = texture(uTextureModel, screenSpace);
         Model.gb = clamp((((Model.gb * 2.0) - 1.9)),-1.0, 1.0);
         if (mod(Time * UVL.y, .001587) > .0005) {Model.g*=-1.0;}
         if (mod(Time * UVL.x, .001587) > .0005) {Model.b*=-1.0;}

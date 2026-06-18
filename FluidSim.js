@@ -67,7 +67,7 @@ export class FluidSim2D
         this.LastDispGuess = await createTexture2DFromBuffer(gGL, DoubleEmptyBuffer, this.Dimensions[0] * 2.0, this.Dimensions[1], true);
         this.LastPressGuess = await createTexture2DFromBuffer(gGL, DoubleEmptyBuffer, this.Dimensions[0] * 2.0, this.Dimensions[1], true);
         this.ModelRendText = await createTexture2DFromBuffer(gGL, EmptyModelTextBuff, CanvasWidth, CanvasHeight, true);
-        this.BorderObjText = await createTexture2DFromBuffer(gGL, DoubleEmptyBuffer, this.Dimensions[0] * 2.0, this.Dimensions[1], true);
+        this.BorderObjText = await createTexture2DFromBuffer(gGL, EmptyModelTextBuff, CanvasWidth, CanvasHeight, true);
     }
     UpdateIter()
     {

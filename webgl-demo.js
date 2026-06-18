@@ -2405,20 +2405,24 @@ const FluidVisLoop = ()=>
     ClearFBO(gRaycastFBO, gGL);
     ClearFBO(gGlassFBO, gGL);
     ClearFBO(gFluidFBO, gGL);
+    ClearFBO(gBloomFBO, gGL);
 
    gGL.bindFramebuffer(gGL.FRAMEBUFFER, gMainFBO);
      //============ 3D TEXT SAVE===================
-    Draw(gProgramInfoDef, gFlute, gCamera, gLight1);
+    Draw(gProgramInfoDef, gViolin, gCamera, gLight1);
     gDistMerge.Texture = gMainDepthMap;
 
-    //gGL.bindFramebuffer(gGL.FRAMEBUFFER, gGlassFBO);
-    Draw(gProgramInfoDef, gViolin, gCamera, gLight1);
+    Draw(gProgramInfoDef, gEmptyCube, gCamera, gLight1);
     gDistMerge.TextureBN = gMainDepthMap;
-
     gGL.bindFramebuffer(gGL.FRAMEBUFFER, gGlassFBO);
+
     Draw(gProgramInfoMergeMarch, gDistMerge, gCamera, gLight1);
     gFluidSimObj.ScreenQuad.TextureBN = gGlassRendText;
-  
+    //============ MODEL FOR BORDER ===================
+    gGL.bindFramebuffer(gGL.FRAMEBUFFER, gBloomFBO);
+    gGL.clear(gGL.COLOR_BUFFER_BIT || gGL.DEPTH_BUFFER_BIT);
+    Draw(gProgramInfoDef, gFlute, gCamera, gLight1);
+    gFluidSimObj.BorderObjText = gBloomRendText;
     //============ Screen Resize for Fluid===================
     gGL.viewport(0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
     gCamera.Width = gFluidSimObj.Dimensions[0]; //Changing to temp scaled down for fluid sim
@@ -2473,6 +2477,7 @@ const FluidVisLoop = ()=>
     }
     gFluidSimObj.UpdateText(); 
     // =============BORDER UPD===================
+    gFluidSimObj.ScreenQuad.TextureBN =  gFluidSimObj.BorderObjText;
     Draw(gProgramInfoScreenFluidBorder, gFluidSimObj.ScreenQuad, gCamera, gLight1);
     //Save to readText
     gGL.activeTexture(gGL.TEXTURE9); 
@@ -2556,8 +2561,6 @@ const FluidVisLoop = ()=>
      gFluidSimObj.SwapText();
      gFluidSimObj.UpdateText(); 
      
-
-
     //=============UnDiverge===================
   
     // //Gen Divergence

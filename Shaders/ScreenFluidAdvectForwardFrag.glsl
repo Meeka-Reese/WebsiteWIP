@@ -30,7 +30,7 @@
     }
     void main()
     {
-        float TimeScale = 10.3;
+        float TimeScale = 7.3;
         float DiffAm = 7.0;
         float Ratio = (uResolution.x * .5) / uResolution.y;
         vec2 NewCord = gl_FragCoord.xy;

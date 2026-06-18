@@ -567,6 +567,7 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         ViewMatrix: GL.getUniformLocation(ShaderProgramScreenFluidBorder, "uViewMatrix"),
         modelMatrix: GL.getUniformLocation(ShaderProgramScreenFluidBorder, "uModelMatrix"),
         textureScene: GL.getUniformLocation(ShaderProgramScreenFluidBorder, "uTextureScene"),
+        textureBN: GL.getUniformLocation(ShaderProgramScreenFluidBorder, "uTextureModelAdd"),
         resolution: GL.getUniformLocation(ShaderProgramScreenFluidBorder, "uResolution"),
     }
 

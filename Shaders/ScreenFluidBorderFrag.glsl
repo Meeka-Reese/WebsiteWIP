@@ -4,13 +4,17 @@
     in vec3 FragPos;
     in vec2 UVCord;
     uniform sampler2D uTextureScene;
+    uniform sampler2D uTextureModelAdd;
     uniform vec2 uResolution;  
     uniform float DeltaTime; 
     out vec4 fragColor;
     vec2 UnitSize;
+    float eps = 0.00001;
 
    int BorderCheck(vec2 UV)
         {
+            //float ModelBorder = texture(uTextureModelAdd, UV).r;
+            //if (ModelBorder > eps) {return 0;}
             //Corners 
             if (UV.x - UnitSize.x < 0.0 && UV.y - UnitSize.y < 0.0) {return 4;}//BottomLeft
             else if (UV.x - UnitSize.x < 0.0 && UV.y + UnitSize.y > .5) {return 5;}//TopLeft
@@ -36,6 +40,8 @@
             else{
                 return -1;
             }
+
+            
         }
     vec3 UpdateBorder(float InitDense, vec2 InitVelo, vec2 screenSpace)
     {
@@ -110,7 +116,8 @@
         float InitalDensity = texture(uTextureScene, UVL).r;
         vec2 InitalVelocities = texture(uTextureScene, UVL).gb;
         vec3 Output = vec3(InitalDensity, InitalVelocities);
-        if (UVL.x < .5)
+     
+        if (UVL.x < 1.5)
         {
             Output = UpdateBorder(InitalDensity,InitalVelocities, UVL);
             Output = vec3(clamp(Output.r, 0.0, 1.0), clamp(Output.gb, -1.0, 1.0));
