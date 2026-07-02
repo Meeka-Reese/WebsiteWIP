@@ -69,6 +69,7 @@ export class FluidSim2D
     }
     async RescaleCanvas(CanvasWidth, CanvasHeight, Quality)
     {
+        let DirCol = './Textures/GlassNoiseNorm.png';  
         //this.Dimensions = [Math.floor(CanvasWidth * Quality), Math.floor(CanvasHeight * Quality)];//broken
         let DoubleEmptyBuffer = new Float32Array(this.Dimensions[0] * 2 * this.Dimensions[1] * 4);
         let EmptyModelTextBuff = new Float32Array(CanvasWidth * CanvasHeight * 4);

@@ -43,8 +43,8 @@ function GrabMove()
 
     let HypMax = vec3.create(); 
     console.log(gAspect);
-    HypMax[0] = ((Dist[2] * .5) / Math.cos(gFOVDegree * (Math.PI / 180))); 
-    HypMax[1] = ((Dist[2] * .5) / Math.sin(gFOVDegree * (Math.PI / 180)));
+    HypMax[0] = ((Dist[2] * gAspect[0] * .3) / Math.cos(gFOVDegree * (Math.PI / 180))); 
+    HypMax[1] = ((Dist[2] * .3) / Math.sin(gFOVDegree * (Math.PI / 180)));
     //IDK why .7 and .42 works but who cares. Whatever works, works
     HypMax[2] = Depth;
     let HypMin = vec3.create();

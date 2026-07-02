@@ -9,15 +9,15 @@
 
     void main()
     {
-        float GravityAm = 0.0;
+        float GravityAm = .01;
         float Ratio = (uResolution.x * .5) / uResolution.y;
         vec2 NewCord = gl_FragCoord.xy;
         vec2 screenSpace = vec2(((NewCord.x * 1.0)/(uResolution.x)), 
         (NewCord.y/(uResolution.y)));
         vec2 UVL = vec2((screenSpace.x * .5), screenSpace.y);
         vec3 DVeloText = texture(uTextureScene, UVL).rgb;
-        float DnsFriction = 1.000;
-        float VelFriction = 1.000;
+        float DnsFriction = 1.001;
+        float VelFriction = 1.001;
         vec3 Output = DVeloText;
 
             Output = vec3(DVeloText.r / DnsFriction, DVeloText.gb / VelFriction);
