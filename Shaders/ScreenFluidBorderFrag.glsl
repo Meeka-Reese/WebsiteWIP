@@ -117,7 +117,7 @@
         vec2 InitalVelocities = texture(uTextureScene, UVL).gb;
         vec3 Output = vec3(InitalDensity, InitalVelocities);
      
-        if (UVL.x < 1.5)
+        if (UVL.x < .5)
         {
             Output = UpdateBorder(InitalDensity,InitalVelocities, UVL);
             Output = vec3(clamp(Output.r, 0.0, 1.0), clamp(Output.gb, -1.0, 1.0));

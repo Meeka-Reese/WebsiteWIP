@@ -15,7 +15,7 @@ gFragFleshPart, gFragMorph, gFragTreeMorph, gFragScreenBGTrans, gFragPostProcess
 gFragToon, gFragPostProcessing, gFragScreenFluidDisp, gFragScreenFluidAdvectForward, gFragScreenFlatFluid, gFragScreenFluidFindDivergence, gFragScreenFluidPressureSolver,
 gFragScreenFluidBorder, gFragScreenFluidPressureCorrect, gFragScreenFluidMouseMove, gFragScreenSplitL, gFragScreenSplitR,
 gFragScreenFluidFriction, gFragScreenFluidAdvectBackward, gFragScreenFluidAdvectCorrect, gFragFlatNorm, gFragScreenFluidTextAdd,
-gFragMergeMarch, gFragCubicSplineFilter;
+gFragMergeMarch, gFragCubicSplineFilter, gFragInvert;
 
 
 let gShaderProgramDef, gShaderProgramWave, gShaderProgramFlat, gShaderProgramCloud,
@@ -27,7 +27,7 @@ gShaderProgramScreenFluidDisp, gShaderProgramScreenFluidAdvectForward, gShaderPr
 gShaderProgramScreenFluidBorder, gShaderProgramScreenFluidPressureCorrect, gShaderProgramScreenFluidMouseMove, 
 gShaderProgramScreenSplitL, gShaderProgramScreenSplitR, gShaderProgramScreenFluidFriction, gShaderProgramScreenFluidAdvectBackward,
 gShaderProgramScreenFluidAdvectCorrect, gShaderProgramFlatNorm, gShaderProgramScreenFluidTextAdd, gShaderProgramMergeMarch,
-gShaderProgramCubicSplineFilter;
+gShaderProgramCubicSplineFilter, gShaderProgramInvert;
 
 let gProgramInfoDef = {};
 let gProgramInfoWave = {};
@@ -70,6 +70,7 @@ let gProgramInfoFlatNorm = {};
 let gProgramInfoScreenFluidTextAdd = {};
 let gProgramInfoMergeMarch = {};
 let gProgramInfoCubicSplineFilter = {};
+let gProgramInfoInvert = {};
 
 //Depth
 let gDepthFBO;
@@ -81,6 +82,7 @@ let gGlassDepthMap;
 let gRaycastFBO;
 let gRaycastColecMain = [];
 let gRaycastColecTransform = [];
+let gRaycastColecFluid = [];
 let gRaycastMap;
 let gRaycastIndex;
 let gRaycastText; // storing in different var to avoid editing binded buff
@@ -124,6 +126,7 @@ import * as THREE from 'three';
 import { LoadThreeScene, AddAnimation, UpdateModel,UpdateBoneMatrix } from './ChudThreeImplementation.js';
 import {SoundObject} from './SoundObject.js';
 import { FluidSim2D } from './FluidSim.js';
+import { GrabCheck } from './ObjGrab.js';
 
 
 
@@ -132,7 +135,7 @@ import { FluidSim2D } from './FluidSim.js';
 //Scene
 let gSceneLoadState = {Main: false, Transform: false, AboutMe: false, LiquidSim: false};
 let gActiveMainLoop;
-let gCamera;
+
 let gLight1, gLight2, gLight3;
 let gSimpleWave;
 let gBoatMesh;
@@ -190,7 +193,7 @@ let gStarTransforms = [];
 let gCommissionsText, gGameAudioText, gSoundDesignText, gVisualsText, gContactText;
 
 //Fluid Sim Scene
-let gFluidSimObj, gEmptyCube, gViolin, gFlute, gDistMerge;
+let gFluidSimObj, gEmptyCube, gViolin, gFlute, gDistMerge, gFluidPlay, gFluidPause;
 let gFluidFBO;
 let gFluidRendText;
 let gFluidDepthMap;
@@ -229,8 +232,6 @@ let gMousePosInit = false;
 let gKeysPressed = {};
 
 //CanvasData
-let gCanvasWidth;
-let gCanvasHeight;
 let gCanvasAspect;
 
 
@@ -708,8 +709,8 @@ async function LoadTransformScene()
   if (gSceneLoadState.Transform == true) {return}
    //Clear screen to solid color
   gActiveMainLoop = LoadLoop;
-  document.getElementById("Gif").style.opacity = 1.0;
-  document.getElementById("LoadTxt").style.opacity = 1.0;
+  document.getElementById("Gif").style.display = "block";
+  document.getElementById("LoadTxt").style.display = "block";
 
   gTime = new Date();
   let initTime = gTime.getTime() * .001;
@@ -1046,8 +1047,8 @@ async function LoadAboutMe()
     if (gSceneLoadState.AboutMe == true) {return}
      //Clear screen to solid color
     gActiveMainLoop = LoadLoop;
-    document.getElementById("Gif").style.opacity = 1.0;
-    document.getElementById("LoadTxt").style.opacity = 1.0;
+    document.getElementById("Gif").style.display = "block";
+    document.getElementById("LoadTxt").style.display = "block";
    
 
     gTime = new Date();
@@ -1174,8 +1175,8 @@ async function LoadFluidSim()
   if (gSceneLoadState.LiquidSim == true) {return}
   //Clear screen to solid color
   gActiveMainLoop = LoadLoop;
-  document.getElementById("Gif").style.opacity = 1.0;
-  document.getElementById("LoadTxt").style.opacity = 1.0;
+  document.getElementById("Gif").style.display = "block";
+  document.getElementById("LoadTxt").style.display = "block";
 
   gTime = new Date();
   let initTime = gTime.getTime() * .001;
@@ -1184,27 +1185,39 @@ async function LoadFluidSim()
     {key: 'EmptyCube', path: './models/EmptyCube.obj'},
     {key: 'Flute', path: './models/Flute.obj'},
     {key: 'Violin', path: './models/Violin.obj'},
+    {key: 'Play', path: './models/Play.obj'},
+    {key: 'Pause', path: './models/Pause.obj'},
+
   ];
   const results = await Promise.all(
     assets.map(a => LoadOBJ(gGL, a.path))
 );
-const [EmptyCube, Flute, Violin] = results;
+const [EmptyCube, Flute, Violin, Play, Pause] = results;
 
   LoadTxt.style.color = 'ffb700';
   //Load Obj
   gEmptyCube = Object.assign({}, EmptyCube);
   gFlute = Object.assign({}, Flute);
   gViolin = Object.assign({}, Violin); //if Violin gives problems. Look at obj to delete text inbetween f and vn I think
+  gFluidPlay = Object.assign({}, Play);
+  gFluidPause = Object.assign({}, Pause);
+  //FluidOBJ
   let ScreenSpaceOrigin = [0.0,0.0,0.0];
   let FluidSimQuad = new Quad(null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
     [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null, null);
   GenerateQuad(FluidSimQuad,1.0,ScreenSpaceOrigin); 
-  let SimDim = [800, 400];
+  let SimQuality = .5;
+  let SimDim = [Math.floor(gCanvasWidth * SimQuality), Math.floor(gCanvasHeight * SimQuality)];
   let StartVals = [255, 255, 255, 255];
   let IterNum = 5;
   gFluidSimObj = new FluidSim2D(FluidSimQuad, SimDim, StartVals, IterNum);
+  //Textures
   await gFluidSimObj.SetUpText(gCanvasWidth, gCanvasHeight);
   await gFluidSimObj.UpdateText();
+
+  gFlute.Texture = genEmptyTex(gGL, gCanvasWidth, gCanvasHeight, false);
+  gViolin.Texture = genEmptyTex(gGL, gCanvasWidth, gCanvasHeight, false);
+  gEmptyCube.Texture = genEmptyTex(gGL, gCanvasWidth, gCanvasHeight, false);
 
   gDistMerge = new Quad(null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
     [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null, null);
@@ -1225,14 +1238,28 @@ const [EmptyCube, Flute, Violin] = results;
   gViolin.Rotation = [0.0,0.0,0.0];
   gViolin.Scale = [ViolinSize, ViolinSize, ViolinSize];
   gViolin.Color = [1.0, 1.0, 1.0, 1.0];
+  let UIScale = 3.0;
+  gFluidPlay.Position = [0.0, 5.0, -40.0];
+  gFluidPlay.Rotation = [0.0, 270.0, 0.0];
+  gFluidPlay.Scale = [UIScale, UIScale, UIScale];
+  gFluidPlay.Color = [1.0, 1.0, 1.0, 1.0];
+  gFluidPause.Position = [-20.0, 5.0, -40.0];
+  gFluidPause.Rotation = [0.0, 270.0, 0.0];
+  gFluidPause.Scale = [UIScale, UIScale, UIScale];
+  gFluidPause.Color = [1.0, 1.0, 1.0, 1.0];
 
+   //========SET PARENTS==============
+   gFluidPlay.ParentTrans = gCamera;
+   gFluidPause.ParentTrans = gCamera;
 
   //Make sure load is cleared if not caught in load loop
-  document.getElementById("Gif").style.opacity = 0.0;
-  document.getElementById("LoadTxt").style.opacity = 0.0;
+  document.getElementById("Gif").style.display = "none";
+  document.getElementById("LoadTxt").style.display = "none";
   gGL.clearColor(0.0, 0.0, 0.0, 0.0); //Pink
   gGL.clear(gGL.COLOR_BUFFER_BIT); //Command to clear buffer bit and fill with clear color
 
+  //========RAYCAST SETUP==============
+  gRaycastColecFluid.push(gViolin, gEmptyCube);
 
   gSceneLoadState.LiquidSim = true;
 
@@ -1467,8 +1494,8 @@ function Draw(programInfo, Object, Camera, Light, Armature = null, MidiObject = 
         // ratio that matches the display size of the canvas
         // and we only want to see objects between 0.1 units
         // and 100 units away from the camera.
-      
-        const fieldOfView = (45 * Math.PI) / 180; // in radians
+        //gFOVDegree set to 45 by def
+        const fieldOfView = (gFOVDegree * Math.PI) / 180; // in radians
         const aspect = gGL.canvas.clientWidth / gGL.canvas.clientHeight;
         const zNear = 0.1;
         const zFar = 10000.0;
@@ -1593,16 +1620,16 @@ function Input() //For Computer
     if (gKeysPressed['x']){Direction = 4; CameraMove(gCamera, Direction, DeltaTime);}
     if (gKeysPressed['z']){Direction = 5; CameraMove(gCamera, Direction, DeltaTime);}
     if (gKeysPressed['p'] && gActiveMainLoop == TransformationLoop){PlayTransformSong();}
-    if (gKeysPressed['y'] && !gConditions.AudioInit) { document.getElementById("PlayMusic").style.opacity = 0.0; if (gAudioContext.state == "suspended" ){gAudioContext.resume();} AcceptObj.Play(0); MainThemeObj.Play(1); gConditions.AudioInit = true;}
-    if (gKeysPressed['n']) { document.getElementById("PlayMusic").style.opacity = 0.0;}
+    if (gKeysPressed['y'] && !gConditions.AudioInit) { document.getElementById("PlayMusic").style.display = "none"; if (gAudioContext.state == "suspended" ){gAudioContext.resume();} AcceptObj.Play(0); MainThemeObj.Play(1); gConditions.AudioInit = true;}
+    if (gKeysPressed['n']) { document.getElementById("PlayMusic").style.display = "none";}
     if (gKeysPressed['Tab'] && document.pointerLockElement === gCanvas){document.exitPointerLock();gKeysPressed['Tab'] = false;} // so I don't leave zoom callws :(
-    if (gKeysPressed['h'] && (gActiveMainLoop == AboutMeLoop || gActiveMainLoop == FluidVisLoop)) {document.getElementById("GoHome").style.opacity = 0.0; GoHome();}
-    if (gKeysPressed[' '] && gActiveMainLoop == TransformationLoop) {document.getElementById("ExitCam").style.opacity = 0.0; gCamera.ActiveAniClip = null;} //exit camera animation
-    if (gKeysPressed['i'] && gActiveMainLoop == TransformationLoop) {document.getElementById("ExitCam").style.opacity = 0.0;} //Hide Exit Message
+    if (gKeysPressed['h'] && (gActiveMainLoop == AboutMeLoop || gActiveMainLoop == FluidVisLoop)) {document.getElementById("GoHome").style.display = "none"; GoHome();}
+    if (gKeysPressed[' '] && gActiveMainLoop == TransformationLoop) {document.getElementById("ExitCam").style.display = "none"; gCamera.ActiveAniClip = null;} //exit camera animation
+    if (gKeysPressed['i'] && gActiveMainLoop == TransformationLoop) {document.getElementById("ExitCam").style.display = "none";} //Hide Exit Message
 
 
 }
-function CheckRaycast(SelectColor, DeselectColor)
+function GetRaycastInd()
 {
   let MousePos = [gCurrentMousePos[0], gCurrentMousePos[1]]; //flip y to turn from mouse to screen space
   //console.log("x " + MousePos[0] + "y " + MousePos[1]);
@@ -1617,7 +1644,12 @@ function CheckRaycast(SelectColor, DeselectColor)
   );
  
   let ObjIndex = (MousePixel[0] - 1); // -1 for indexing against array
-  gRaycastIndex = ObjIndex;
+  return ObjIndex;
+}
+function CheckRaycast(SelectColor, DeselectColor)
+{
+ 
+  gRaycastIndex = GetRaycastInd();
   //console.log(gRaycastIndex);
 
   for (let Obj of gRaycastColecMain)//reset all to deselect color
@@ -1637,9 +1669,9 @@ function CheckRaycast(SelectColor, DeselectColor)
 
   if (gActiveMainLoop == MainLoop)
   {
-    if (ObjIndex == -1) {return null;}
+    if (gRaycastIndex == -1) {return null;}
 
-    let ObjSelec = gRaycastColecMain[ObjIndex];
+    let ObjSelec = gRaycastColecMain[gRaycastIndex];
     if (ObjSelec == undefined) {return null;}
     ObjSelec.Color = SelectColor;
     let DispObj = gRCDict.get(ObjSelec);
@@ -1647,9 +1679,9 @@ function CheckRaycast(SelectColor, DeselectColor)
 }
 else if(gActiveMainLoop == TransformationLoop)
 {
-  if (ObjIndex == -1) {return null;}
+  if (gRaycastIndex == -1) {return null;}
 
-  let ObjSelec = gRaycastColecTransform[ObjIndex];
+  let ObjSelec = gRaycastColecTransform[gRaycastIndex];
   //console.log(ObjSelec);
   //console.log("Index " + ObjIndex + " Raycast Colec " + gRaycastColecTransform.length);
   ObjSelec.Color = SelectColor;
@@ -1683,7 +1715,7 @@ async function RaycastClick(Obj)
       gMidiObj.StartMidi();
       gMidiObj.StopMidi();
       gCharArmature.Timeline.clearAniClips();
-      document.getElementById("PlayMusic").style.opacity = 0.0;
+      document.getElementById("PlayMusic").style.display = "none";
       break;
     case gOpt2:
       if (gSceneLoadState.AboutMe == false) {await LoadAboutMe();}
@@ -1696,8 +1728,8 @@ async function RaycastClick(Obj)
       SoundMainTheme.pause();
       SoundTransformSound.pause();
       SoundTransformSound.currentTime = 0;
-      document.getElementById("PlayMusic").style.opacity = 0.0;
-      document.getElementById("GoHome").style.opacity = 1.0;
+      document.getElementById("PlayMusic").style.display = "none";
+      document.getElementById("GoHome").style.display = "block";
       let Speed = .7;
       gCharMeAniMixer = AddAnimation(gSceneAboutMe, gCharMeAniMixer, gCharMeAniClips[0], Speed);
       TriggerAboutMeSong();
@@ -1711,22 +1743,21 @@ async function RaycastClick(Obj)
       gCamera.ViewDir = [0.0,0.0,-1.0];
       SoundMainTheme.currentTime = 0;
       SoundMainTheme.pause();
-      document.getElementById("PlayMusic").style.opacity = 0.0;
+      document.getElementById("PlayMusic").style.display = "none";
 
       break;
     case gHomeButton:
-        document.getElementById("ExitCam").style.opacity = 0.0;
+        document.getElementById("ExitCam").style.display = "none";
         GoHome();
       break
     case gPauseButton:
-      document.getElementById("ExitCam").style.opacity = 0.0;
+      document.getElementById("ExitCam").style.display = "none";
       console.log("Pausing");
       SoundTransformSound.pause();
       //Sound1.currentTime = 0;
       gMidiObj.StopMidi();
       break
     case gPlayButton:
-      //document.getElementById("ExitCam").style.opacity = 1.0;
       console.log("Playing");
       PlayTransformSong();
       break
@@ -1858,7 +1889,7 @@ const MainLoop = ()=>
       let ViewMat = GetViewMatrix(gCamera);
       
       MainThemeObj.SetPan(ViewMat, gAudioContext.currentTime);
-
+      gCamera.updatePR();
 
       //======================RENDER RAYCAST============================
       ClearFBO(null, gGL);
@@ -2020,6 +2051,7 @@ const TransformationLoop = ()=>
           gCamera.ActiveAniClip.UpdateCam(newTime * .001);
         }
       }
+      gCamera.updatePR();
   //======================RENDER RAYCAST============================
   ClearFBO(null, gGL);
   ClearFBO(gMainFBO, gGL);
@@ -2242,6 +2274,7 @@ const AboutMeLoop = async ()=>
       let initSize =  gVisualsText.Scale[0];
         gVisualsText.Rotation[0] = initRot + .2 * gSinView[Math.floor((gTimeSinceRun * 1.0)%WAVE_BUFFER_SIZE)];
       gVisualsText.Scale[1] = 30.0 + initSize + 40.0 * gSinView[Math.floor((gTimeSinceRun)%WAVE_BUFFER_SIZE)];
+      gCamera.updatePR();
       //({Dict: gCharMeDict} = await UpdateModel(gSceneAboutMe, gCharMeDict)); //sets skeleton as undefined
       gCharMeAniMixer.update(DeltaTime * .001);
       gSceneAboutMe.updateMatrix();         
@@ -2379,7 +2412,7 @@ const AboutMeLoop = async ()=>
 const FluidVisLoop = ()=> 
 {
   //https://github.com/indutny/fft.js/ use for fft
-
+  
   //Add Text Add shader and implement it prob before diffuse or something idk
   gGL.disable(gGL.BLEND);
   gTime = new Date();
@@ -2387,6 +2420,7 @@ const FluidVisLoop = ()=>
     DeltaTime = newTime - gPreviousTime;
     gTimeSinceRun = newTime - gTimeStart;
     gPreviousTime = newTime;
+    let FluidIMGSc = [gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]];
     
     // Animation Step
     let CSpinSpeed = .1;
@@ -2396,10 +2430,30 @@ const FluidVisLoop = ()=>
     gViolin.Rotation[0] += DeltaTime * CSpinSpeed;
     gEmptyCube.Rotation[1] += DeltaTime * CSpinSpeed;
     gEmptyCube.Rotation[0] += DeltaTime * CSpinSpeed;
-    
+    gCamera.updatePR(); //updates for cam parent trans and rot
     DrawCallSetup();
-    gGL.disable(gGL.CULL_FACE);
+
+    //==============RAYCAST RENDER===================
+    gGL.bindFramebuffer(gGL.FRAMEBUFFER, gRaycastFBO);
+    gGL.viewport(0, 0, gCanvasWidth, gCanvasHeight);
+    gGL.enable(gGL.DEPTH_TEST);
+    gGL.enable(gGL.CULL_FACE);
+    let SelectColor = [1.0,1.0,1.0,1.0];
+    let DeselectColor = [.2,.2,.5,1.0];
+    let ObjIndex = 1; //start indexing at 1
+    for(let obj of gRaycastColecFluid)
+    {
+      gCamera.ObjectIndex = ObjIndex;
+      Draw(gProgramInfoRaycast,obj,gCamera,gLight1); 
+      ObjIndex++;
+    }
+    gRaycastText = gRaycastMap;
+
+    let LocDeltMouse = gIsMobile ? gTouchDelta : gDeltaMouse; //Mobile touch not set up yet 
     Input();
+    let RCInd = GetRaycastInd();
+    GrabCheck(RCInd, gRaycastColecFluid);
+
     ClearFBO(null, gGL);
     ClearFBO(gMainFBO, gGL);
     ClearFBO(gRaycastFBO, gGL);
@@ -2407,7 +2461,8 @@ const FluidVisLoop = ()=>
     ClearFBO(gFluidFBO, gGL);
     ClearFBO(gBloomFBO, gGL);
 
-   gGL.bindFramebuffer(gGL.FRAMEBUFFER, gMainFBO);
+    gGL.disable(gGL.CULL_FACE);
+    gGL.bindFramebuffer(gGL.FRAMEBUFFER, gMainFBO);
      //============ 3D TEXT SAVE===================
     Draw(gProgramInfoDef, gViolin, gCamera, gLight1);
     gDistMerge.Texture = gMainDepthMap;
@@ -2424,7 +2479,7 @@ const FluidVisLoop = ()=>
     Draw(gProgramInfoDef, gFlute, gCamera, gLight1);
     gFluidSimObj.BorderObjText = gBloomRendText;
     //============ Screen Resize for Fluid===================
-    gGL.viewport(0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+    gGL.viewport(0, 0, FluidIMGSc[0], FluidIMGSc[1]);
     gCamera.Width = gFluidSimObj.Dimensions[0]; //Changing to temp scaled down for fluid sim
     gCamera.Height = gFluidSimObj.Dimensions[1];
     let ResRatio = [(gCamera.Width) / gCanvasWidth, gCamera.Height / gCanvasHeight];
@@ -2436,7 +2491,7 @@ const FluidVisLoop = ()=>
     //Save to readText
     gGL.activeTexture(gGL.TEXTURE9); 
     gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
-    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, FluidIMGSc[0], FluidIMGSc[1]);
     gFluidSimObj.SwapText();
     gFluidSimObj.UpdateText(); 
     //============ MODEL TEXT ADD===================
@@ -2444,14 +2499,14 @@ const FluidVisLoop = ()=>
     //Save to readText
     gGL.activeTexture(gGL.TEXTURE9); 
     gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
-    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, FluidIMGSc[0], FluidIMGSc[1]);
     gFluidSimObj.SwapText();
     gFluidSimObj.UpdateText(); 
     // ===========FRICTION and GRAVITY===========
     Draw(gProgramInfoScreenFluidFriction, gFluidSimObj.ScreenQuad, gCamera, gLight1);
     gGL.activeTexture(gGL.TEXTURE9); 
     gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
-    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, FluidIMGSc[0], FluidIMGSc[1]);
 
     gFluidSimObj.SwapText();
     gFluidSimObj.UpdateText(); 
@@ -2465,12 +2520,12 @@ const FluidVisLoop = ()=>
       gGL.activeTexture(gGL.TEXTURE9);
       gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
 
-      gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+      gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, FluidIMGSc[0], FluidIMGSc[1]);
       if (iter + 1 == 5.0) 
         {
           gGL.activeTexture(gGL.TEXTURE9);
           gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.LastDispGuess);
-          gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+          gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, FluidIMGSc[0], FluidIMGSc[1]);
         }
       gFluidSimObj.UpdateIter();
       gFluidSimObj.SwapText();
@@ -2482,7 +2537,7 @@ const FluidVisLoop = ()=>
     //Save to readText
     gGL.activeTexture(gGL.TEXTURE9); 
     gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
-    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, FluidIMGSc[0], FluidIMGSc[1]);
 
     gFluidSimObj.SwapText();
     gFluidSimObj.UpdateText();
@@ -2495,7 +2550,7 @@ const FluidVisLoop = ()=>
 
      gGL.activeTexture(gGL.TEXTURE9); 
      gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.HoldText);
-     gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+     gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, FluidIMGSc[0], FluidIMGSc[1]);
 
      gFluidSimObj.ScreenQuad.DepthTexture = gFluidSimObj.HoldText; //Saves Forward to Depth
      gFluidSimObj.ScreenQuad.Texture = gFluidSimObj.HoldText;
@@ -2505,7 +2560,7 @@ const FluidVisLoop = ()=>
     //Save to readText
     gGL.activeTexture(gGL.TEXTURE9); 
     gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.DoubleText);
-    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, FluidIMGSc[0], FluidIMGSc[1]);
 
     gFluidSimObj.ScreenQuad.TextureBN = gFluidSimObj.DoubleText; //Backward text saved
     gFluidSimObj.ScreenQuad.Texture = gFluidSimObj.ReadText; // Set back to use original values
@@ -2515,7 +2570,7 @@ const FluidVisLoop = ()=>
     //Save to readText
     gGL.activeTexture(gGL.TEXTURE9); 
     gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
-    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, FluidIMGSc[0], FluidIMGSc[1]);
 
     gFluidSimObj.SwapText();
     gFluidSimObj.UpdateText(); 
@@ -2527,7 +2582,7 @@ const FluidVisLoop = ()=>
 
      gGL.activeTexture(gGL.TEXTURE9); 
      gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.HoldText);
-     gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+     gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, FluidIMGSc[0], FluidIMGSc[1]);
 
      gFluidSimObj.ScreenQuad.DepthTexture = gFluidSimObj.HoldText; //Saves Forward to Depth
      gFluidSimObj.ScreenQuad.Texture = gFluidSimObj.HoldText;
@@ -2537,7 +2592,7 @@ const FluidVisLoop = ()=>
     //Save to readText
     gGL.activeTexture(gGL.TEXTURE9); 
     gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.DoubleText);
-    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, FluidIMGSc[0], FluidIMGSc[1]);
 
     gFluidSimObj.ScreenQuad.TextureBN = gFluidSimObj.DoubleText; //Backward text saved
     gFluidSimObj.ScreenQuad.Texture = gFluidSimObj.ReadText; // Set back to use original values
@@ -2547,7 +2602,7 @@ const FluidVisLoop = ()=>
     //Save to readText
     gGL.activeTexture(gGL.TEXTURE9); 
     gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
-    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, FluidIMGSc[0], FluidIMGSc[1]);
 
     gFluidSimObj.SwapText();
     gFluidSimObj.UpdateText(); 
@@ -2556,7 +2611,7 @@ const FluidVisLoop = ()=>
      //Save to readText
      gGL.activeTexture(gGL.TEXTURE9); 
      gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
-     gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+     gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, FluidIMGSc[0], FluidIMGSc[1]);
  
      gFluidSimObj.SwapText();
      gFluidSimObj.UpdateText(); 
@@ -2569,7 +2624,7 @@ const FluidVisLoop = ()=>
     gGL.activeTexture(gGL.TEXTURE9);
     gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.DivergeText);
 
-    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, FluidIMGSc[0], FluidIMGSc[1]);
 
     gFluidSimObj.ScreenQuad.TextureBN = gFluidSimObj.DivergeText; // set to texturebn just to not have an extra member for the struct
     [gFluidSimObj.ReadText, gFluidSimObj.HoldText] = gFluidSimObj.SwapText2(gFluidSimObj.ReadText, gFluidSimObj.HoldText); //save Dense and velo text in Hold
@@ -2584,12 +2639,12 @@ const FluidVisLoop = ()=>
         gGL.activeTexture(gGL.TEXTURE9);
         gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
 
-        gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+        gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, FluidIMGSc[0], FluidIMGSc[1]);
         if (iter + 1 == gFluidSimObj.IterNum) 
         {
           gGL.activeTexture(gGL.TEXTURE9);
           gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.LastPressGuess);
-          gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+          gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, FluidIMGSc[0], FluidIMGSc[1]);
         }
         gFluidSimObj.UpdateIter();
         gFluidSimObj.SwapText();
@@ -2606,7 +2661,7 @@ const FluidVisLoop = ()=>
     gGL.activeTexture(gGL.TEXTURE9);
     gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
 
-    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, FluidIMGSc[0], FluidIMGSc[1]);
     gFluidSimObj.SwapText();
     gFluidSimObj.UpdateText(); 
      
@@ -2617,16 +2672,29 @@ const FluidVisLoop = ()=>
     gCamera.Width = gCanvasWidth;
     gCamera.Height = gCanvasHeight;
   
-
+    
     Draw(gProgramInfoScreenFlatFluid, gFluidSimObj.ScreenQuad, gCamera, gLight3);
+    //Save Texts to Objs for Inverts
+    gGL.activeTexture(gGL.TEXTURE9);
+    gGL.bindTexture(gGL.TEXTURE_2D, gEmptyCube.Texture);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gCanvasWidth, gCanvasHeight);
+    gGL.activeTexture(gGL.TEXTURE9);
+    gGL.bindTexture(gGL.TEXTURE_2D, gViolin.Texture);
+    gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gCanvasWidth, gCanvasHeight);
+
     gGL.clear(gGL.DEPTH_BUFFER_BIT);
-   // Draw(gProgramInfoDef, gEmptyCube, gCamera, gLight3);
-   // Draw(gProgramInfoMergeMarch, gDistMerge, gCamera, gLight1);
+    Draw(gProgramInfoInvert, gEmptyCube, gCamera, gLight3);
+    Draw(gProgramInfoInvert, gViolin, gCamera, gLight3);
+
+    //UI RENDER
+    Draw(gProgramInfoDef, gFluidPlay, gCamera, gLight3);
+    Draw(gProgramInfoDef, gFluidPause, gCamera, gLight3);
     gFrameCount++;
-    gCycleNum++;
-    if (gActiveMainLoop != FluidVisLoop) {gInitLoad = true;}
-    else {gInitLoad = false;}
-    requestAnimationFrame(gActiveMainLoop);
+      gCycleNum++;
+      if (gActiveMainLoop != FluidVisLoop) {gInitLoad = true;}
+      else {gInitLoad = false;}
+      requestAnimationFrame(gActiveMainLoop);
+   
 
 }
 //=======================LOAD LOOP=======================================
@@ -2639,8 +2707,8 @@ const LoadLoop = ()=>
   gGL.clear(gGL.COLOR_BUFFER_BIT); //Command to clear buffer bit and fill with clear color
   if (gActiveMainLoop != LoadLoop)
   {
-    document.getElementById("Gif").style.opacity = 0.0;
-    document.getElementById("LoadTxt").style.opacity = 0.0;
+    document.getElementById("Gif").style.display = "none";
+    document.getElementById("LoadTxt").style.display = "none";
     gGL.clearColor(0.0, 0.0, 0.0, 0.0); //Pink
     gGL.clear(gGL.COLOR_BUFFER_BIT | gGL.DEPTH_BUFFER_BIT); //Command to clear buffer bit and fill with clear color
   }
@@ -2654,8 +2722,11 @@ function ResizeCanvas(gl, canvas)
   const displayHeight = Math.floor(canvas.clientHeight * dpr);
 
   if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
+    console.log("Canvas Width updated");
     canvas.width  = displayWidth;
     canvas.height = displayHeight;
+    console.log(canvas.width + " " + canvas.height);
+    gAspect = [displayWidth / displayHeight, displayHeight / displayWidth];
     
 
     gl.viewport(0, 0, displayWidth, displayHeight);
@@ -2673,13 +2744,11 @@ function ResizeCanvas(gl, canvas)
       gRenderText    = genEmptyTex(gGL, gCanvasWidth, gCanvasHeight);
       gMainDepthMap  = genDepthMap(gGL, gCanvasWidth, gCanvasHeight);
       gMainFBO       = genFBO(gGL, gMainDepthMap, gRenderText);
-    
-      if (gActiveMainLoop == MainLoop)
-      {
-        gGlassRendText = genEmptyTex(gGL, gCanvasWidth, gCanvasHeight);
-        gGlassDepthMap = genDepthMap(gGL, gCanvasWidth, gCanvasHeight);
-        gGlassFBO      = genFBO(gGL, gGlassDepthMap, gGlassRendText);
-      }
+
+      gGlassRendText = genEmptyTex(gGL, gCanvasWidth, gCanvasHeight);
+      gGlassDepthMap = genDepthMap(gGL, gCanvasWidth, gCanvasHeight);
+      gGlassFBO      = genFBO(gGL, gGlassDepthMap, gGlassRendText);
+      
       gDepthMap = genDepthMap(gGL, gCanvasWidth, gCanvasHeight);
       gDepthFBO = genFBO(gGL, gDepthMap);
       gRaycastMap    = genEmptyTex(gGL, gCanvasWidth, gCanvasHeight);
@@ -2688,6 +2757,7 @@ function ResizeCanvas(gl, canvas)
       gBloomRendText = genEmptyTex(gGL, gCanvasWidth, gCanvasHeight);
       gBloomDepthMap = genDepthMap(gGL, gCanvasWidth, gCanvasHeight);
       gBloomFBO      = genFBO(gGL, gBloomDepthMap, gBloomRendText);
+      if (gFluidSimObj != null && gActiveMainLoop == FluidVisLoop){gFluidSimObj.RescaleCanvas(gCanvasWidth, gCanvasHeight, .1);}
     }
   
     
@@ -2695,20 +2765,27 @@ function ResizeCanvas(gl, canvas)
     gCanvasAspect = gCanvasHeight / gCanvasWidth;
   }
 }
+
+
+
+
+
+
 main();
 
 async function main() {
   gIsMobile = MobileCheck();
   if (gIsMobile) 
   {
-    document.getElementById("GoHome").style.opacity = 0.0;
-    document.getElementById("LoadTxt").style.opacity = 0.0;
-    document.getElementById("MobileInfo").style.opacity = 1.0;
+
+    document.getElementById("GoHome").style.display = "none";
+    document.getElementById("LoadTxt").style.display = "none";
+    document.getElementById("MobileInfo").style.display = "block";
     return;
   }
   let LoadTxt = document.getElementById("LoadTxt");
   LoadTxt.style.color = '#990000'; 
-  document.getElementById("Gif").style.opacity = 1.0;
+  document.getElementById("Gif").style.display = "block";
   const canvas = document.querySelector("#gl-canvas");
   // Initialize the GL context
   gGL = canvas.getContext("webgl2",
@@ -2787,6 +2864,7 @@ if (!extLinearFloat) {
   gFragScreenFluidTextAdd = await loadShaderFiles(gFragScreenFluidTextAdd, './Shaders/ScreenFluidTextAdd.glsl');
   gFragMergeMarch = await loadShaderFiles(gFragMergeMarch, './Shaders/MergeMarchFrag.glsl');
   gFragCubicSplineFilter = await loadShaderFiles(gFragCubicSplineFilter, './Shaders/CubicSplineFilterFrag.glsl');
+  gFragInvert = await loadShaderFiles(gFragInvert, './Shaders/InvertFrag.glsl');
 
   gShaderProgramWave = initShader(gGL, gVertSourceDef,gFragSourceWave);
   gShaderProgramFlat = initShader(gGL, gVertSourceDef,gFragSourceFlat);
@@ -2828,6 +2906,7 @@ if (!extLinearFloat) {
   gShaderProgramScreenFluidTextAdd = initShader(gGL, gVertSkyboxHigh, gFragScreenFluidTextAdd);
   gShaderProgramMergeMarch = initShader(gGL, gVertSkyboxHigh, gFragMergeMarch);
   gShaderProgramCubicSplineFilter = initShader(gGL, gVertSkyboxHigh, gFragCubicSplineFilter);
+  gShaderProgramInvert = initShader(gGL, gVertSourceDef, gFragInvert);
   //Shaders done
   LoadTxt.style.color = '#ff0000'; 
   
@@ -2874,6 +2953,7 @@ if (!extLinearFloat) {
      gProgramInfoScreenFluidTextAdd, gShaderProgramScreenFluidTextAdd,
      gProgramInfoMergeMarch, gShaderProgramMergeMarch,
      gProgramInfoCubicSplineFilter, gShaderProgramCubicSplineFilter,
+     gProgramInfoInvert, gShaderProgramInvert,
      );
   
     SinPreComp(gSinView,WAVE_BUFFER_SIZE);
@@ -2968,8 +3048,9 @@ if (!extLinearFloat) {
     document.addEventListener("mousemove", CalcMouseDelta);
     document.addEventListener("click", (e) => ClickFunc(e));
     document.addEventListener("click", (e) => gAudioContext.resume());
-
-
+    document.addEventListener("mousedown", (e) => gMouseDown = true);
+    document.addEventListener("mouseup", (e) => gMouseDown = false);
+    console.log("CANVAS WIDTH: " + gCanvasWidth + " CANVAS HEIGHT: " + gCanvasHeight);
     gDepthMap = genDepthMap(gGL, gCanvasWidth, gCanvasHeight);
     gDepthFBO = genFBO(gGL, gDepthMap);
     gRaycastMap = genEmptyTex(gGL, gCanvasWidth, gCanvasHeight);
@@ -3008,10 +3089,10 @@ if (!extLinearFloat) {
 
 
     gActiveMainLoop();
-    document.getElementById("Gif").style.opacity = 0.0;
-    document.getElementById("GoHome").style.opacity = 0.0;
-    document.getElementById("LoadTxt").style.opacity = 0.0;
-    if (!gIsMobile) {document.getElementById("PlayMusic").style.opacity = 1.0;}
+    document.getElementById("Gif").style.display = "none";
+    document.getElementById("GoHome").style.display = "none";
+    document.getElementById("LoadTxt").style.display = "none";
+    if (!gIsMobile) {document.getElementById("PlayMusic").style.display = "block";}
     FrameCount();
     console.log(gIsMobile);
     if (gIsMobile)

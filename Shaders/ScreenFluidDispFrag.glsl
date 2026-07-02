@@ -65,7 +65,7 @@
         vec2 NewCord = gl_FragCoord.xy;
         vec2 screenSpace = vec2(((NewCord.x)/(uResolution.x)), 
         (NewCord.y/(uResolution.y)));
-        vec2 UVR = vec2(screenSpace.x - .5, screenSpace.y);
+        vec2 UVR = vec2(screenSpace.x * .5 + .5, screenSpace.y);
         vec2 UVL = vec2((screenSpace.x * .5), screenSpace.y);
         UnitSize = vec2(1.0 / (uResolution.x), 1.0 / (uResolution.y));
         float initVal = texture(uTextureScene, UVL).r;

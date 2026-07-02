@@ -2,7 +2,7 @@ import { Normalize, ToRadian, Vec3ArrLerp } from './Utils.js';
 import { mat4, vec3, vec4, quat } from './Externals/esm/index.js';
 let gSpeed = .11;
 let gRotationSpeed = .7;
-let gTotalYaw;
+let gTotalYaw = 0.0;
 let gTotalPitch = 0.0;
 let gOrbitalRotSpeed = .1;
 
@@ -12,6 +12,8 @@ export class Camera
     constructor(Eye, ViewDir, UpDir, Width, Height, ObjectIndex, Mode, OrbitalOrg)
     {
         this.Eye = Eye; //size 3 arr
+        this.Position = Eye;
+        this.Rotation = [0.0,0.0,0.0];
         this.ViewDir = ViewDir; // size 3 arr
         this.UpDir = UpDir; // size 3 arr
         this.Width = Width;
@@ -34,6 +36,11 @@ export class Camera
         this.OutlineCutoff = outCut;
         this.BlurAmount = blurAmount;
         this.BGCol = bgCol;
+    }
+    updatePR()
+    {
+        this.Position = this.Eye;
+        this.Rotation = [0.0, 0.0, 0.0];
     }
 
 }

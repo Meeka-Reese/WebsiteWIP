@@ -169,6 +169,7 @@ vec3 RGB2HSL (vec3 RGB)
     }
     void main()
     {
+        float Ratio = (uResolution.x) / uResolution.y;
         vec2 NewCord = gl_FragCoord.xy;
         vec2 screenSpace = vec2(((NewCord.x)/(uResolution.x)), 
         (NewCord.y/(uResolution.y)));

@@ -148,10 +148,13 @@
         vec2 UVR = vec2((screenSpace.x * .5) + .5, screenSpace.y);
         vec4 DVeloText = texture(uTextureScene, UVL);
         vec4 ColText = texture(uTextureScene, UVR);
+        vec4 InitColText = texture(uTextureScene, UVR);
         ColText *= DVeloText.r;
         vec3 CHSL = RGB2HSL(ColText.rgb);
         CHSL.b = mod(.8, DVeloText.r * 2.0);
         ColText.rgb = HSL2RGB(CHSL);
        // if (ColText.r + ColText.g + ColText.b <= .4) {ColText = vec4(1.0);}
-        fragColor = vec4(vec3(abs(ColText)), 1.0);
+        fragColor = vec4(vec3(abs(ColText.rgb)), 1.0);
+
+
     }

@@ -11,7 +11,13 @@ export function Clamp(Val, Min, Max)
 {
   let ClampedVal = Math.min(Math.max(Val, Min),Max);
   return ClampedVal;
-  
+}
+export function ClampArr3(Val, Min, Max)
+{
+  let ClampedVal = [Math.min(Math.max(Val[0], Min[0]),Max[0]),
+                    Math.min(Math.max(Val[1], Min[1]),Max[1]),
+                    Math.min(Math.max(Val[2], Min[2]),Max[2])];
+  return ClampedVal;
 }
 export function MobileCheck() {
                     let check = false;

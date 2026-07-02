@@ -37,6 +37,7 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
     ProgramInfoScreenFluidTextAdd, ShaderProgramScreenFluidTextAdd,
     ProgramInfoMergeMarch, ShaderProgramMergeMarch,
     ProgramInfoCubicSplineFilter, ShaderProgramCubicSplineFilter,
+    ProgramInfoInvert, ShaderProgramInvert,
     ) {
         //SOON TO DO - REORGANIZE TEXTURES SO THEY USE MULTIPLE TEXTURE SLOTS WITH GENERIC NAMES INSTEAD OF "TEXTUREBN"
     ProgramInfoDef.program = ShaderProgramDef;
@@ -723,8 +724,22 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         textureScene: GL.getUniformLocation(ShaderProgramCubicSplineFilter, "uTextureScene"),
         resolution: GL.getUniformLocation(ShaderProgramCubicSplineFilter, "uResolution"),
     }
-    
 
+    ProgramInfoInvert.program = ShaderProgramInvert;
+    ProgramInfoInvert.attribLocations = {
+        vertexPosition: GL.getAttribLocation(ShaderProgramInvert, "aVertPos"),
+        normalPosition: GL.getAttribLocation(ShaderProgramInvert, "aNorm"),
+        UVPosition: GL.getAttribLocation(ShaderProgramInvert, "aUVCord"),
+    };
+    ProgramInfoInvert.uniformLocations = {
+        projectionMatrix: GL.getUniformLocation(ShaderProgramInvert, "uProjMatrix"),
+        ViewMatrix: GL.getUniformLocation(ShaderProgramInvert, "uViewMatrix"),
+        modelMatrix: GL.getUniformLocation(ShaderProgramInvert, "uModelMatrix"),
+        texture: GL.getUniformLocation(ShaderProgramInvert, "uTexture"),
+        alpha: GL.getUniformLocation(ShaderProgramInvert, "Alpha"),
+        resolution: GL.getUniformLocation(ShaderProgramInvert, "uResolution"),
+    };
+    
 }
 //
 // Initialize a texture and load an image.
