@@ -180,13 +180,19 @@ export class Armature{
     {
         let ActiveBone;
         let DeltaTime = gTimeSinceRun * 0.001;
+        let SkippedKeys = 0;
+        console.log(DeltaTime);
         for (let i = 0; i < this.Timeline.Keyframes.length; i++)
         {
             let keyframe = this.Timeline.Keyframes[i];
-            //console.log(keyframe.Time - keyframe.StartTime);
-            if ((keyframe.Time + keyframe.StartTime) < DeltaTime) {continue;} // if end time is less than dela time continue
-            if ((keyframe.StartTime) > DeltaTime) {continue;} // if start is in the future continue
+            // console.log(keyframe.StartTime);
+            // console.log(DeltaTime);
+            if ((keyframe.Time) < DeltaTime) {SkippedKeys ++; continue;} // if end time is less than dela time continue
+            if ((keyframe.StartTime) > DeltaTime) {SkippedKeys ++; continue;} // if start is in the future continue
+            //console.log("Delta Time : " + DeltaTime + " Start Time : " + keyframe.StartTime + " Time : " + keyframe.Time);
+            //console.log(Math.min((DeltaTime - keyframe.StartTime) / (keyframe.Time - keyframe.StartTime)));
             let Alpha = keyframe.Time != 0 ? Math.min((DeltaTime - keyframe.StartTime) / (keyframe.Time - keyframe.StartTime), 1) : 1; // Alpha working
+            //console.log(Alpha);
            // console.log(Alpha);
             
             let ActiveBoneIndex = this.BoneStringColec.indexOf(keyframe.BoneName); //ind of bone in keyframe
@@ -234,6 +240,7 @@ export class Armature{
 
             
         }
+        //console.log(SkippedKeys);
         let clip;
         let ClipsIndToUpdate = [];
         for (let i = this.Timeline.AnimationClips.length - 1; i >= 0; i--)

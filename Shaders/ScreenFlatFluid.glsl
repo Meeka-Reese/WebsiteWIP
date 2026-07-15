@@ -151,6 +151,7 @@
         vec4 InitColText = texture(uTextureScene, UVR);
         ColText *= DVeloText.r;
         vec3 CHSL = RGB2HSL(ColText.rgb);
+        CHSL.b = mod(.8, DVeloText.r * 2.0);
         if (CHSL.b < .1) {CHSL.b = 0.0;}
         ColText.rgb = HSL2RGB(CHSL);
        // if (ColText.r + ColText.g + ColText.b <= .4) {ColText = vec4(1.0);}

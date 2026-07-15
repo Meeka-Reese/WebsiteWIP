@@ -59,7 +59,8 @@ export class Timeline
     }
 
     const updateAll = clipsToUpdate.length === 1 && clipsToUpdate[0] === -1;
-    const currentTime = (gTimeSinceRun * 0.001) - this.StartTime;
+    const currentTime = (gTimeSinceRun * 0.001);
+    console.log("Current Time : " + currentTime);
 
     //console.log(`setKeyframes called | updateAll: ${updateAll} | clipsToUpdate: [${clipsToUpdate}]`);
 

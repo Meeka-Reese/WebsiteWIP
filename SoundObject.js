@@ -64,7 +64,7 @@ export class SoundObject
     }
     OnEndDef()
     {
-        console.log("EndDef");
+        //console.log("EndDef");
     }
     OnRandSwitch()
     {

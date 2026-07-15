@@ -82,6 +82,7 @@ let gGlassDepthMap;
 let gRaycastFBO;
 let gRaycastColecMain = [];
 let gRaycastColecTransform = [];
+let gGrabColecFluid = [];
 let gRaycastColecFluid = [];
 let gRaycastMap;
 let gRaycastIndex;
@@ -121,7 +122,7 @@ import { LoadOBJ } from './Externals/webgl-obj-loader.js';
 import { Bone, Armature, LoadBones} from './Armature.js';
 import { CharClips } from './Animation.js';
 import { PlayAudio, StopAudio, gAudioContext} from './AudioManager.js';
-import { MidiObj } from './MidiManager.js';
+import { MidiObj, TransCallback } from './MidiManager.js';
 import * as THREE from 'three';
 import { LoadThreeScene, AddAnimation, UpdateModel,UpdateBoneMatrix } from './ChudThreeImplementation.js';
 import {SoundObject} from './SoundObject.js';
@@ -174,6 +175,7 @@ let gSurfObjColec = [];
 let gCompSurfObj;
 let gSurfColecVertIndicies = []; //Used to store which verts surface objects are linked with
 let gMidiObj;
+let gAtSeaMidiObj;
 let gBoneModel;
 export let gBoneColec = [];
 export let gFlowerColec = [];
@@ -269,7 +271,7 @@ let AcceptObj = new SoundObject(vec3.create(), 0, 1, AcceptSound, null, null, 0)
 let MouseClickSound = document.getElementById("MouseClick");
 let Track4 = gAudioContext.createMediaElementSource(MouseClickSound);
 let T4Gain = new GainNode(gAudioContext);
-T4Gain.gain.value = .5;
+T4Gain.gain.value = .1;
 Track4.connect(T4Gain);
 T4Gain.connect(gAudioContext.destination);
 let MouseClickObj =  new SoundObject(vec3.create(), 0, 1, MouseClickSound, null, null, 0);
@@ -417,6 +419,16 @@ let AboutMePiano3Obj =  new SoundObject(PosPiano3, 0, 1, AboutMePiano3Sound, Abo
 
 gAboutMeSoundObjColec.push(AboutMeBassObj, AboutMeBirdTextureObj, AboutMeHatObj, AboutMeKickObj, AboutMeLeadObj, AboutMePadObj,
   AboutMePiano1Obj, AboutMePiano2Obj, AboutMeStringsObj, AboutMeVocalChopObj, AboutMeTomObj, AboutMePiano3Obj);
+
+//=========FLUID AT SEA SONG SETUP===================
+
+  let AtSeaSong = document.getElementById("AtSeaSong");
+  let Track18 = gAudioContext.createMediaElementSource(AtSeaSong);
+  let T18Gain = new GainNode(gAudioContext);
+  T18Gain.gain.value = .5;
+  Track18.connect(T18Gain);
+  T18Gain.connect(gAudioContext.destination);
+  let AtSeaSongObj =  new SoundObject(vec3.create(), 0, 1, AtSeaSong, null, null, 0);
 
   function TriggerAboutMeSong()
   {
@@ -749,6 +761,8 @@ async function LoadTransformScene()
     {key: 'uiBacking', path: './models/UIBacking.obj'},
     {key: 'veinThick1', path: './models/VeinsThick.obj'},
     {key: 'veinThin1', path: './models/VeinsThin.obj'},
+    {key: 'veinThick2', path: './models/VeinsThick2.obj'},
+    {key: 'veinThin2', path: './models/VeinsThin2.obj'},
    ];
 
 
@@ -757,7 +771,7 @@ async function LoadTransformScene()
 );
   const [charFullBodyUp, charHairTrans, fleshCube, 
         flowerBloom, flowerStem, flowerBud, flowerWilting, home, play, pause, uiBacking, veinThick1,
-      veinThin1] = results;
+      veinThin1, veinThick2, veinThin2] = results;
   gCharTrans = charFullBodyUp;
 
   //======MODEL AND TEXT ASSIGN ==========  
@@ -799,44 +813,44 @@ async function LoadTransformScene()
   LocTreeColec[0].TextureBN = VeinTree1Text; //need to set morph
   LocTreeColec[0].Texture = VeinTree1Text;
   LocTreeColec[0].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
-  LocTreeColec[1] = Object.assign({}, veinThin1); // Vein opt 2
+  LocTreeColec[1] = Object.assign({}, veinThin2); // Vein opt 2
   LocTreeColec[1].TextureBN = VeinTree2Text; //need to set morph
   LocTreeColec[1].Texture = VeinTree2Text;
-  LocTreeColec[1].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
+  LocTreeColec[1].vertexBuffer2 = Object.assign({}, veinThick2).vertexBuffer;
   LocTreeColec[2] = Object.assign({}, veinThin1); // Vein opt 2
-  LocTreeColec[2].TextureBN = VeinTree2Text; //need to set morph
+  LocTreeColec[2].TextureBN = VeinTree1Text; //need to set morph
   LocTreeColec[2].Texture = VeinTree1Text;
   LocTreeColec[2].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
-  LocTreeColec[3] = Object.assign({}, veinThin1); // Vein opt 2
+  LocTreeColec[3] = Object.assign({}, veinThin2); // Vein opt 2
   LocTreeColec[3].TextureBN = VeinTree2Text; //need to set morph
   LocTreeColec[3].Texture = VeinTree2Text;
-  LocTreeColec[3].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
+  LocTreeColec[3].vertexBuffer2 = Object.assign({}, veinThick2).vertexBuffer;
   LocTreeColec[4] = Object.assign({}, veinThin1); // Vein opt 2
-  LocTreeColec[4].TextureBN = VeinTree2Text; //need to set morph
+  LocTreeColec[4].TextureBN = VeinTree1Text; //need to set morph
   LocTreeColec[4].Texture = VeinTree1Text;
   LocTreeColec[4].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
-  LocTreeColec[5] = Object.assign({}, veinThin1); // Vein opt 2
+  LocTreeColec[5] = Object.assign({}, veinThin2); // Vein opt 2
   LocTreeColec[5].TextureBN = VeinTree2Text; //need to set morph
   LocTreeColec[5].Texture = VeinTree2Text;
-  LocTreeColec[5].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
+  LocTreeColec[5].vertexBuffer2 = Object.assign({}, veinThick2).vertexBuffer;
   LocTreeColec[6] = Object.assign({}, veinThin1); // Vein opt 2
-  LocTreeColec[6].TextureBN = VeinTree2Text; //need to set morph
+  LocTreeColec[6].TextureBN = VeinTree1Text; //need to set morph
   LocTreeColec[6].Texture = VeinTree1Text;
   LocTreeColec[6].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
-  LocTreeColec[7] = Object.assign({}, veinThin1); // Vein opt 2
+  LocTreeColec[7] = Object.assign({}, veinThin2); // Vein opt 2
   LocTreeColec[7].TextureBN = VeinTree2Text; //need to set morph
   LocTreeColec[7].Texture = VeinTree2Text;
-  LocTreeColec[7].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
+  LocTreeColec[7].vertexBuffer2 = Object.assign({}, veinThick2).vertexBuffer;
   LocTreeColec[8] = Object.assign({}, veinThin1); // Vein opt 2
-  LocTreeColec[8].TextureBN = VeinTree2Text; //need to set morph
+  LocTreeColec[8].TextureBN = VeinTree1Text; //need to set morph
   LocTreeColec[8].Texture = VeinTree1Text;
   LocTreeColec[8].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
-  LocTreeColec[9] = Object.assign({}, veinThin1); // Vein opt 2
+  LocTreeColec[9] = Object.assign({}, veinThin2); // Vein opt 2
   LocTreeColec[9].TextureBN = VeinTree2Text; //need to set morph
   LocTreeColec[9].Texture = VeinTree2Text;
-  LocTreeColec[9].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
+  LocTreeColec[9].vertexBuffer2 = Object.assign({}, veinThick2).vertexBuffer;
   LocTreeColec[10] = Object.assign({}, veinThin1); // Vein opt 2
-  LocTreeColec[10].TextureBN = VeinTree2Text; //need to set morph
+  LocTreeColec[10].TextureBN = VeinTree1Text; //need to set morph
   LocTreeColec[10].Texture = VeinTree1Text;
   LocTreeColec[10].vertexBuffer2 = Object.assign({}, veinThick1).vertexBuffer;
 
@@ -1018,7 +1032,17 @@ for (let i = 0; i < LocTreeColec.length; i++)
   await AllCharClips.setupClips();
   gCharArmature = new Armature(gCharBoneColec, gCharTrans, CharStringColec, VertWeightDataColec, gTimeSinceRun * .001, AllCharClips);
   await gCharArmature.setUpUniforms();
-  gMidiObj = new MidiObj(gCharArmature.Timeline, AllCharClips);
+  let LastAlmondXZ = [0.0,0.0];
+  let PreviousRandInd = 0;
+  let ccVals = new Array(8);
+  let Members = {
+    Timeline : gCharArmature.Timeline,
+    AnimationClips : AllCharClips,
+    LastAlmondXZ : LastAlmondXZ,
+    PreviousRandInd : PreviousRandInd,
+    ccVals : ccVals
+  };
+  gMidiObj = new MidiObj(TransCallback, Members);
   await gMidiObj.LoadFile('./MidiFiles/RetimedTrigger.mid');
   LoadTxt.style.color = '#09e2ed';
 
@@ -1206,7 +1230,7 @@ const [EmptyCube, Flute, Violin, Play, Pause] = results;
   let FluidSimQuad = new Quad(null, null,0,null,null,[],[],[1.0,1.0,1.0,1.0],
     [0.0,0.0,0.0],[0.0,0.0,0.0],[1.0,1.0,1.0], null, null, null, null, null, null, null);
   GenerateQuad(FluidSimQuad,1.0,ScreenSpaceOrigin); 
-  let SimQuality = .5;
+  let SimQuality = .3;
   let SimDim = [Math.floor(gCanvasWidth * SimQuality), Math.floor(gCanvasHeight * SimQuality)];
   let StartVals = [255, 255, 255, 255];
   let IterNum = 5;
@@ -1238,12 +1262,12 @@ const [EmptyCube, Flute, Violin, Play, Pause] = results;
   gViolin.Rotation = [0.0,0.0,0.0];
   gViolin.Scale = [ViolinSize, ViolinSize, ViolinSize];
   gViolin.Color = [1.0, 1.0, 1.0, 1.0];
-  let UIScale = 3.0;
-  gFluidPlay.Position = [0.0, 5.0, -40.0];
+  let UIScale = 2.0;
+  gFluidPlay.Position = [3.5, 15.0, -40.0];
   gFluidPlay.Rotation = [0.0, 270.0, 0.0];
   gFluidPlay.Scale = [UIScale, UIScale, UIScale];
   gFluidPlay.Color = [1.0, 1.0, 1.0, 1.0];
-  gFluidPause.Position = [-20.0, 5.0, -40.0];
+  gFluidPause.Position = [-3.5, 15.0, -40.0];
   gFluidPause.Rotation = [0.0, 270.0, 0.0];
   gFluidPause.Scale = [UIScale, UIScale, UIScale];
   gFluidPause.Color = [1.0, 1.0, 1.0, 1.0];
@@ -1259,7 +1283,8 @@ const [EmptyCube, Flute, Violin, Play, Pause] = results;
   gGL.clear(gGL.COLOR_BUFFER_BIT); //Command to clear buffer bit and fill with clear color
 
   //========RAYCAST SETUP==============
-  gRaycastColecFluid.push(gViolin, gEmptyCube);
+  gGrabColecFluid.push(gViolin, gEmptyCube);
+  gRaycastColecFluid.push(gFluidPlay, gFluidPause);
 
   gSceneLoadState.LiquidSim = true;
 
@@ -1617,13 +1642,14 @@ function Input() //For Computer
     if (gKeysPressed['s']){Direction = 1; CameraMove(gCamera, Direction, DeltaTime);}
     if (gKeysPressed['a']){Direction = 2; CameraMove(gCamera, Direction, DeltaTime);}
     if (gKeysPressed['d']){Direction = 3; CameraMove(gCamera, Direction, DeltaTime);}
-    if (gKeysPressed['x']){Direction = 4; CameraMove(gCamera, Direction, DeltaTime);}
+    if (gKeysPressed['x'] && gCamera.ActiveAniClip == null) {Direction = 4; CameraMove(gCamera, Direction, DeltaTime);}
+    if (gKeysPressed['x'] && gCamera.ActiveAniClip != null) {gCamera.ActiveAniClip = null;} // exit camera animation
     if (gKeysPressed['z']){Direction = 5; CameraMove(gCamera, Direction, DeltaTime);}
     if (gKeysPressed['p'] && gActiveMainLoop == TransformationLoop){PlayTransformSong();}
     if (gKeysPressed['y'] && !gConditions.AudioInit) { document.getElementById("PlayMusic").style.display = "none"; if (gAudioContext.state == "suspended" ){gAudioContext.resume();} AcceptObj.Play(0); MainThemeObj.Play(1); gConditions.AudioInit = true;}
     if (gKeysPressed['n']) { document.getElementById("PlayMusic").style.display = "none";}
     if (gKeysPressed['Tab'] && document.pointerLockElement === gCanvas){document.exitPointerLock();gKeysPressed['Tab'] = false;} // so I don't leave zoom callws :(
-    if (gKeysPressed['h'] && (gActiveMainLoop == AboutMeLoop || gActiveMainLoop == FluidVisLoop)) {document.getElementById("GoHome").style.display = "none"; GoHome();}
+    if (gKeysPressed['h'] && (gActiveMainLoop != MainLoop)) {document.getElementById("GoHome").style.display = "none"; GoHome();}
     if (gKeysPressed[' '] && gActiveMainLoop == TransformationLoop) {document.getElementById("ExitCam").style.display = "none"; gCamera.ActiveAniClip = null;} //exit camera animation
     if (gKeysPressed['i'] && gActiveMainLoop == TransformationLoop) {document.getElementById("ExitCam").style.display = "none";} //Hide Exit Message
 
@@ -1665,6 +1691,12 @@ function CheckRaycast(SelectColor, DeselectColor)
       let DispObj = gRCDict.get(Obj);
       if (DispObj != null && "isHover" in DispObj){DispObj.isHover = 0.0;}
     }
+    for (let Obj of gRaycastColecFluid)//reset all to deselect color
+    {
+      Obj.Color = DeselectColor;
+      let DispObj = gRCDict.get(Obj);
+      if (DispObj != null && "isHover" in DispObj){DispObj.isHover = 0.0;}
+    }
 
 
   if (gActiveMainLoop == MainLoop)
@@ -1682,8 +1714,14 @@ else if(gActiveMainLoop == TransformationLoop)
   if (gRaycastIndex == -1) {return null;}
 
   let ObjSelec = gRaycastColecTransform[gRaycastIndex];
-  //console.log(ObjSelec);
-  //console.log("Index " + ObjIndex + " Raycast Colec " + gRaycastColecTransform.length);
+  ObjSelec.Color = SelectColor;
+  let DispObj = gRCDict.get(ObjSelec);
+  if (DispObj != null && "isHover" in DispObj){DispObj.isHover = 1.0;}
+}
+else if (gActiveMainLoop == FluidVisLoop)
+{
+  if (gRaycastIndex == -1) {return null;}
+  let ObjSelec = gRaycastColecFluid[gRaycastIndex];
   ObjSelec.Color = SelectColor;
   let DispObj = gRCDict.get(ObjSelec);
   if (DispObj != null && "isHover" in DispObj){DispObj.isHover = 1.0;}
@@ -1761,6 +1799,13 @@ async function RaycastClick(Obj)
       console.log("Playing");
       PlayTransformSong();
       break
+    case gFluidPlay:
+      console.log("PLAYING AT SEA SONG");
+      AtSeaSong.play();
+      break;
+    case gFluidPause:
+      AtSeaSong.pause();
+      break;
     case gCamAniOn: //not set up yet
       gCamera.ActiveAniClip = CamAniClips[0]; //Step 1 attatch camera aniclip to camera
       CamAniClips[0].ConnectedCamera = gCamera; //Step 2 assign attatched camera to ani clip
@@ -1796,6 +1841,10 @@ async function PlayTransformSong()
     CamAniClips[0].ConnectedCamera = gCamera;
     //gCapturer.start();
     //gIsRecording = true; //Turnon to enable recording
+
+}
+async function PlayFluidSong()
+{
 
 }
 function ClickFunc(event)
@@ -1844,6 +1893,9 @@ document.addEventListener('pointerlockerror', () => {
         break;
       case TransformationLoop:
         rcObj = gRaycastColecTransform[gRaycastIndex];
+        break;
+      case FluidVisLoop:
+        rcObj = gRaycastColecFluid[gRaycastIndex];
         break;
       
     }
@@ -2439,9 +2491,9 @@ const FluidVisLoop = ()=>
     gGL.enable(gGL.DEPTH_TEST);
     gGL.enable(gGL.CULL_FACE);
     let SelectColor = [1.0,1.0,1.0,1.0];
-    let DeselectColor = [.2,.2,.5,1.0];
+    let DeselectColor = [.2,.2,.5,.3];
     let ObjIndex = 1; //start indexing at 1
-    for(let obj of gRaycastColecFluid)
+    for(let obj of gGrabColecFluid)
     {
       gCamera.ObjectIndex = ObjIndex;
       Draw(gProgramInfoRaycast,obj,gCamera,gLight1); 
@@ -2450,9 +2502,24 @@ const FluidVisLoop = ()=>
     gRaycastText = gRaycastMap;
 
     let LocDeltMouse = gIsMobile ? gTouchDelta : gDeltaMouse; //Mobile touch not set up yet 
+    gMouseMoved = Math.abs(LocDeltMouse[0]) + Math.abs(LocDeltMouse[1]) >= .001 ? true : false;
     Input();
     let RCInd = GetRaycastInd();
-    GrabCheck(RCInd, gRaycastColecFluid);
+    GrabCheck(RCInd, gGrabColecFluid);
+
+    gGL.clear(gGL.DEPTH_BUFFER_BIT | gGL.COLOR_BUFFER_BIT);
+    ObjIndex = 1; //start indexing at 1
+    for(let obj of gRaycastColecFluid)
+    {
+      gCamera.ObjectIndex = ObjIndex;
+      Draw(gProgramInfoRaycast,obj,gCamera,gLight1); 
+      ObjIndex++;
+    }
+    gRaycastText = gRaycastMap;
+    if (gMouseMoved) {CheckRaycast(SelectColor, DeselectColor);}
+
+
+
 
     ClearFBO(null, gGL);
     ClearFBO(gMainFBO, gGL);

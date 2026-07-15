@@ -1,3 +1,4 @@
+
 :root {
   --primary-text-color: #d6d6d6;
   --highlight-text-color: #000000;
@@ -42,12 +43,12 @@
 #Gif {
   display: block;
   position: fixed;
-  top: 20vh;
-  left: 25vw;
-  width:50vw;
-  height:50vh / 50vw; 
+
+  left:25%;
+  width:50%;
+  height:50vh / 5vw; 
   image-rendering: pixelated;
-  transform: translateY(-100px);
+
   z-index: 7;
 }
 #LoadTxt{

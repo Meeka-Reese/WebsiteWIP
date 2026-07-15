@@ -10,8 +10,8 @@ export async function LoadOBJ(gl, path, DebugInd = false)
   Time = new Date();
   let EndTime = Time.getTime() * .001;
   let ElapsedTime = EndTime - StartTime;
-  console.log(path);
-  console.log("Obj with Path " + path + " Took " + ElapsedTime + " seconds to load");
+  //console.log(path);
+  //console.log("Obj with Path " + path + " Took " + ElapsedTime + " seconds to load");
   return obj;
 }
 
