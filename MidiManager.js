@@ -3,12 +3,14 @@ import { SpawnModel, gBoneColec, gFlowerColec, gAlmondColec, gGlobalTempo } from
 export class MidiObj
 {
     constructor(CallbackFunc, Members)
-    { //member size max is 8
-        console.log(Members);
+    { 
         this.MidiCallback = CallbackFunc;
-        this.ccVals = new Array(8);
-        Members.ccVals = this.ccVals;
-        this.Player = new MidiPlayer.Player(this.MidiCallback.bind(this, Members));
+        this.Members = Members;
+        for (let i = 0; i < this.Members.ccVals.length; i++) //init vals for array
+        {
+            this.Members.ccVals[i] = 0.0;
+        }
+        this.Player = new MidiPlayer.Player(this.MidiCallback.bind(this, this.Members));
     }
     async LoadFile(dir)
     {
@@ -22,10 +24,7 @@ export class MidiObj
         this.Player.play(); 
         
         console.log("Midi clip starting");
-        for (let i = 0; i < this.ccVals.length; i++) //initialize
-        {
-            this.ccVals[i] = 0.0;
-        }
+    
     }
     async StopMidi()
     {
@@ -39,6 +38,7 @@ export class MidiObj
     
 
 }
+
 export const TransCallback = async (Members, event)=>
 {
     let EventName = event.name;
@@ -128,3 +128,28 @@ export const TransCallback = async (Members, event)=>
         
     }
 }
+
+export const SeaCallback = async (Members, event)=>
+{
+    let EventName = event.name;
+    let PitchNum = event.noteNumber;
+    let CCNum = event.number;
+    switch(EventName)
+    {
+        case("Note on"):
+            console.log("Note on");
+            switch(PitchNum)
+            {
+                
+            }
+
+            break;
+        case("Controller Change"):
+            Members.ccVals[CCNum - 1] = event.value / 127.0;
+        break;
+        
+        
+    }
+}
+
+

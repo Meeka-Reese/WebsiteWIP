@@ -480,6 +480,8 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         prevTexture: GL.getUniformLocation(ShaderProgramScreenFluidDisp, "uTexturePrev"),
         resolution: GL.getUniformLocation(ShaderProgramScreenFluidDisp, "uResolution"),
         deltaTime: GL.getUniformLocation(ShaderProgramScreenFluidDisp, "DeltaTime"),
+        ccVals: GL.getUniformLocation(ShaderProgramScreenFluidDisp, "ccVals"),
+        time: GL.getUniformLocation(ShaderProgramScreenFluidDisp, "Time"),
     }
 
     ProgramInfoScreenFluidAdvectForward.program = ShaderProgramScreenFluidAdvectForward;
@@ -495,6 +497,7 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         textureScene: GL.getUniformLocation(ShaderProgramScreenFluidAdvectForward, "uTextureScene"),
         resolution: GL.getUniformLocation(ShaderProgramScreenFluidAdvectForward, "uResolution"),
         deltaTime: GL.getUniformLocation(ShaderProgramScreenFluidAdvectForward, "DeltaTime"),
+        ccVals: GL.getUniformLocation(ShaderProgramScreenFluidAdvectForward, "ccVals"),
     }
 
     ProgramInfoScreenFluidAdvectBackward.program = ShaderProgramScreenFluidAdvectBackward;
@@ -510,6 +513,7 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         textureScene: GL.getUniformLocation(ShaderProgramScreenFluidAdvectBackward, "uTextureScene"),
         resolution: GL.getUniformLocation(ShaderProgramScreenFluidAdvectBackward, "uResolution"),
         deltaTime: GL.getUniformLocation(ShaderProgramScreenFluidAdvectBackward, "DeltaTime"),
+        ccVals: GL.getUniformLocation(ShaderProgramScreenFluidAdvectBackward, "ccVals"),
     }
 
     ProgramInfoScreenFluidAdvectCorrect.program = ShaderProgramScreenFluidAdvectCorrect;
@@ -540,6 +544,7 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         ViewMatrix: GL.getUniformLocation(ShaderProgramScreenFlatFluid, "uViewMatrix"),
         modelMatrix: GL.getUniformLocation(ShaderProgramScreenFlatFluid, "uModelMatrix"),
         textureScene: GL.getUniformLocation(ShaderProgramScreenFlatFluid, "uTextureScene"),
+        ccVals: GL.getUniformLocation(ShaderProgramScreenFlatFluid, "ccVals"),
         resolution: GL.getUniformLocation(ShaderProgramScreenFlatFluid, "uResolution"),
     }
 
@@ -660,6 +665,7 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         modelMatrix: GL.getUniformLocation(ShaderProgramScreenFluidFriction, "uModelMatrix"),
         textureScene: GL.getUniformLocation(ShaderProgramScreenFluidFriction, "uTextureScene"),
         resolution: GL.getUniformLocation(ShaderProgramScreenFluidFriction, "uResolution"),
+        ccVals: GL.getUniformLocation(ShaderProgramScreenFluidFriction, "ccVals"),
     }
 
     ProgramInfoFlatNorm.program = ShaderProgramFlatNorm;
@@ -738,6 +744,7 @@ export function SetProgramInfo(GL, ProgramInfoWave, ShaderProgramWave, ProgramIn
         texture: GL.getUniformLocation(ShaderProgramInvert, "uTexture"),
         alpha: GL.getUniformLocation(ShaderProgramInvert, "Alpha"),
         resolution: GL.getUniformLocation(ShaderProgramInvert, "uResolution"),
+        ccVals: GL.getUniformLocation(ShaderProgramInvert, "ccVals"),
     };
     
 }
@@ -1261,7 +1268,8 @@ export function loadTexture(gl, url, numChans = 4, flip = true) {
  
     if (programInfo.uniformLocations.ccVals != null)
     {
-        gl.uniform1fv(programInfo.uniformLocations.ccVals, MidiManager.ccVals);
+        //console.log(MidiManager.ccVals);
+        gl.uniform1fv(programInfo.uniformLocations.ccVals, MidiManager.Members.ccVals);
     }
     else if(("alpha" in programInfo))
     {console.log("Alpha Uniform Could Not Be Found!")} 
@@ -1335,7 +1343,10 @@ export function loadTexture(gl, url, numChans = 4, flip = true) {
         gl.uniform1f(programInfo.uniformLocations.blurAmount, Camera.BlurAmount);
     }
     else if(("blurAmount" in programInfo))
-    {console.log("blurAmount Uniform Could Not Be Found!")} 
+    {console.log("blurAmount Uniform Could Not Be Found!")}
+
+  
+
 
     //==== Bone Uniforms ====
     if (Armature != null)

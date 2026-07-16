@@ -60,6 +60,19 @@
   color: white;
   z-index: 7;
 }
+#Controls{
+  position: fixed;
+    display: none;
+    top: 0px;
+    margin-left: 50%;
+    font-size: max(4vw, 4vh);
+    width: min(50vw, 40%);
+    height: 15vw;
+    color: white;
+    opacity: 1;
+    background-color: #00000055;
+    z-index: 6;
+}
 /*
 Load Text Colors
 ffb700
@@ -70,38 +83,41 @@ aaff00
 */
 #PlayMusic{
   position: fixed;
+    display: none;
     top: 0px;
     left: 0px;
     font-size: max(4vw, 4vh);
     width: min(50vw, 40%);
     height: 15vw;
     color: white;
-    opacity: 0;
+    opacity: 1;
     background-color: #00000055;
     z-index: 6;
 }
 #GoHome{
   position: fixed;
+  display: none;
     top: 0px;
     left: 0px;
     font-size: max(4vw, 4vh);
     width: min(50vw, 40%);
     height: 10vw;
     color: white;
-    opacity: 0;
+    opacity: 1;
     background-color: #00000055;
     z-index: 6;
 }
 #ExitCam
 {
   position: fixed;
+  display: none;
   top: 0px;
   left: 0px;
   font-size: max(4vw, 4vh);
   width: min(50vw, 40%);
   height: 10vw;
   color: white;
-  opacity: 0;
+  opacity: 1;
   background-color: #00000055;
   z-index: 7;
 }

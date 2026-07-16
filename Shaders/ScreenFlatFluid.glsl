@@ -1,4 +1,5 @@
 #version 300 es
+    #define CC_CHANNEL_NUM 8
     precision mediump float;    
     in vec3 Normals;
     in vec3 FragPos;
@@ -7,6 +8,7 @@
     uniform sampler2D uTextureScene;
     uniform vec2 uResolution;  
     float eps = .0001;
+    uniform float ccVals[CC_CHANNEL_NUM];
     vec3 RGB2HSL (vec3 RGB)
     {
         //using this for hsl https://www.niwa.nu/2013/05/math-behind-colorspace-conversions-rgb-hsl/
@@ -151,6 +153,7 @@
         vec4 InitColText = texture(uTextureScene, UVR);
         ColText *= DVeloText.r;
         vec3 CHSL = RGB2HSL(ColText.rgb);
+        CHSL.r += ccVals[1] * 180.0;
         CHSL.b = mod(.8, DVeloText.r * 2.0);
         if (CHSL.b < .1) {CHSL.b = 0.0;}
         ColText.rgb = HSL2RGB(CHSL);

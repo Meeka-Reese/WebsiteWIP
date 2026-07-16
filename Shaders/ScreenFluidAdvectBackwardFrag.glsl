@@ -1,4 +1,5 @@
 #version 300 es
+    #define CC_CHANNEL_NUM 8
     precision highp float;    
     in vec3 Normals;
     in vec3 FragPos;
@@ -6,6 +7,7 @@
     uniform sampler2D uTextureScene;
     uniform vec2 uResolution;  
     uniform float DeltaTime; 
+    uniform float ccVals[CC_CHANNEL_NUM];
     out vec4 fragColor;
     vec2 UnitSize;
 
@@ -30,7 +32,7 @@
     void main()
     {
         float TimeScale = 7.3;
-        float DiffAm = 10.0;
+        float DiffAm = 10.0 * ccVals[2];
         float Ratio = (uResolution.x) / uResolution.y;
         vec2 NewCord = gl_FragCoord.xy;
         vec2 screenSpace = vec2(((NewCord.x)/(uResolution.x)), 

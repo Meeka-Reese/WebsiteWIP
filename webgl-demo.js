@@ -122,7 +122,7 @@ import { LoadOBJ } from './Externals/webgl-obj-loader.js';
 import { Bone, Armature, LoadBones} from './Armature.js';
 import { CharClips } from './Animation.js';
 import { PlayAudio, StopAudio, gAudioContext} from './AudioManager.js';
-import { MidiObj, TransCallback } from './MidiManager.js';
+import { MidiObj, TransCallback, SeaCallback } from './MidiManager.js';
 import * as THREE from 'three';
 import { LoadThreeScene, AddAnimation, UpdateModel,UpdateBoneMatrix } from './ChudThreeImplementation.js';
 import {SoundObject} from './SoundObject.js';
@@ -1287,6 +1287,13 @@ const [EmptyCube, Flute, Violin, Play, Pause] = results;
   gRaycastColecFluid.push(gFluidPlay, gFluidPause);
 
   gSceneLoadState.LiquidSim = true;
+  //Midi Setup
+  let ccVals = new Array(8);
+  let Members = {
+    ccVals : ccVals,
+  };
+  gAtSeaMidiObj = new MidiObj(SeaCallback, Members);
+  await gAtSeaMidiObj.LoadFile('./MidiFiles/AtSea.mid');
 
 }
 
@@ -1643,15 +1650,17 @@ function Input() //For Computer
     if (gKeysPressed['a']){Direction = 2; CameraMove(gCamera, Direction, DeltaTime);}
     if (gKeysPressed['d']){Direction = 3; CameraMove(gCamera, Direction, DeltaTime);}
     if (gKeysPressed['x'] && gCamera.ActiveAniClip == null) {Direction = 4; CameraMove(gCamera, Direction, DeltaTime);}
-    if (gKeysPressed['x'] && gCamera.ActiveAniClip != null) {gCamera.ActiveAniClip = null;} // exit camera animation
+    if (gKeysPressed['x'] && gCamera.ActiveAniClip != null) {gCamera.ActiveAniClip = null; document.getElementById("ExitCam").style.display = "none";} // exit camera animation
     if (gKeysPressed['z']){Direction = 5; CameraMove(gCamera, Direction, DeltaTime);}
     if (gKeysPressed['p'] && gActiveMainLoop == TransformationLoop){PlayTransformSong();}
     if (gKeysPressed['y'] && !gConditions.AudioInit) { document.getElementById("PlayMusic").style.display = "none"; if (gAudioContext.state == "suspended" ){gAudioContext.resume();} AcceptObj.Play(0); MainThemeObj.Play(1); gConditions.AudioInit = true;}
     if (gKeysPressed['n']) { document.getElementById("PlayMusic").style.display = "none";}
     if (gKeysPressed['Tab'] && document.pointerLockElement === gCanvas){document.exitPointerLock();gKeysPressed['Tab'] = false;} // so I don't leave zoom callws :(
     if (gKeysPressed['h'] && (gActiveMainLoop != MainLoop)) {document.getElementById("GoHome").style.display = "none"; GoHome();}
-    if (gKeysPressed[' '] && gActiveMainLoop == TransformationLoop) {document.getElementById("ExitCam").style.display = "none"; gCamera.ActiveAniClip = null;} //exit camera animation
+    if (gKeysPressed['i'] && gActiveMainLoop == MainLoop) {document.getElementById("Controls").style.display = "none";} //Hide Controls Message
     if (gKeysPressed['i'] && gActiveMainLoop == TransformationLoop) {document.getElementById("ExitCam").style.display = "none";} //Hide Exit Message
+    if (gKeysPressed['i'] && gActiveMainLoop == AboutMeLoop) {document.getElementById("GoHome").style.display = "none";} //Hide Home Message
+    if (gKeysPressed['i'] && gActiveMainLoop == FluidVisLoop) {document.getElementById("GoHome").style.display = "none";} //Hide Home Message
 
 
 }
@@ -1782,6 +1791,7 @@ async function RaycastClick(Obj)
       SoundMainTheme.currentTime = 0;
       SoundMainTheme.pause();
       document.getElementById("PlayMusic").style.display = "none";
+      document.getElementById("GoHome").style.display = "block";
 
       break;
     case gHomeButton:
@@ -1802,9 +1812,11 @@ async function RaycastClick(Obj)
     case gFluidPlay:
       console.log("PLAYING AT SEA SONG");
       AtSeaSong.play();
+      gAtSeaMidiObj.StartMidi();
       break;
     case gFluidPause:
       AtSeaSong.pause();
+      gAtSeaMidiObj.StopMidi();
       break;
     case gCamAniOn: //not set up yet
       gCamera.ActiveAniClip = CamAniClips[0]; //Step 1 attatch camera aniclip to camera
@@ -1831,7 +1843,6 @@ function GoHome()
 }
 async function PlayTransformSong()
 {
-  //Woops I broke the animation with the loading :(
     await gMidiObj.StopMidi(); 
     SoundTransformSound.pause();
     //Sound1.currentTime = 0;
@@ -1839,6 +1850,7 @@ async function PlayTransformSong()
     gMidiObj.StartMidi();
     gCamera.ActiveAniClip = CamAniClips[0];
     CamAniClips[0].ConnectedCamera = gCamera;
+    document.getElementById("ExitCam").style.display = "block";
     //gCapturer.start();
     //gIsRecording = true; //Turnon to enable recording
 
@@ -2083,13 +2095,13 @@ const TransformationLoop = ()=>
   MouseLook(gCamera, LocDeltMouse);
   //Animation
   gCharArmature.ApplyAnimation(gTimeSinceRun * .001);
-  gScreenSpaceQuadTrans.lightness = gMidiObj.ccVals[1];
+  gScreenSpaceQuadTrans.lightness = gMidiObj.Members.ccVals[1];
   for (let i = 0; i < gTreeColec.length; i++)
   {
-    gTreeColec[i].lightness = gMidiObj.ccVals[1];
+    gTreeColec[i].lightness = gMidiObj.Members.ccVals[1];
   }
-  gFleshGroundL.lightness = gMidiObj.ccVals[1];
-  gFleshGroundR.lightness = gMidiObj.ccVals[1];
+  gFleshGroundL.lightness = gMidiObj.Members.ccVals[1];
+  gFleshGroundR.lightness = gMidiObj.Members.ccVals[1];
   gFleshParticles.Position[1] = -300.0 + (Math.abs(gSinView[Math.floor(gTimeSinceRun * .24) % WAVE_BUFFER_SIZE]) + gCharTrans.Position[1]) * 50.0;
   //console.log(" Elapsed Time " + SoundTransformSound.currentTime);
   if (gCamera.ActiveAniClip != null) //Camera Animation
@@ -2463,6 +2475,7 @@ const AboutMeLoop = async ()=>
 //=======================FLUID VIS=======================================
 const FluidVisLoop = ()=> 
 {
+  console.log(gAtSeaMidiObj.Members.ccVals);
   //https://github.com/indutny/fft.js/ use for fft
   
   //Add Text Add shader and implement it prob before diffuse or something idk
@@ -2475,11 +2488,13 @@ const FluidVisLoop = ()=>
     let FluidIMGSc = [gFluidSimObj.Dimensions[0] * 2.0, gFluidSimObj.Dimensions[1]];
     
     // Animation Step
-    let CSpinSpeed = .1;
+    let CSpinSpeed = .1 + (-.05 + (gAtSeaMidiObj.Members.ccVals[0] * .1));
     gFlute.Rotation[1] += DeltaTime * CSpinSpeed;
     gFlute.Rotation[0] += DeltaTime * CSpinSpeed;
     gViolin.Rotation[1] += DeltaTime * CSpinSpeed;
     gViolin.Rotation[0] += DeltaTime * CSpinSpeed;
+    gViolin.Rotation[2] += DeltaTime * CSpinSpeed * .5;
+    gEmptyCube.Rotation[2] += DeltaTime * CSpinSpeed * .5;
     gEmptyCube.Rotation[1] += DeltaTime * CSpinSpeed;
     gEmptyCube.Rotation[0] += DeltaTime * CSpinSpeed;
     gCamera.updatePR(); //updates for cam parent trans and rot
@@ -2570,7 +2585,7 @@ const FluidVisLoop = ()=>
     gFluidSimObj.SwapText();
     gFluidSimObj.UpdateText(); 
     // ===========FRICTION and GRAVITY===========
-    Draw(gProgramInfoScreenFluidFriction, gFluidSimObj.ScreenQuad, gCamera, gLight1);
+    Draw(gProgramInfoScreenFluidFriction, gFluidSimObj.ScreenQuad, gCamera, gLight1, null, gAtSeaMidiObj);
     gGL.activeTexture(gGL.TEXTURE9); 
     gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
     gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, FluidIMGSc[0], FluidIMGSc[1]);
@@ -2582,8 +2597,7 @@ const FluidVisLoop = ()=>
     gFluidSimObj.UpdateIter();
     for (let iter = 0; iter < 5.0; iter++)
     {
-      Draw(gProgramInfoScreenFluidDisp, gFluidSimObj.ScreenQuad, gCamera, gLight1);
-
+      Draw(gProgramInfoScreenFluidDisp, gFluidSimObj.ScreenQuad, gCamera, gLight1, null, gAtSeaMidiObj);
       gGL.activeTexture(gGL.TEXTURE9);
       gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.WriteText);
 
@@ -2613,7 +2627,7 @@ const FluidVisLoop = ()=>
     //Apply velocity field to densitys 
 
      // ==== FORWARD ======
-     Draw(gProgramInfoScreenFluidAdvectForward, gFluidSimObj.ScreenQuad, gCamera, gLight1);
+     Draw(gProgramInfoScreenFluidAdvectForward, gFluidSimObj.ScreenQuad, gCamera, gLight1, null, gAtSeaMidiObj);
 
      gGL.activeTexture(gGL.TEXTURE9); 
      gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.HoldText);
@@ -2623,7 +2637,7 @@ const FluidVisLoop = ()=>
      gFluidSimObj.ScreenQuad.Texture = gFluidSimObj.HoldText;
 
     // ==== BACKWARD ======
-    Draw(gProgramInfoScreenFluidAdvectBackward, gFluidSimObj.ScreenQuad, gCamera, gLight1);
+    Draw(gProgramInfoScreenFluidAdvectBackward, gFluidSimObj.ScreenQuad, gCamera, gLight1, null, gAtSeaMidiObj);
     //Save to readText
     gGL.activeTexture(gGL.TEXTURE9); 
     gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.DoubleText);
@@ -2645,7 +2659,7 @@ const FluidVisLoop = ()=>
     //Apply velocity field to densitys 
 
      // ==== FORWARD ======
-     Draw(gProgramInfoScreenFluidAdvectForward, gFluidSimObj.ScreenQuad, gCamera, gLight1);
+     Draw(gProgramInfoScreenFluidAdvectForward, gFluidSimObj.ScreenQuad, gCamera, gLight1, null, gAtSeaMidiObj);
 
      gGL.activeTexture(gGL.TEXTURE9); 
      gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.HoldText);
@@ -2655,7 +2669,7 @@ const FluidVisLoop = ()=>
      gFluidSimObj.ScreenQuad.Texture = gFluidSimObj.HoldText;
 
     // ==== BACKWARD ======
-    Draw(gProgramInfoScreenFluidAdvectBackward, gFluidSimObj.ScreenQuad, gCamera, gLight1);
+    Draw(gProgramInfoScreenFluidAdvectBackward, gFluidSimObj.ScreenQuad, gCamera, gLight1, null, gAtSeaMidiObj);
     //Save to readText
     gGL.activeTexture(gGL.TEXTURE9); 
     gGL.bindTexture(gGL.TEXTURE_2D, gFluidSimObj.DoubleText);
@@ -2740,18 +2754,18 @@ const FluidVisLoop = ()=>
     gCamera.Height = gCanvasHeight;
   
     
-    Draw(gProgramInfoScreenFlatFluid, gFluidSimObj.ScreenQuad, gCamera, gLight3);
+    Draw(gProgramInfoScreenFlatFluid, gFluidSimObj.ScreenQuad, gCamera, gLight3, null, gAtSeaMidiObj);
     //Save Texts to Objs for Inverts
-    gGL.activeTexture(gGL.TEXTURE9);
+    gGL.activeTexture(gGL.TEXTURE8);
     gGL.bindTexture(gGL.TEXTURE_2D, gEmptyCube.Texture);
     gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gCanvasWidth, gCanvasHeight);
-    gGL.activeTexture(gGL.TEXTURE9);
+    gGL.activeTexture(gGL.TEXTURE8);
     gGL.bindTexture(gGL.TEXTURE_2D, gViolin.Texture);
     gGL.copyTexSubImage2D(gGL.TEXTURE_2D, 0,0, 0, 0, 0, gCanvasWidth, gCanvasHeight);
 
     gGL.clear(gGL.DEPTH_BUFFER_BIT);
-    Draw(gProgramInfoInvert, gEmptyCube, gCamera, gLight3);
-    Draw(gProgramInfoInvert, gViolin, gCamera, gLight3);
+    Draw(gProgramInfoInvert, gEmptyCube, gCamera, gLight3, null, gAtSeaMidiObj);
+    Draw(gProgramInfoInvert, gViolin, gCamera, gLight3, null, gAtSeaMidiObj);
 
     //UI RENDER
     Draw(gProgramInfoDef, gFluidPlay, gCamera, gLight3);
@@ -3159,7 +3173,10 @@ if (!extLinearFloat) {
     document.getElementById("Gif").style.display = "none";
     document.getElementById("GoHome").style.display = "none";
     document.getElementById("LoadTxt").style.display = "none";
-    if (!gIsMobile) {document.getElementById("PlayMusic").style.display = "block";}
+    if (!gIsMobile) {
+      document.getElementById("PlayMusic").style.display = "block";
+      document.getElementById("Controls").style.display = "block";
+    }
     FrameCount();
     console.log(gIsMobile);
     if (gIsMobile)
